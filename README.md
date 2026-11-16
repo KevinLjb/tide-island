@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。增量 inbox、受保护历史清理及既有共享能力已通过严格 CI：98 项单测实际执行通过，另有 bridge 构建、四项 CLI 与工程结构检查；此前测试管道误绿已修复。T010 已加入共享接收器、故障诊断、目录重连与中断操作恢复，新增验证等待严格 CI。偏好和游标仅存内存；原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T010 通道恢复已完成共享逻辑：119 项单测实际执行通过，bridge 构建、四项 CLI 与工程结构共七项严格检查成功。目录重建、单接收者、状态确认和中断恢复规则见 [通道故障恢复](docs/inbox-recovery.md)。下一步为 T011 必要元数据与偏好持久化；偏好和游标目前仅存内存，原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 

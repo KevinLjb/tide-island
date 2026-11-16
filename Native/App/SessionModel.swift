@@ -27,6 +27,10 @@ final class SessionModel: ObservableObject {
                 Task { @MainActor [weak self] in self?.reloadInbox() }
             }
             .store(in: &subscriptions)
+        connectReceiver()
+    }
+
+    private func connectReceiver() {
         do {
             let receiver = InboxReceiver(inbox: try EventInbox.applicationDefault())
             self.receiver = receiver
@@ -44,7 +48,7 @@ final class SessionModel: ObservableObject {
     }
 
     func reloadInbox() {
-        guard let receiver else { return }
+        guard let receiver else { connectReceiver(); return }
         Task { await receiver.reconnect() }
     }
 

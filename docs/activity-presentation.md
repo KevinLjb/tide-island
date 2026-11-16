@@ -38,6 +38,8 @@ T021 的 [偏好投影](preferences.md)在验证原内容后，可将项目名�
 
 T018 已加入清单协调、授权变化、系统已结束 / 用户关闭活动、重启关联及退出清理，完整规则见 [活动生命周期](activity-lifecycle.md)。禁用时先尝试清理管理中的活动；不提供跨进程事务、崩溃清理或原生运行保证。
 
+T023 的 [系统状态](system-status.md)将接口 / 权限、来源与上次交付错误分开呈现。允许请求不证明岛上可见，系统关闭也不掩盖结束未确认；重新检查仍沿用有序来源和既有所有权规则。
+
 ## 原生适配源码
 
 `NativeActivityController` 委托共享调度器及其基本控制器；`NativeActivityKitClient` 在主 actor 使用公开 ActivityAuthorizationInfo、Activity.request、update、end，并保留本次请求 / 经主接收器授权接管的 SDK 对象。ContentState 与 staleDate 直接取共享投影，不在适配层重新计算计数或刷新时间。

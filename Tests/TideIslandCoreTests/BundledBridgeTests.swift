@@ -18,7 +18,7 @@ import Testing
 @Test func bundledBridgeRejectsForeignApplicationAndInvalidVersions() throws {
     let root = try deliveryTestRoot(); defer { try? FileManager.default.removeItem(at: root) }
     let app = try deliveryTestApp(in: root)
-    for (key, value) in [("CFBundleIdentifier", "foreign.application"), ("CFBundleShortVersionString", "unknown"), ("CFBundleVersion", "1\n2"), ("CFBundleVersion", "1\n")]:
+    for (key, value) in [("CFBundleIdentifier", "foreign.application"), ("CFBundleShortVersionString", "unknown"), ("CFBundleVersion", "1\n2"), ("CFBundleVersion", "1\n")] {
         try deliveryInfo(app, replacing: [key: value])
         #expect(throws: BundledBridgeError.invalidApplication) { try BundledBridge.inspect(applicationURL: app) }
         try deliveryInfo(app)

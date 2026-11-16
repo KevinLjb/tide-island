@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T011 持久化已完成共享逻辑：143 项单测实际执行通过，七项严格 CI 步骤覆盖 bridge 构建、五类 CLI 与工程结构。元数据 / 偏好 checkpoint、跨重启保护、保存失败提示和主动清除规则见 [会话持久化](docs/session-persistence.md)。下一步为 T012 Wave 定位能力研究；游标正文缓存仍在内存，原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T011 持久化已完成共享逻辑：143 项单测实际执行通过，七项严格 CI 步骤覆盖 bridge 构建、五类 CLI 与工程结构。元数据 / 偏好 checkpoint、跨重启保护、保存失败提示和主动清除规则见 [会话持久化](docs/session-persistence.md)。T012 已完成 0.14.5 的本机只读与固定源码核对，下一步为 T013 定位元数据；游标正文缓存仍在内存，原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -44,6 +44,7 @@ docs/session-attention.md     已读、忽略、置顶、选择与注意力排�
 docs/inbox-maintenance.md     增量游标、受保护历史与预览 / 应用清理
 docs/inbox-recovery.md        通道健康、监听重连、单接收者与中断恢复
 docs/session-persistence.md   会话 / 偏好 checkpoint、跨重启保护与主动清除
+docs/wave-capabilities.md     Wave 版本、公开定位入口、认证与列表输出边界
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -99,7 +100,7 @@ swift run tide-island-bridge emit \
 
 CLI 将事件原子写入 `~/Library/Application Support/TideIsland/Events/`，并输出一行 v2 JSON。运行中的应用监听该目录。状态包括 `working`、`needsInput`、`completed`、`failed`、`interrupted` 和 `ended`；`completed` 只表示本轮结束。新读取器继续兼容已有的 v1 记录。
 
-`--inbox <目录>` 可隔离调试数据；`--wave-block <ID>` 可显式携带分屏标识。在 Wave 中运行时，默认读取 `WAVETERM_BLOCKID`。应用当前只唤起 Wave，**尚未实现或验证精确分屏定位**。
+`--inbox <目录>` 可隔离调试数据；`--wave-block <ID>` 可显式携带分屏标识。在 Wave 中运行时，默认读取 `WAVETERM_BLOCKID`。应用当前只唤起 Wave，**尚未实现或验证精确分屏定位**。已核对的 Wave 0.14.5 `focusblock` 只处理标签内布局，需要认证和 tab 上下文；跨标签 / 窗口没有本轮可承诺的公开路线，详见 [Wave 定位能力](docs/wave-capabilities.md)。
 
 ## 回放生命周期事件
 

@@ -73,7 +73,7 @@ flowchart LR
 
 ## Wave 接入
 
-初始化只通过应用 bundle identifier 唤起 Wave。本机 Wave 0.14.5 提供 `wsh focusblock`，其帮助文本限定当前标签；真实调用还需要验证 Wave 上下文、认证、跨标签和窗口选择。保存 block ID 不等于已经实现精确跳转。
+当前源码只通过 bundle identifier 唤起 Wave。T012 已核对本机 0.14.5 与固定版本源码：`wsh focusblock` 要求 Wave 认证及 tab 上下文，只聚焦标签内布局，不激活其他标签 / 窗口；内部 Electron / HTTP 切换服务不作为稳定第三方接口。公开列表还存在部分失败、非 JSON 空结果和字段差异，元数据只能有界提取 ID。版本、证据和 T013—T015 的实施边界见 [Wave 定位能力](wave-capabilities.md)。精确路线仍未实现或交互验证。
 
 URL scheme 只识别 `tide-island://session?id=...`，只查找已有会话，不把链接参数拼接成 shell 命令。
 

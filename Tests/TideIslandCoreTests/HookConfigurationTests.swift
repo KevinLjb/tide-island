@@ -141,7 +141,7 @@ private let existingHookData = Data(#"{"description":"fixture-private-descriptio
     defer { try? FileManager.default.removeItem(at: root) }
     let config = root.appendingPathComponent("missing/.codex/hooks.json")
     let file = try HookConfigurationFile(url: config)
-    let preview = try file.preview(action: .install, bridgePath: "/bin/true")
+    let preview = try file.preview(action: .install, bridgePath: hookTestBridge(in: root).path)
     #expect(preview.changesFile)
     let noOp = try file.preview(action: .uninstall)
     #expect(!noOp.changesFile)
@@ -157,7 +157,7 @@ private let existingHookData = Data(#"{"description":"fixture-private-descriptio
     try existingHookData.write(to: config)
     try FileManager.default.setAttributes([.posixPermissions: 0o640], ofItemAtPath: config.path)
     let file = try HookConfigurationFile(url: config)
-    let plan = try file.preview(action: .install, bridgePath: "/bin/true")
+    let plan = try file.preview(action: .install, bridgePath: hookTestBridge(in: root).path)
     let appliedBackup = try file.apply(plan, expectedFingerprint: plan.fingerprint, backupDirectory: root.appendingPathComponent("backups"))
     let backup = try #require(appliedBackup)
     #expect(try Data(contentsOf: backup.appendingPathComponent("hooks.json.before")) == existingHookData)
@@ -165,7 +165,7 @@ private let existingHookData = Data(#"{"description":"fixture-private-descriptio
     #expect(try permissions(backup) == 0o700)
     #expect(try permissions(backup.appendingPathComponent("hooks.json.before")) == 0o600)
     let after = try Data(contentsOf: config)
-    let noOp = try file.preview(action: .install, bridgePath: "/bin/true")
+    let noOp = try file.preview(action: .install, bridgePath: hookTestBridge(in: root).path)
     #expect(!noOp.changesFile)
     #expect(try file.apply(noOp, expectedFingerprint: noOp.fingerprint, backupDirectory: root.appendingPathComponent("other-backups")) == nil)
     #expect(try Data(contentsOf: config) == after)
@@ -178,7 +178,7 @@ private let existingHookData = Data(#"{"description":"fixture-private-descriptio
     let config = root.appendingPathComponent("hooks.json")
     try existingHookData.write(to: config)
     let file = try HookConfigurationFile(url: config)
-    let plan = try file.preview(action: .install, bridgePath: "/bin/true")
+    let plan = try file.preview(action: .install, bridgePath: hookTestBridge(in: root).path)
     let changed = Data(#"{"description":"edited","hooks":{}}"#.utf8)
     try changed.write(to: config)
     #expect(throws: HookConfigurationError.self) {
@@ -198,7 +198,7 @@ private let existingHookData = Data(#"{"description":"fixture-private-descriptio
     let config = root.appendingPathComponent("hooks.json")
     try existingHookData.write(to: config)
     let file = try HookConfigurationFile(url: config)
-    let plan = try file.preview(action: .install, bridgePath: "/bin/true")
+    let plan = try file.preview(action: .install, bridgePath: hookTestBridge(in: root).path)
     let changed = try file.preview(action: .install, bridgePath: "/bin/echo")
     #expect(throws: HookConfigurationError.self) {
         try file.apply(changed, expectedFingerprint: plan.fingerprint, backupDirectory: root.appendingPathComponent("backups"))
@@ -222,7 +222,7 @@ private let existingHookData = Data(#"{"description":"fixture-private-descriptio
     #expect(throws: HookConfigurationError.self) { try file.preview(action: .uninstall) }
     try FileManager.default.removeItem(at: config)
     try existingHookData.write(to: config)
-    let plan = try file.preview(action: .install, bridgePath: "/bin/true")
+    let plan = try file.preview(action: .install, bridgePath: hookTestBridge(in: root).path)
     let descriptor = open(root.appendingPathComponent(".tide-island-hooks.lock").path, O_RDWR | O_CREAT, 0o600)
     #expect(descriptor >= 0)
     defer { close(descriptor) }
@@ -241,6 +241,15 @@ private func hookTestDirectory() throws -> URL {
     let root = base.appendingPathComponent("tide-island-hooks-" + UUID().uuidString)
     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
     return root
+}
+
+private func hookTestBridge(in root: URL) throws -> URL {
+    let bridge = root.appendingPathComponent("observer-bridge")
+    if !FileManager.default.fileExists(atPath: bridge.path) {
+        try Data("#!/bin/sh\nexit 0\n".utf8).write(to: bridge)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: bridge.path)
+    }
+    return bridge
 }
 
 private func permissions(_ url: URL) throws -> Int {

@@ -21,7 +21,7 @@ swift run tide-island-bridge replay \
 
 ## 基线场景
 
-合成数据统一位于 [Replay fixtures](../Tests/TideIslandCoreTests/Fixtures/Replay/lifecycle.json)，共 10 个场景、44 步。原始 Codex payload 基于 T001 的固定 0.169.0 契约；预期状态独立编写，不从程序输出生成。
+合成数据统一位于 [Replay fixtures](../Tests/TideIslandCoreTests/Fixtures/Replay/lifecycle.json)，现有 22 个场景、107 步。原始 Codex payload 基于 T001 的固定 0.169.0 契约；预期状态独立编写，不从程序输出生成。
 
 | 场景 | 检查内容 |
 | --- | --- |
@@ -36,6 +36,8 @@ swift run tide-island-bridge replay \
 | `multi-session-attention` | 会话隔离、注意力排序和同项目的多个线程 |
 | `ignored-and-question-tools` | Stop、压缩恢复、子代理、未知 hook 过滤；问答工具名不自动表示正在等待 |
 
+T006 新增：迟到上一轮通知、旧轮工具 / 开始、未知轮次与无身份通知、新开始被旧活动时间阻挡、终态防回退、同时间戳、并行工具下的权限等待、非相邻 UUID 重复、手动新轮、退出恢复及忽略事件不推进当前时钟。轮次规则及窗口边界见 [会话状态](session-state.md)。
+
 ## fixture 格式 v1
 
 顶层包含 `schemaVersion: 1` 和非空 `scenarios` 数组，可选 `description`。每个场景包含唯一的 `name`、非空 `steps` 和可选说明。所有场景先完成定义校验，再选择 `--scenario` 指定的场景执行。
@@ -48,11 +50,11 @@ swift run tide-island-bridge replay \
 | `payload` | 原始 JSON 值；与 `payloadJSON` 二选一 |
 | `payloadJSON` | 原始 JSON 文本，可表达损坏输入等负向场景 |
 | `waveBlockID` | hook / notify 的可选 Wave 元数据；event 来源保留 payload 中的值 |
-| `expect` | 必需的 disposition、完整 sessions 数组及可选 errorCode |
+| `expect` | 必需的 disposition、完整 sessions 数组；可选 errorCode / registryDecision |
 
 `event` 来源按现有协议读取，payload 的 ID 必须与步骤 ID 相同；其 `occurredAt` 和 context 来自原始事件，不由步骤的接收时间替换。hook / notify 保留真实适配器结果，只替换接收端 UUID，然后经过与 inbox 相同的事件编解码边界。
 
-步骤按数组中的到达顺序执行，不按时间排序。每个场景使用独立 registry；场景内逐步检查按实际注意力顺序排列的完整会话列表，包括 id、项目、phase、更新时间、最后事件 ID、来源 / turn / 工具 context 及 Wave 元数据。旧 v1 快照的 context 保持缺失。
+步骤按数组中的到达顺序执行，不按时间排序。每个场景使用独立 registry；场景内逐步检查按实际注意力顺序排列的完整会话列表，包括 id、项目、phase、更新时间、最后事件 ID、跟踪的 turnID、原始 context 及 Wave 元数据。旧 v1 快照的 context 保持缺失；读取旧 fixture 时，可从 context 的 turnID 补齐跟踪身份。SessionEnd 等没有 turn 的原始 context 不会被改写。
 
 结果 disposition 包含：
 
@@ -61,20 +63,21 @@ swift run tide-island-bridge replay \
 - `discarded`：事件有效，但 registry 因当前状态规则未接受。
 - `rejected`：输入解码或校验失败；固定错误码为 `invalid-hook-input`、`invalid-notify-input`、`invalid-agent-event` 或 `event-id-mismatch`。
 
-报告仅包含标准化事件、实际与预期快照及差异字段名（`disposition`、`errorCode`、`sessions`），不复制原始 payload、聊天正文或底层解码错误文本。fixture 定义的未知字段、重复键、缺少身份 / 时钟 / 预期、空场景和重复场景名会被拒绝。
+报告仅包含标准化事件、实际与预期快照、registryDecision 及差异字段名（`disposition`、`errorCode`、`sessions`、可选的 `registryDecision`），不复制原始 payload、聊天正文或底层解码错误文本。fixture 定义的未知字段、重复键、缺少身份 / 时钟 / 预期、空场景和重复场景名会被拒绝。
 
 资源限制：fixture 最大 1 MiB、最多 32 个场景、总计 256 步；一次回放累计实际快照中的会话条目最多 1024 个，编码后的报告最多 4 MiB。单个标准化事件继续遵守 16 KiB 上限。文件入口只接受普通文件，FIFO 不会作为输入读取。
 
-## T006 的跨轮反例
+## T006 的跨轮回归
 
 ```bash
 swift run tide-island-bridge replay \
-  --file Tests/TideIslandCoreTests/Fixtures/Replay/pending-turn-ordering.json
+  --file Tests/TideIslandCoreTests/Fixtures/Replay/lifecycle.json \
+  --scenario late-previous-turn-notify
 ```
 
-该 [反例](../Tests/TideIslandCoreTests/Fixtures/Replay/pending-turn-ordering.json) 表达期望：新一轮开始后，接收时间更晚的上一轮完成 notify 应被丢弃，并保持当前轮工作状态。现有 registry 仅按时间与最后事件 ID 处理，尚缺跨 turn 判定；此例当前预期返回 1，并在报告中保留实际与期望的差异。
+该回归保留 T005 的正确预期：新一轮开始后，接收时间更晚的上一轮完成 notify 应被丢弃，并保持当前轮工作状态。T006 已将原 pending 场景迁入通过集合；预期返回 0，最后一条通知的 registryDecision 为 `retired-turn`，前后当前轮快照保持一致。
 
-CI 单独检查该反例能如实给出失败报告，T006 的产品状态保持待开发。实施 T006 时，应将该场景迁入通过集合，并移除 CLI 检查中“仍复现缺口”的断言。完整重复窗口、同时间戳规则和跨轮恢复同样由 T006 完善。
+原 pending 文件已移除，历史反例保留在 T005 的 Git 提交中。CLI 检查已移除“仍复现缺口”的失败断言，并单独确认这项回归通过；错误预期的负向测试继续检查回放的失败报告与退出码。
 
 ## 验证入口
 

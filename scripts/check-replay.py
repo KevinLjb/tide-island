@@ -43,7 +43,7 @@ def main():
         assert first.returncode == second.returncode == 0, first.stderr + second.stderr
         assert not first.stderr and not second.stderr and first.stdout == second.stdout
         report = json.loads(first.stdout)
-        assert report["passed"] and report["scenarioCount"] == 10 and report["stepCount"] == 44
+        assert report["passed"] and report["scenarioCount"] == 22 and report["stepCount"] == 107
         assert report["mismatchCount"] == 0 and report["scope"] == "in-memory-adapters-codec-registry"
         assert not any(text in first.stdout for text in ["/fixture/projects", "transcript_path", "tool_response", "fixture-model"])
         assert {p.name: p.read_bytes() for p in root.iterdir() if p.is_file()} == sentinels
@@ -69,18 +69,16 @@ def main():
         assert failed["scenarios"][0]["steps"][0]["mismatches"] == ["disposition", "sessions"]
         checks += 1
 
-        # Desired T006 behavior is kept as an explicit failing fixture. This
-        # validates the diagnostic, not cross-turn correctness of the registry.
-        pending = invoke(target=fixtures / "pending-turn-ordering.json")
-        assert pending.returncode == 1 and pending.stdout and pending.stderr
-        pending_report = json.loads(pending.stdout)
-        assert not pending_report["passed"] and pending_report["mismatchCount"] > 0
-        assert pending_report["scenarios"][0]["name"] == "late-previous-turn-notify"
-        pending_steps = pending_report["scenarios"][0]["steps"]
-        assert all(not item["mismatches"] for item in pending_steps[:2])
-        assert pending_steps[-1]["mismatches"] == ["disposition", "sessions"]
-        assert pending_steps[-1]["event"]["context"]["turnID"] == "turn-old"
-        assert pending_steps[-1]["expected"]["sessions"] == pending_steps[1]["sessions"]
+        # The original T005 failure now belongs to the passing baseline. Keep
+        # its independently authored desired state instead of changing it.
+        regression = invoke("--scenario", "late-previous-turn-notify")
+        assert regression.returncode == 0 and not regression.stderr
+        regression_report = json.loads(regression.stdout)
+        assert regression_report["passed"] and regression_report["mismatchCount"] == 0
+        regression_steps = regression_report["scenarios"][0]["steps"]
+        assert regression_steps[-1]["registryDecision"] == "retired-turn"
+        assert regression_steps[-1]["sessions"] == regression_steps[1]["sessions"]
+        assert regression_steps[-1]["sessions"][0]["turnID"] == "turn-new"
         checks += 1
 
         missing = invoke("--scenario", "missing-scenario")
@@ -119,7 +117,7 @@ def main():
         assert (root / "hooks.json").read_bytes() == sentinels["hooks.json"]
 
     print(json.dumps({"status": "passed", "checks": checks, "scenarios": report["scenarioCount"],
-                      "steps": report["stepCount"], "known_limits_reproduced": ["late-previous-turn-notify"],
+                      "steps": report["stepCount"], "cross_turn_regression": "passed",
                       "scope": "deterministic-in-memory-replay"}))
 
 

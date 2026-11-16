@@ -24,9 +24,15 @@ public enum EventReplay {
             for (index, step) in scenario.steps.enumerated() {
                 let converted = convert(step)
                 let disposition: ReplayDisposition
+                let decision: SessionEventDecision?
                 if let event = converted.event {
-                    disposition = try registry.apply(event) ? .applied : .discarded
-                } else { disposition = converted.error == nil ? .filtered : .rejected }
+                    let result = try registry.applyResult(event)
+                    decision = result
+                    disposition = result == .applied ? .applied : .discarded
+                } else {
+                    decision = nil
+                    disposition = converted.error == nil ? .filtered : .rejected
+                }
                 let sessions = registry.sessions.map(ReplaySessionSnapshot.init)
                 snapshotCount += sessions.count
                 guard snapshotCount <= maximumSnapshotSessions else { throw ReplayError.limitExceeded }
@@ -34,9 +40,10 @@ public enum EventReplay {
                 if disposition != step.expected.disposition { mismatches.append("disposition") }
                 if converted.error != step.expected.errorCode { mismatches.append("errorCode") }
                 if sessions != step.expected.sessions { mismatches.append("sessions") }
+                if let expected = step.expected.registryDecision, expected != decision { mismatches.append("registryDecision") }
                 steps.append(ReplayStepResult(
                     index: index + 1, eventID: step.id, receivedAt: step.at, source: step.source,
-                    disposition: disposition, errorCode: converted.error, event: converted.event,
+                    disposition: disposition, errorCode: converted.error, registryDecision: decision, event: converted.event,
                     sessions: sessions, expected: step.expected, mismatches: mismatches
                 ))
             }
@@ -146,10 +153,10 @@ public enum EventReplay {
             guard let text = json.string else { throw ReplayError.invalidFixture }
             payload = Data(text.utf8)
         } else { payload = try fields["payload"]!.encode() }
-        let expectedFields = try object(expectation, allowed: ["disposition", "errorCode", "sessions"])
+        let expectedFields = try object(expectation, allowed: ["disposition", "errorCode", "sessions", "registryDecision"])
         guard let sessions = expectedFields["sessions"]?.array else { throw ReplayError.invalidFixture }
         for session in sessions {
-            let sessionFields = try object(session, allowed: ["id", "projectName", "phase", "updatedAt", "lastEventID", "context", "waveBlockID"])
+            let sessionFields = try object(session, allowed: ["id", "projectName", "phase", "updatedAt", "lastEventID", "context", "waveBlockID", "turnID"])
             if let context = sessionFields["context"], context != .null {
                 _ = try object(context, allowed: ["source", "kind", "receivedAt", "sourceOccurredAt", "turnID", "toolName", "toolUseID"])
             }

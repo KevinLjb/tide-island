@@ -24,7 +24,7 @@ flowchart LR
 - `TideIslandCore` 使用 Foundation、CryptoKit 和 macOS 文件操作接口，不调用 AppKit、ActivityKit 或终端内部接口。
 - `TideIslandBridge` 验证事件并按 UUID 独立原子落盘，避免多个 CLI 写入者互相截断。
 - 应用监听目录变更后读取最近 256 个合法事件文件，不定时扫描整个系统或读取聊天历史。
-- `SessionRegistry` 按线程隔离，忽略已处理事件与较早时间戳；需要处理、异常、本轮结束、工作中的排序只决定展示注意力。
+- `SessionRegistry` 按线程隔离当前轮次、退役轮次、重复窗口与工具生命周期；明确的新轮开始才能切换已有轮次。同轮终态胜过迟到工作，注意力排序独立于事件处理优先级。
 - 初始化的读取窗口是数量上限，不是磁盘保留策略；历史文件暂不自动删除，后续补充有界保留和会话存活检测。
 
 ## 事件协议 v1 / v2
@@ -36,7 +36,7 @@ flowchart LR
 | `sessionID` | 会话身份，不作为文件路径 |
 | `projectName` | 显示名称，不保存完整 cwd |
 | `phase` | v1 的 working / needsInput / completed / failed；v2 增加 interrupted / ended |
-| `occurredAt` | ISO 8601 时间；本 Codex 适配器无上游时间字段，使用接收时间，完整跨轮顺序仍待 T006 |
+| `occurredAt` | ISO 8601 时间；本 Codex 适配器无上游时间字段，使用接收时间，按身份和状态规则处理顺序冲突 |
 | `waveBlockID` | 可选的 Wave 分屏元数据，不包含认证凭据 |
 | `context` | v2 必需：source / kind / receivedAt，可选源时间、turn 和工具身份；v1 保持缺失 |
 
@@ -54,7 +54,7 @@ flowchart LR
 
 `EventReplay` 用 fixture 提供的 UUID 与接收时钟调用真实适配器，经 `EventCodec` 编解码后送入独立 `SessionRegistry`，按声明的到达顺序比较每一步完整会话快照。CLI 的 `replay` 入口仅有界读取文件并输出稳定 JSON，不写 inbox 或 Codex 配置，不启动原生组件。
 
-基线包含 10 个场景 / 44 步，覆盖生命周期、权限等待与恢复、中断、错误、相邻重复、旧版本和会话隔离。跨轮迟到 notify 的独立反例保留正确预期并报告当前差异；完整状态机仍由 T006 实现。格式、断言与限制见 [事件回放](event-replay.md)。
+当前基线包含 22 个场景 / 107 步，覆盖生命周期、权限等待与恢复、中断、错误、非相邻重复、旧版本、跨轮、工具重排及会话隔离。T005 的跨轮迟到 notify 反例保留正确预期并迁入通过集合。回放额外输出 `registryDecision` 与独立的跟踪 turnID，原始 context 保持观察语义。格式见 [事件回放](event-replay.md)，状态优先级、窗口和来源边界见 [会话状态](session-state.md)。
 
 ## 原生显示
 
@@ -62,7 +62,7 @@ flowchart LR
 
 源码未采用自行绘制的 NSPanel 作为系统原生岛的替代。27.3 SDK 是原生编译的前提，27.3 系统是运行前提；27.2 环境只能验证共享层。源码与结构检查不能证明原生目标已编译或运行。
 
-当前实时活动由会话更新触发，5 分钟后变为 stale 展示；没有工作中或待处理会话时结束 Activity，保留结束状态 30 秒。启动时不载入超过 15 分钟的事件。完整任务存活、历史会话清理、应用重启后活动恢复及时间相同事件的排序仍需后续完善。
+当前实时活动由会话更新触发，5 分钟后变为 stale 展示；没有工作中或待处理会话时结束 Activity，保留结束状态 30 秒。启动时不载入超过 15 分钟的事件。任务存活、历史清理、跨重启持久化与原生活动恢复仍待后续完善。
 
 ## Wave 接入
 

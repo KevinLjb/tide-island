@@ -28,6 +28,7 @@ public struct ReplaySessionSnapshot: Codable, Equatable, Sendable {
     public let lastEventID: UUID
     public let waveBlockID: String?
     public let context: EventContext?
+    public let turnID: String?
 
     init(_ session: AgentSession) {
         id = session.id
@@ -37,6 +38,23 @@ public struct ReplaySessionSnapshot: Codable, Equatable, Sendable {
         lastEventID = session.lastEventID
         waveBlockID = session.waveBlockID
         context = session.context
+        turnID = session.turnID
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, projectName, phase, updatedAt, lastEventID, waveBlockID, context, turnID
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let fields = try decoder.container(keyedBy: CodingKeys.self)
+        id = try fields.decode(String.self, forKey: .id)
+        projectName = try fields.decode(String.self, forKey: .projectName)
+        phase = try fields.decode(AgentPhase.self, forKey: .phase)
+        updatedAt = try fields.decode(Date.self, forKey: .updatedAt)
+        lastEventID = try fields.decode(UUID.self, forKey: .lastEventID)
+        waveBlockID = try fields.decodeIfPresent(String.self, forKey: .waveBlockID)
+        context = try fields.decodeIfPresent(EventContext.self, forKey: .context)
+        turnID = try fields.decodeIfPresent(String.self, forKey: .turnID) ?? context?.turnID
     }
 
     func validate() throws {
@@ -45,6 +63,7 @@ public struct ReplaySessionSnapshot: Codable, Equatable, Sendable {
             id: lastEventID, sessionID: id, projectName: projectName, phase: phase,
             occurredAt: updatedAt, waveBlockID: waveBlockID, context: context
         ).validate()
+        try EventContext(source: .manual, kind: .status, receivedAt: updatedAt, turnID: turnID).validate(phase: phase)
     }
 }
 
@@ -52,6 +71,7 @@ public struct ReplayExpectation: Codable, Equatable, Sendable {
     public let disposition: ReplayDisposition
     public let errorCode: ReplayInputError?
     public let sessions: [ReplaySessionSnapshot]
+    public let registryDecision: SessionEventDecision?
 }
 
 public struct ReplayStepResult: Encodable, Equatable, Sendable {
@@ -61,6 +81,7 @@ public struct ReplayStepResult: Encodable, Equatable, Sendable {
     public let source: ReplayInputSource
     public let disposition: ReplayDisposition
     public let errorCode: ReplayInputError?
+    public let registryDecision: SessionEventDecision?
     public let event: AgentEvent?
     public let sessions: [ReplaySessionSnapshot]
     public let expected: ReplayExpectation

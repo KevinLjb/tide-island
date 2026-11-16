@@ -57,18 +57,23 @@ public struct EventInbox: Sendable {
             return $0.0.lastPathComponent < $1.0.lastPathComponent
         }.prefix(max(0, limit))
 
-        var events: [AgentEvent] = []
+        var events: [(event: AgentEvent, publishedAt: Date)] = []
         var rejected = 0
-        for (url, _) in candidates {
+        for (url, publishedAt) in candidates {
             do {
                 let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
                 guard size <= EventCodec.maximumBytes else { throw EventError.oversizedEvent }
-                events.append(try EventCodec.decode(Data(contentsOf: url)))
+                events.append((try EventCodec.decode(Data(contentsOf: url)), publishedAt))
             } catch {
                 rejected += 1
             }
         }
-        return InboxBatch(events: events.reversed().sorted { $0.occurredAt < $1.occurredAt }, rejectedFiles: rejected)
+        let ordered = events.sorted {
+            if $0.event.occurredAt != $1.event.occurredAt { return $0.event.occurredAt < $1.event.occurredAt }
+            if $0.publishedAt != $1.publishedAt { return $0.publishedAt < $1.publishedAt }
+            return $0.event.id.uuidString < $1.event.id.uuidString
+        }
+        return InboxBatch(events: ordered.map(\.event), rejectedFiles: rejected)
     }
 }
 

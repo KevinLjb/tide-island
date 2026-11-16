@@ -53,6 +53,18 @@ private let existingHookData = Data(#"{"description":"fixture-private-descriptio
     #expect(reinstall.proposedData == upgrade.proposedData)
 }
 
+@Test func codexDefaultEmptyGroupsRemainValidAndForeignNoOpKeepsOriginalBytes() throws {
+    let input = Data(#"{ "description": "keep layout", "hooks": {"Stop":[{}, {"matcher":"Bash"}],"PreToolUse":[{"matcher":"Bash"}]}}"#.utf8)
+    let noOp = try CodexHookConfiguration.plan(action: .uninstall, existing: input)
+    #expect(noOp.proposedData == input)
+    #expect(!noOp.changesFile)
+    let install = try CodexHookConfiguration.plan(action: .install, existing: input, bridgePath: "/stable/bridge")
+    let after = try ConfigurationJSON.decode(#require(install.proposedData))
+    let original = try ConfigurationJSON.decode(input)
+    #expect(after.object?["hooks"]?.object?["Stop"] == original.object?["hooks"]?.object?["Stop"])
+    #expect(after.object?["hooks"]?.object?["PreToolUse"]?.array?.first == .object(["matcher": .string("Bash")]))
+}
+
 @Test func removingAnOwnedHandlerKeepsItsForeignNeighbors() throws {
     let install = try CodexHookConfiguration.plan(action: .install, existing: nil, bridgePath: "/stable/bridge")
     var root = try #require(ConfigurationJSON.decode(#require(install.proposedData)).object)

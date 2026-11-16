@@ -85,6 +85,9 @@ def main():
         assert not supported["island_activity"]["formal_sdk_limit_verified"]
         assert not supported["island_activity"]["native_runtime_verified"]
         assert not supported["island_activity"]["runs_native_api_from_cli"]
+        assert supported["island_activity"]["latest_snapshot_scheduler"] and supported["island_activity"]["ordered_source_sequences"]
+        assert supported["island_activity"]["minimum_ordinary_update_interval_seconds"] > 0
+        assert supported["island_activity"]["delivery_stream"]
         checks += 1
 
         fixture_path = Path(__file__).resolve().parent.parent / "Tests/TideIslandCoreTests/Fixtures/Codex/lifecycle.json"

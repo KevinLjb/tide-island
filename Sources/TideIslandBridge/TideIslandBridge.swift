@@ -190,6 +190,9 @@ struct TideIslandBridge {
                 "shared_json_development_budget_bytes": IslandActivityPresentationPolicy.standard.maximumContentBytes,
                 "formal_sdk_limit_verified": false, "native_runtime_verified": false,
                 "runs_native_api_from_cli": false,
+                "latest_snapshot_scheduler": true, "ordered_source_sequences": true,
+                "minimum_ordinary_update_interval_seconds": IslandActivityScheduler.minimumUpdateInterval,
+                "delivery_stream": true,
             ],
         ]
         FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .prettyPrinted]) + Data([0x0A]))

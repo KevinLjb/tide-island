@@ -4,14 +4,15 @@ import TideIslandCore
 
 @MainActor
 final class NativeActivityController {
-    private let controller: IslandActivityController
+    private let scheduler: IslandActivityScheduler
+    var frames: AsyncStream<IslandActivityDelivery> { scheduler.frames }
 
     init() {
-        controller = IslandActivityController(client: NativeActivityKitClient())
+        scheduler = IslandActivityScheduler(client: NativeActivityKitClient())
     }
 
-    func update(snapshot: SessionSnapshot) async throws {
-        try await controller.update(snapshot: snapshot)
+    func submit(snapshot: SessionSnapshot, sequence: UInt64) async {
+        await scheduler.submit(snapshot: snapshot, sequence: sequence)
     }
 }
 

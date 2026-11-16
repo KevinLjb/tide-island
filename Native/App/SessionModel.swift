@@ -16,8 +16,8 @@ final class SessionModel: ObservableObject {
     private let activities = NativeActivityController()
     private var receiver: InboxReceiver?
     private var frameTask: Task<Void, Never>?
-    private var updateTask: Task<Void, Never>?
-    private var pendingSnapshot: SessionSnapshot?
+    private var activityTask: Task<Void, Never>?
+    private var activitySequence: UInt64 = 0
     private var subscriptions: Set<AnyCancellable> = []
     private var waveReturn: WaveReturnCoordinator?
     private var returnTask: Task<Void, Never>?
@@ -27,6 +27,14 @@ final class SessionModel: ObservableObject {
     private var activityMessage: String?
 
     init() {
+        let deliveries = activities.frames
+        activityTask = Task { [weak self] in
+            for await delivery in deliveries {
+                guard !Task.isCancelled, let self else { break }
+                activityMessage = delivery.problem == nil ? nil : "原生实时活动暂不可用，请检查系统的实时活动设置。"
+                refreshStatusMessage()
+            }
+        }
         NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)
             .merge(with: NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification))
             .sink { [weak self] _ in
@@ -148,20 +156,10 @@ final class SessionModel: ObservableObject {
         cleanupPlan = frame.cleanupPlan
         guard frame.snapshot != snapshot else { return }
         snapshot = frame.snapshot
-        pendingSnapshot = frame.snapshot
-        guard updateTask == nil else { return }
-        updateTask = Task { [weak self] in
-            guard let self else { return }
-            // Keep Activity IPC serialized and coalesce bursts to the newest
-            // snapshot, including an immediate loss of source confirmation.
-            while let current = pendingSnapshot {
-                pendingSnapshot = nil
-                do { try await activities.update(snapshot: current); activityMessage = nil }
-                catch { activityMessage = "原生实时活动暂不可用，请检查系统的实时活动设置。" }
-                refreshStatusMessage()
-            }
-            updateTask = nil
-        }
+        activitySequence &+= 1
+        let sequence = activitySequence
+        let activities = self.activities
+        Task { await activities.submit(snapshot: frame.snapshot, sequence: sequence) }
     }
 
     private func showReturnMessage(_ message: String?, invalidatesPending: Bool = false) {
@@ -176,6 +174,7 @@ final class SessionModel: ObservableObject {
 
     deinit {
         frameTask?.cancel()
+        activityTask?.cancel()
         returnTask?.cancel()
         if let receiver { Task { await receiver.stop() } }
     }

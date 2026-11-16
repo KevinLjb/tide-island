@@ -4,11 +4,11 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 让 AI 的工作状态，在岛上一目了然。面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。
 
-> 当前阶段：会话与事件可靠性开发。已提供 v1 / v2 事件协议、轮次状态、新鲜度投影、会话注意力、增量 inbox、可预览清理与通道恢复、观察型 hook / notify CLI、hooks 配置管理、确定性回放、菜单栏及原生扩展源码。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
+> 当前阶段：会话与事件可靠性开发。已提供 v1 / v2 事件协议、轮次状态、新鲜度投影、会话注意力、增量 inbox、可预览清理、通道恢复与会话持久化、观察型 hook / notify CLI、hooks 配置管理、确定性回放、菜单栏及原生扩展源码。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T010 通道恢复已完成共享逻辑：119 项单测实际执行通过，bridge 构建、四项 CLI 与工程结构共七项严格检查成功。目录重建、单接收者、状态确认和中断恢复规则见 [通道故障恢复](docs/inbox-recovery.md)。下一步为 T011 必要元数据与偏好持久化；偏好和游标目前仅存内存，原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T010 通道恢复已完成共享逻辑：119 项单测实际执行通过，bridge 构建、四项 CLI 与工程结构共七项严格检查成功。目录重建、单接收者、状态确认和中断恢复规则见 [通道故障恢复](docs/inbox-recovery.md)。T011 已接入元数据 / 偏好 checkpoint、重启恢复与指纹清除，新增验证等待严格 CI；游标正文缓存仍仅在内存，原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -43,6 +43,7 @@ docs/session-status.md        会话存活边界、新鲜度、展示过期与�
 docs/session-attention.md     已读、忽略、置顶、选择与注意力排序
 docs/inbox-maintenance.md     增量游标、受保护历史与预览 / 应用清理
 docs/inbox-recovery.md        通道健康、监听重连、单接收者与中断恢复
+docs/session-persistence.md   会话 / 偏好 checkpoint、跨重启保护与主动清除
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -56,6 +57,7 @@ python3 scripts/check-bridge.py
 python3 scripts/check-hooks.py
 python3 scripts/check-replay.py
 python3 scripts/check-inbox.py
+python3 scripts/check-state.py
 python3 scripts/check-project.py
 ```
 
@@ -130,6 +132,20 @@ swift run tide-island-bridge inbox recover --inbox /absolute/path/to/TideIsland/
 
 应用接收器会自动完成安全的既有操作；损坏、冲突或超限时保留文件并暂停实时计数。目录重建后重新监听，旧记录必须在当前目录得到确认才能恢复为实时状态。诊断、重试、锁和恢复边界见 [通道故障恢复](docs/inbox-recovery.md)。
 
+## 保存与清除本地会话
+
+原生接入已启用必要元数据和偏好的本地 checkpoint，保留原事件时间、轮次及去重窗口；重启后重新确认当前事件来源。清理历史前先保存状态。保存失败或数据损坏时会给出提示，不静默覆盖原文件。
+
+```bash
+swift run tide-island-bridge state inspect --inbox /absolute/path/to/TideIsland/Events
+swift run tide-island-bridge state clear --inbox /absolute/path/to/TideIsland/Events
+# 核对清除 fingerprint 后再应用；原始事件文件保留
+swift run tide-island-bridge state clear --inbox /absolute/path/to/TideIsland/Events \
+  --apply --expect FINGERPRINT
+```
+
+清除会话 / 偏好与导入边界一起原子保存，已有文件不会马上恢复旧列表。独立 CLI 清除或清理历史需要关闭应用，打开时使用应用内入口；恢复边界和容量限制见 [会话持久化](docs/session-persistence.md)。
+
 ## Codex 接入边界
 
 CLI 提供两个独立入口：
@@ -152,9 +168,9 @@ notify = ["/absolute/path/to/tide-island-bridge", "notify", "--payload"]
 
 ## 当前能力与后续计划
 
-- 已实现：v1 / v2 元数据事件、增量 inbox、可预览历史清理、通道恢复与单接收者、轮次状态机、有界重复 / 退役轮次 / 工具窗口、会话新鲜度与展示过期、已读 / 忽略 / 置顶 / 选择与可解释排序、Codex hook / notify 转换、hooks 配置管理、确定性回放与逐步断言、隔离 CLI 检查、菜单栏与原生扩展源码。
+- 已实现：v1 / v2 元数据事件、增量 inbox、可预览历史清理、通道恢复与单接收者、会话 / 偏好持久化和清除、轮次状态机、有界重复 / 退役轮次 / 工具窗口、会话新鲜度与展示过期、已读 / 忽略 / 置顶 / 选择与可解释排序、Codex hook / notify 转换、hooks 配置管理、确定性回放与逐步断言、隔离 CLI 检查、菜单栏与原生扩展源码。
 - 待验证：macOS 27.3 原生编译、签名安装、灵动岛更新与点击、触摸交互及系统活动协调。
-- 待开发：完整接入与 notify 共存、会话 / 偏好持久化、普通问答 / 最终失败补充来源、可靠进程存活证据、Wave 精确定位、额度信息与小宠物。
+- 待开发：完整接入与 notify 共存、普通问答 / 最终失败补充来源、可靠进程存活证据、Wave 精确定位、额度信息与小宠物。
 
 原生界面的尺寸、动画、更新频率由系统约束；小宠物和高频动画需通过实机验证后再确定。
 

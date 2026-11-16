@@ -60,6 +60,8 @@ jobs:
       - name: Exercise deterministic event replay
         run: python3 scripts/check-replay.py --temporary-root "${{ runner.temp }}"
       - name: Exercise inbox maintenance
-        run: python3 scripts/check-inbox.py --temporary-root "${{ runner.temp }}"
+        run: |
+          python3 scripts/check-inbox.py --temporary-root "${{ runner.temp }}"
+          python3 scripts/check-state.py --temporary-root "${{ runner.temp }}"
       - name: Check native project structure
         run: python3 scripts/check-project.py

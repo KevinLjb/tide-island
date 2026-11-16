@@ -62,7 +62,7 @@ public enum SessionAttentionReason: Int, Equatable, Sendable {
     }
 }
 
-struct SessionPreference: Sendable {
+struct SessionPreference: Codable, Sendable {
     var readEventID: UUID?
     var ignoredEventID: UUID?
     var isPinned = false

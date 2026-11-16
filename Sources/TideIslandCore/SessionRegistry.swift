@@ -1,6 +1,6 @@
 import Foundation
 
-public struct AgentSession: Identifiable, Equatable, Sendable {
+public struct AgentSession: Identifiable, Codable, Equatable, Sendable {
     public let id: String
     public let projectName: String
     public let phase: AgentPhase
@@ -50,6 +50,21 @@ public struct SessionRegistry: Sendable {
 
     public init() {}
 
+    struct PersistedState: Codable {
+        fileprivate let storage: [String: SessionState]
+    }
+
+    func persistedState() -> PersistedState { PersistedState(storage: storage) }
+
+    init(persisted: PersistedState) throws {
+        guard persisted.storage.count <= SessionCheckpointCodec.maximumSessions else { throw SessionStateError.limitExceeded }
+        for (id, state) in persisted.storage {
+            guard id == state.session.id else { throw SessionStateError.invalidData }
+            try state.validateCheckpoint()
+        }
+        storage = persisted.storage
+    }
+
     public var sessions: [AgentSession] {
         storage.values.map(\.session).sorted {
             if $0.phase.attentionPriority != $1.phase.attentionPriority {
@@ -81,7 +96,7 @@ public struct SessionRegistry: Sendable {
     }
 }
 
-private struct SessionState: Sendable {
+private struct SessionState: Codable, Sendable {
     var session: AgentSession
     var seen = BoundedHistory<UUID>(capacity: SessionRegistry.eventHistoryLimit)
     var retired = BoundedHistory<String>(capacity: SessionRegistry.retiredTurnLimit)
@@ -257,20 +272,105 @@ private struct SessionState: Sendable {
         return 1
     }
 
-    private struct ToolState: Sendable {
+    private struct ToolState: Codable, Sendable {
         let name: String
         let finished: Bool
     }
 }
 
+fileprivate extension SessionState {
+    enum CodingKeys: String, CodingKey {
+        case session, seen, retired, toolIDs, tools, turnAnchor, sawStart, waitingToolIDs, pending
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        session = try values.decode(AgentSession.self, forKey: .session)
+        seen = try values.decode(BoundedHistory<UUID>.self, forKey: .seen)
+        retired = try values.decode(BoundedHistory<String>.self, forKey: .retired)
+        toolIDs = try values.decode(BoundedHistory<String>.self, forKey: .toolIDs)
+        tools = try values.decode([String: ToolState].self, forKey: .tools)
+        turnAnchor = try values.decodeIfPresent(Date.self, forKey: .turnAnchor)
+        sawStart = try values.decode(Bool.self, forKey: .sawStart)
+        let waiting = try values.decodeIfPresent([String].self, forKey: .waitingToolIDs)
+        guard waiting.map({ Set($0).count == $0.count }) != false else { throw SessionStateError.invalidData }
+        waitingToolIDs = waiting.map(Set.init)
+        pending = try values.decode([AgentEvent].self, forKey: .pending)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(session, forKey: .session)
+        try values.encode(seen, forKey: .seen)
+        try values.encode(retired, forKey: .retired)
+        try values.encode(toolIDs, forKey: .toolIDs)
+        try values.encode(tools, forKey: .tools)
+        try values.encodeIfPresent(turnAnchor, forKey: .turnAnchor)
+        try values.encode(sawStart, forKey: .sawStart)
+        try values.encodeIfPresent(waitingToolIDs?.sorted(), forKey: .waitingToolIDs)
+        try values.encode(pending, forKey: .pending)
+    }
+
+    func validateCheckpoint() throws {
+        let observation = AgentEvent(version: session.context == nil ? 1 : 2, id: session.lastEventID,
+                                     sessionID: session.id, projectName: session.projectName, phase: session.phase,
+                                     occurredAt: session.updatedAt, waveBlockID: session.waveBlockID, context: session.context)
+        try observation.validate()
+        guard seen.capacity == SessionRegistry.eventHistoryLimit,
+              retired.capacity == SessionRegistry.retiredTurnLimit,
+              toolIDs.capacity == SessionRegistry.toolHistoryLimit,
+              pending.count <= SessionRegistry.pendingEventLimit,
+              tools.count <= SessionRegistry.toolHistoryLimit,
+              (waitingToolIDs?.count ?? 0) <= SessionRegistry.toolHistoryLimit,
+              turnAnchor?.timeIntervalSince1970.isFinite != false,
+              Set(toolIDs.orderedValues) == Set(tools.keys) else { throw SessionStateError.invalidData }
+        if session.turnID != session.context?.turnID {
+            guard session.context?.kind == .sessionEnded, session.context?.turnID == nil else { throw SessionStateError.invalidData }
+        }
+        if let turn = session.turnID { try SessionCheckpointCodec.validateIdentifier(turn) }
+        for turn in retired.orderedValues { try SessionCheckpointCodec.validateIdentifier(turn) }
+        for (id, tool) in tools {
+            try SessionCheckpointCodec.validateIdentifier(id)
+            try SessionCheckpointCodec.validateIdentifier(tool.name)
+        }
+        for id in waitingToolIDs ?? [] { try SessionCheckpointCodec.validateIdentifier(id) }
+        for event in pending {
+            try event.validate()
+            guard event.sessionID == session.id else { throw SessionStateError.invalidData }
+        }
+    }
+}
+
 /// FIFO eviction is deterministic and does not depend on wall-clock time.
-private struct BoundedHistory<Key: Hashable & Sendable>: Sendable {
+private struct BoundedHistory<Key: Hashable & Codable & Sendable>: Codable, Sendable {
     let capacity: Int
     private var values: Set<Key> = []
     private var slots: [Key] = []
     private var next = 0
 
     init(capacity: Int) { self.capacity = capacity }
+
+    var orderedValues: [Key] { slots }
+
+    private enum CodingKeys: String, CodingKey { case capacity, slots, next }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        capacity = try container.decode(Int.self, forKey: .capacity)
+        slots = try container.decode([Key].self, forKey: .slots)
+        next = try container.decode(Int.self, forKey: .next)
+        guard capacity > 0, capacity <= SessionRegistry.eventHistoryLimit, slots.count <= capacity,
+              Set(slots).count == slots.count, next >= 0, next < capacity,
+              slots.count == capacity || next == 0 else { throw SessionStateError.invalidData }
+        values = Set(slots)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(capacity, forKey: .capacity)
+        try container.encode(slots, forKey: .slots)
+        try container.encode(next, forKey: .next)
+    }
 
     func contains(_ key: Key) -> Bool { values.contains(key) }
 

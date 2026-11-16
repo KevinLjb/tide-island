@@ -23,6 +23,10 @@ struct TideIslandBridge {
             return
         }
         let rest = Array(arguments.dropFirst())
+        if command == "state" {
+            try StateCommand.run(rest)
+            return
+        }
         if command == "inbox" {
             try InboxCommand.run(rest)
             return
@@ -140,6 +144,13 @@ struct TideIslandBridge {
                 "protects_unresolved_session_history": true, "capacity_targets_are_soft": true,
                 "recovery_default_mode": "preview", "resumes_approved_cleanup": true,
                 "recovers_complete_staged_events": true, "preserves_conflicting_files": true,
+                "cleanup_apply_requires_receiver_lease": true, "saves_turn_protection_before_cleanup": true,
+            ],
+            "session_persistence": [
+                "schema_version": 1, "metadata_only": true, "maximum_checkpoint_bytes": 33554432,
+                "maximum_sessions": 2048, "maximum_imported_files": 65536,
+                "clear_default_mode": "preview", "clear_preserves_inbox_files": true,
+                "clear_suppresses_existing_records": true, "validates_source_after_restart": true,
             ],
         ]
         FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .prettyPrinted]) + Data([0x0A]))
@@ -157,6 +168,9 @@ struct TideIslandBridge {
                   [--max-age-days DAYS] [--scan-limit COUNT] [--read-budget-bytes BYTES]
                   [--apply --expect FINGERPRINT]
     inbox recover [--inbox /DIRECTORY] [--scan-limit COUNT] [--read-budget-bytes BYTES] [--apply]
+    state inspect [--inbox /DIRECTORY] [--state-directory /DIRECTORY]
+    state clear [--inbox /DIRECTORY] [--state-directory /DIRECTORY]
+                [--scan-limit COUNT] [--read-budget-bytes BYTES] [--apply --expect FINGERPRINT]
     hooks install --config /PATH/hooks.json --bridge /STABLE/PATH/tide-island-bridge
                   [--inbox /DIRECTORY] [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
     hooks uninstall --config /PATH/hooks.json
@@ -174,6 +188,11 @@ struct TideIslandBridge {
     exact fingerprint; active/uncertain histories and unknown files stay intact.
     inbox recover previews interrupted operations. Apply completes only valid
     staged writes and previously approved cleanup, preserving conflicting files.
+    state inspect reports metadata counts only. state clear previews a reset of
+    saved sessions/preferences; apply requires its fingerprint and a free app
+    receiver lease. Existing inbox files stay intact and are not reimported.
+    inbox cleanup apply also requires a free receiver lease and checkpoints the
+    observed turn state before deletion; use the app's cleanup while it is open.
     Default inbox: ~/Library/Application Support/TideIsland/Events
     """
 }

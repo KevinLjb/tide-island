@@ -7,7 +7,7 @@ public enum InboxChannelState: String, Sendable {
 
 public enum InboxChannelProblem: String, Sendable {
     case directoryUnavailable, invalidMarker, readLimitExceeded, unsafeFile
-    case changing, busy, receiverInUse, interruptedOperation, damagedEvents, watcherUnavailable, ioFailure
+    case changing, busy, receiverInUse, interruptedOperation, damagedEvents, watcherUnavailable, savedStateUnavailable, ioFailure
 }
 
 public struct InboxHealth: Equatable, Sendable {
@@ -36,6 +36,7 @@ public struct InboxHealth: Equatable, Sendable {
         case .damagedEvents:
             detail = "存在无法识别或不安全的事件（损坏 \(rejectionCounts[.malformed, default: 0])、未知版本 \(rejectionCounts[.unsupportedVersion, default: 0])、过大 \(rejectionCounts[.oversized, default: 0])、ID 不匹配 \(rejectionCounts[.filenameMismatch, default: 0])、链接等 \(unsafeFiles)），已保留文件。"
         case .watcherUnavailable: detail = "目录监听已失效，正在重新连接。"
+        case .savedStateUnavailable: detail = "保存的会话数据尚未恢复，暂不确认实时状态。"
         case .ioFailure, nil: detail = "事件通道暂不可用，请检查本地数据目录后重试。"
         }
         return detail + (willRetry ? " 正在有限次自动重试。" : " 可点击重新连接。")
@@ -47,6 +48,8 @@ public struct InboxFrame: Sendable {
     public let health: InboxHealth
     public let cleanupPlan: InboxCleanupPlan?
     public let notice: String?
+    public let persistence: SessionPersistenceStatus
+    public let resetPreview: SessionResetPreview?
 }
 
 /// One serialized owner of IO, source confirmation, attention actions, retries
@@ -57,12 +60,21 @@ public actor InboxReceiver {
     private let inbox: EventInbox
     private let limits: InboxReadLimits
     private let now: @Sendable () -> Date
+    private let stateFile: SessionStateFile?
     private var store = SessionStore()
     private var cursor = InboxCursor()
     private var confirmedEvents: [UUID: AgentEvent] = [:]
     private var health = InboxHealth()
     private var notice: String?
     private var cleanupPlan: InboxCleanupPlan?
+    private var resetPreview: SessionResetPreview?
+    private var persistence = SessionPersistenceStatus()
+    private var loadedState = false
+    private var hasCheckpoint = false
+    private var stateRevision: SessionStateRevision?
+    private var processedFiles: [String: String] = [:]
+    private var needsSave = false
+    private var saveTask: Task<Void, Never>?
     private var started = false
     private var lease: InboxConsumerLease?
     private var directoryMonitor: InboxMonitor?
@@ -74,11 +86,13 @@ public actor InboxReceiver {
     private var debounceTask: Task<Void, Never>?
     private var expiryTask: Task<Void, Never>?
 
-    public init(inbox: EventInbox, limits: InboxReadLimits = InboxReadLimits(),
+    public init(inbox: EventInbox, limits: InboxReadLimits = InboxReadLimits(), persistence stateFile: SessionStateFile? = nil,
                 now: @escaping @Sendable () -> Date = { Date() }) {
         self.inbox = inbox
         self.limits = limits
         self.now = now
+        self.stateFile = stateFile
+        if stateFile != nil { persistence.phase = .loading }
         let pair = AsyncStream<InboxFrame>.makeStream(bufferingPolicy: .bufferingNewest(1))
         frames = pair.stream
         continuation = pair.continuation
@@ -103,12 +117,14 @@ public actor InboxReceiver {
         health.willRetry = false
         health.retryAttempt = 0
         cleanupPlan = nil
+        resetPreview = nil
         emit()
         return reload()
     }
 
     @discardableResult
     public func stop() -> InboxFrame {
+        _ = flushSavedState()
         started = false
         cancelScheduledReads()
         expiryTask?.cancel(); expiryTask = nil
@@ -116,6 +132,8 @@ public actor InboxReceiver {
         lease = nil
         confirmedEvents = [:]
         cleanupPlan = nil
+        resetPreview = nil
+        if stateFile != nil { loadedState = false }
         health.state = .stopped
         health.problem = nil
         health.willRetry = false
@@ -126,18 +144,98 @@ public actor InboxReceiver {
         InboxFrame(snapshot: store.snapshot(at: now(),
                                             sourceIssue: health.state == .healthy ? nil : .channelUnavailable,
                                             confirmedEvents: confirmedEvents),
-                   health: health, cleanupPlan: cleanupPlan, notice: notice)
+                   health: health, cleanupPlan: cleanupPlan, notice: notice, persistence: persistence, resetPreview: resetPreview)
     }
 
     @discardableResult
     public func perform(_ action: SessionAction, for reference: SessionReference) -> Bool {
+        guard stateFile == nil || loadedState else { return false }
         let accepted = store.perform(action, for: reference, at: now())
         notice = accepted ? nil : "状态已变化，请使用当前会话记录重试。"
+        if accepted { needsSave = true; resetPreview = nil; _ = flushSavedState() }
         emit()
         return accepted
     }
 
-    public func clearSelection() { store.clearSelection(); emit() }
+    public func clearSelection() {
+        guard stateFile == nil || loadedState else { return }
+        store.clearSelection()
+        needsSave = true
+        resetPreview = nil
+        _ = flushSavedState()
+        emit()
+    }
+
+    /// Preferences are saved before their action returns. Event bursts share
+    /// a maximum 300 ms save window; their original inbox files remain durable.
+    @discardableResult
+    public func flushSavedState() -> Bool {
+        saveTask?.cancel(); saveTask = nil
+        guard let stateFile else { needsSave = false; return true }
+        guard loadedState, let expected = stateRevision else { return false }
+        guard needsSave else { return true }
+        do {
+            try lease?.verifyPath()
+            guard lease != nil else { throw SessionStateError.conflict }
+            stateRevision = try stateFile.save(store, index: processedFiles, expected: expected)
+            needsSave = false
+            hasCheckpoint = true
+            persistence.phase = .saved
+            persistence.problem = nil
+            return true
+        } catch {
+            persistence.phase = .unavailable
+            persistence.problem = (error as? SessionStateError) ?? .fileOperation
+            return false
+        }
+    }
+
+    @discardableResult
+    public func previewReset() -> SessionResetPreview? {
+        do {
+            guard let stateFile, started, let lease else { throw SessionStateError.fileOperation }
+            try lease.verifyPath()
+            _ = flushSavedState()
+            resetPreview = try stateFile.previewReset(limits: limits)
+            notice = nil
+        } catch {
+            resetPreview = nil
+            notice = "无法生成清除预览，请检查事件目录和恢复数据后重试。"
+        }
+        emit()
+        return resetPreview
+    }
+
+    @discardableResult
+    public func applyReset(expectedFingerprint: String) -> Bool {
+        guard let stateFile, started, let lease, let preview = resetPreview,
+              preview.fingerprint == expectedFingerprint else {
+            notice = "清除预览已变化，请重新预览。"; emit(); return false
+        }
+        resetPreview = nil
+        saveTask?.cancel(); saveTask = nil
+        do {
+            try lease.verifyPath()
+            let result = try stateFile.resetWhileReceiving(preview, expectedFingerprint: expectedFingerprint, limits: limits)
+            store = result.snapshot.store
+            cursor = result.cursor
+            processedFiles = result.snapshot.importIndex
+            stateRevision = result.snapshot.revision
+            loadedState = true
+            hasCheckpoint = true
+            needsSave = false
+            persistence.phase = .saved
+            persistence.problem = nil
+            cleanupPlan = nil
+            notice = "已清除会话与偏好；保留事件文件，已有记录不再重新导入。"
+            _ = reload(preserveNotice: true)
+            return true
+        } catch {
+            notice = "恢复数据或事件目录已变化，尚未清除；请重新预览。"
+            emit()
+            return false
+        }
+    }
 
     public func previewCleanup() {
         do {
@@ -157,6 +255,14 @@ public actor InboxReceiver {
         cleanupPlan = nil
         do {
             try lease.verifyPath()
+            _ = reload(preserveNotice: true)
+            guard health.state == .healthy || health.state == .degraded else {
+                notice = "事件历史尚未完整读取，暂不清理。"; emit(); return
+            }
+            guard flushSavedState() else {
+                notice = "会话状态尚未保存，暂不清理历史，以免重启后丢失轮次保护。"
+                emit(); return
+            }
             let result = try inbox.applyCleanup(plan, expectedFingerprint: plan.fingerprint, limits: limits)
             notice = "已清理 \(result.removedFiles) 个过期事件文件。"
             if !result.failedFiles.isEmpty { notice = "清理尚未完成，将尝试恢复已批准的操作。" }
@@ -188,14 +294,37 @@ public actor InboxReceiver {
             try armParentMonitor()
             try inbox.prepare()
             try armDirectoryMonitor()
+            if let stateFile, !loadedState {
+                guard stateFile.inbox.directory.standardizedFileURL == inbox.directory.standardizedFileURL else {
+                    throw SessionStateError.scopeMismatch
+                }
+                let restored = try stateFile.load()
+                store = restored.store
+                cursor = InboxCursor()
+                confirmedEvents = [:]
+                processedFiles = restored.importIndex
+                stateRevision = restored.revision
+                loadedState = true
+                hasCheckpoint = restored.existed
+                needsSave = false
+                persistence.phase = .saved
+                persistence.problem = nil
+            }
             let recovery = try inbox.recoverInterruptedOperations(limits: limits)
             var nextCursor = cursor
             let update = try inbox.readIncrementally(using: &nextCursor, limits: limits)
             var nextStore = store
-            try nextStore.receive(update.events)
+            let events = nextCursor.unimportedEvents(update.events, index: processedFiles)
+            try nextStore.receive(events)
             try lease?.verifyPath()
             cursor = nextCursor
             store = nextStore
+            let nextIndex = cursor.importIndex
+            if !events.isEmpty || nextIndex != processedFiles || (stateFile != nil && !hasCheckpoint) {
+                needsSave = true
+                resetPreview = nil
+            }
+            processedFiles = nextIndex
             confirmedEvents = cursor.confirmedEvents
             if update.changedFiles > 0 || update.removedFiles > 0 || update.directoryChanged { cleanupPlan = nil }
             retryTask?.cancel(); retryTask = nil
@@ -211,6 +340,7 @@ public actor InboxReceiver {
             } else if update.rejectedFiles > 0 || update.skippedFiles > 0 {
                 health.state = .degraded; health.problem = .damagedEvents
             }
+            scheduleSave()
             if !preserveNotice {
                 notice = nil
                 if update.scannedFiles > InboxRetentionPolicy().maximumFiles || update.totalBytes > InboxRetentionPolicy().maximumBytes {
@@ -227,9 +357,17 @@ public actor InboxReceiver {
     @discardableResult
     private func fail(_ error: Error) -> InboxFrame {
         cleanupPlan = nil
+        resetPreview = nil
         health.state = .unavailable
         health.willRetry = false
         var retryable = false
+        if let savedError = error as? SessionStateError {
+            persistence.phase = .unavailable
+            persistence.problem = savedError
+            health.problem = .savedStateUnavailable
+            retryTask?.cancel(); retryTask = nil
+            return emit()
+        }
         switch error as? InboxError {
         case .busy: health.problem = .busy; retryable = true
         case .changedDuringRead:
@@ -344,8 +482,21 @@ public actor InboxReceiver {
 
     private func expire() { expiryTask = nil; emit() }
 
+    private func scheduleSave() {
+        guard stateFile != nil, loadedState, needsSave, saveTask == nil else { return }
+        // Never postpone an existing deadline during a continuous event burst.
+        if persistence.phase != .unavailable { persistence.phase = .pending }
+        saveTask = Task { [weak self] in
+            do { try await Task.sleep(for: .milliseconds(300)) } catch { return }
+            guard !Task.isCancelled else { return }
+            await self?.savePending()
+        }
+    }
+
+    private func savePending() { saveTask = nil; _ = flushSavedState(); emit() }
+
     deinit {
-        retryTask?.cancel(); debounceTask?.cancel(); expiryTask?.cancel()
+        retryTask?.cancel(); debounceTask?.cancel(); expiryTask?.cancel(); saveTask?.cancel()
         directoryMonitor?.cancel(); parentMonitor?.cancel()
         continuation.finish()
     }

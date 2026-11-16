@@ -12,6 +12,30 @@ public struct SessionStore: Sendable {
         self.policy = policy
     }
 
+    struct PersistedState: Codable {
+        let registry: SessionRegistry.PersistedState
+        let preferences: [String: SessionPreference]
+        let preferredSessionID: String?
+    }
+
+    var sessionCount: Int { registry.sessions.count }
+    var preferenceCount: Int { preferences.count }
+
+    func persistedState() -> PersistedState {
+        PersistedState(registry: registry.persistedState(), preferences: preferences, preferredSessionID: preferredSessionID)
+    }
+
+    init(persisted: PersistedState) throws {
+        registry = try SessionRegistry(persisted: persisted.registry)
+        let ids = Set(registry.sessions.map(\.id))
+        guard persisted.preferences.count <= SessionCheckpointCodec.maximumSessions,
+              Set(persisted.preferences.keys).isSubset(of: ids),
+              persisted.preferredSessionID.map({ ids.contains($0) }) != false else { throw SessionStateError.invalidData }
+        preferences = persisted.preferences
+        preferredSessionID = persisted.preferredSessionID
+        policy = .standard
+    }
+
     public mutating func receive(_ events: [AgentEvent]) throws {
         for event in events { try registry.apply(event) }
     }

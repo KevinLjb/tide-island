@@ -32,7 +32,8 @@ final class SessionModel: ObservableObject {
 
     private func connectReceiver() {
         do {
-            let receiver = InboxReceiver(inbox: try EventInbox.applicationDefault())
+            let inbox = try EventInbox.applicationDefault()
+            let receiver = InboxReceiver(inbox: inbox, persistence: SessionStateFile(inbox: inbox))
             self.receiver = receiver
             frameTask = Task { [weak self, receiver] in
                 await receiver.start()
@@ -60,6 +61,16 @@ final class SessionModel: ObservableObject {
     func applyCleanup() {
         guard let receiver else { return }
         Task { await receiver.applyCleanup() }
+    }
+
+    func previewReset() async -> SessionResetPreview? {
+        guard let receiver else { return nil }
+        return await receiver.previewReset()
+    }
+
+    func applyReset(expectedFingerprint: String) {
+        guard let receiver else { return }
+        Task { await receiver.applyReset(expectedFingerprint: expectedFingerprint) }
     }
 
     func loadDemo() {
@@ -102,8 +113,8 @@ final class SessionModel: ObservableObject {
     }
 
     private func publish(_ frame: InboxFrame) {
-        statusMessage = frame.health.message ?? frame.notice
-        channelNeedsRecovery = frame.health.state != .healthy
+        statusMessage = frame.persistence.message ?? frame.health.message ?? frame.notice
+        channelNeedsRecovery = frame.health.state != .healthy || frame.persistence.phase == .unavailable
         cleanupPlan = frame.cleanupPlan
         guard frame.snapshot != snapshot else { return }
         snapshot = frame.snapshot

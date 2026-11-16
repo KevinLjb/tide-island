@@ -4,6 +4,8 @@ import TideIslandCore
 struct SessionListView: View {
     @ObservedObject var model: SessionModel
     @State private var showsIgnored = false
+    @State private var showsResetConfirmation = false
+    @State private var resetFingerprint: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -81,6 +83,23 @@ struct SessionListView: View {
             if let plan = model.cleanupPlan, !plan.targetsMetAfterCleanup {
                 Text("受保护或无法识别的记录仍超出容量目标，本次清理会保留它们。")
                     .font(.caption).foregroundStyle(.secondary)
+            }
+
+            Button("清除会话与偏好…") {
+                Task {
+                    guard let preview = await model.previewReset() else { return }
+                    resetFingerprint = preview.fingerprint
+                    showsResetConfirmation = true
+                }
+            }
+            .confirmationDialog("清除本地会话与偏好？", isPresented: $showsResetConfirmation, titleVisibility: .visible) {
+                Button("清除", role: .destructive) {
+                    guard let resetFingerprint else { return }
+                    model.applyReset(expectedFingerprint: resetFingerprint)
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("会话列表和已读、忽略、置顶、选择会被清除。事件文件保留，已有记录不会立即重新导入。")
             }
 
             if let message = model.statusMessage {

@@ -19,6 +19,18 @@ public struct InboxCursor: Sendable {
     var files: [String: InboxIndexedFile] = [:]
     public init() {}
 
+    var importIndex: [String: String] {
+        files.compactMapValues { file in file.event == nil ? nil : file.digest }
+    }
+
+    func unimportedEvents(_ events: [AgentEvent], index: [String: String]) -> [AgentEvent] {
+        let imported = Set(files.values.compactMap { file -> UUID? in
+            guard let digest = file.digest, digest == index[file.name] else { return nil }
+            return file.event?.id
+        })
+        return events.filter { !imported.contains($0.id) }
+    }
+
     var confirmedEvents: [UUID: AgentEvent] {
         Dictionary(grouping: files.values.compactMap(\.event), by: \.id).compactMapValues { events in
             guard let first = events.first, events.allSatisfy({ $0 == first }) else { return nil }

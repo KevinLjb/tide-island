@@ -43,7 +43,7 @@ enum InboxCommand {
         let result: InboxCleanupResult?
         if apply {
             guard let expected = options["--expect"] else { throw CLIError.invalidArguments }
-            result = try inbox.applyCleanup(plan, expectedFingerprint: expected, limits: limits)
+            result = try SessionStateFile(inbox: inbox).applyCleanup(plan, expectedFingerprint: expected, limits: limits)
         } else { result = nil }
         struct Output: Encodable {
             let mode: String

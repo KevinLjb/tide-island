@@ -15,6 +15,7 @@ final class SessionModel: ObservableObject {
     private var inbox: EventInbox?
     private var monitor: InboxMonitor?
     private var updateTask: Task<Void, Never>?
+    private var pendingSessions: [AgentSession]?
 
     init() {
         do {
@@ -82,16 +83,22 @@ final class SessionModel: ObservableObject {
 
     private func publish() {
         sessions = registry.sessions
-        let current = sessions
-        updateTask?.cancel()
+        pendingSessions = sessions
+        guard updateTask == nil else { return }
         updateTask = Task { [weak self] in
-            do {
-                try await self?.activities.update(sessions: current)
-            } catch is CancellationError {
-                return
-            } catch {
-                self?.statusMessage = "原生实时活动暂不可用，请检查系统的实时活动设置。"
+            guard let self else { return }
+            // Activity IPC can suspend. Use one consumer so an older completion
+            // never ends an activity while a newer working update is in flight.
+            // Bursts coalesce into the latest pending session snapshot.
+            while let current = pendingSessions {
+                pendingSessions = nil
+                do {
+                    try await activities.update(sessions: current)
+                } catch {
+                    statusMessage = "原生实时活动暂不可用，请检查系统的实时活动设置。"
+                }
             }
+            updateTask = nil
         }
     }
 }

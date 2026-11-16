@@ -51,4 +51,4 @@ swift run tide-island-bridge inbox recover --inbox /absolute/path/to/TideIsland/
 
 共享层测试使用独立 Events 子目录及父目录锁，覆盖真实 OS 监听重建、旧回调、单接收者及锁文件替换、资源 / 协作锁故障、确认门槛、一次性到期的实际帧发布、中断事件 / 日志发布和清理日志。CLI 检查只操作隔离测试目录。新增 21 项及全部 119 项共享单测、bridge 构建、四项隔离 CLI 与工程结构检查已通过 [严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43872473698)，状态见 [开发进度](development-progress.md)。
 
-原生源码的帧订阅、唤醒、Activity 更新 / 结束、退出生命周期和 UI 尚待 macOS 27.3 正式环境统一验证。T011 已为会话、偏好、窗口和导入边界加入有界 checkpoint；正文缓存仍在内存，重启重新扫描来源，见 [会话持久化](session-persistence.md)。
+原生源码的帧订阅、唤醒、Activity 更新 / 结束、退出生命周期和 UI 尚待 macOS 27.3 正式环境统一验证。T015 在接入源码中独立保留 [返回 Wave](wave-return.md)提示，通道 / 保存错误优先显示，普通帧不会清空返回结果；该消息交互仍待原生验收。T011 已为会话、偏好、窗口和导入边界加入有界 checkpoint；正文缓存仍在内存，重启重新扫描来源，见 [会话持久化](session-persistence.md)。

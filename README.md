@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T015 已加入 [应用级返回与会话链接](docs/wave-return.md)：安装 / 运行状态、打开结果、链接失效及旧行 / 并发保护，等待本次共享 CI。T014 的同标签聚焦仍无真实 driver；原生编译、签名和真机验收继续待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T015 已加入 [应用级返回与会话链接](docs/wave-return.md)：安装 / 运行状态、打开结果、链接失效及旧行 / 并发保护，[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43929399979) 实际执行 208 / 声明 208 项测试全部通过，七项检查成功。T014 的同标签聚焦仍无真实 driver；原生编译、签名和真机验收继续待 macOS 27.3 正式环境。
 
 ## 环境要求
 

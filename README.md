@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T016 已抽出 [实时活动展示数据与客户端](docs/activity-presentation.md)，可用共享测试验证截止时间、六字段负载及基本活动控制，等待本次共享 CI。原生编译、正式 SDK 限制、签名和真机验收继续待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T016 已抽出 [实时活动展示数据与客户端](docs/activity-presentation.md)，可用共享测试验证截止时间、六字段负载及基本活动控制，[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43932421484) 实际执行 225 / 声明 225 项测试全部通过，七项检查成功。原生编译、正式 SDK 限制、签名和真机验收继续待 macOS 27.3 正式环境。
 
 ## 环境要求
 

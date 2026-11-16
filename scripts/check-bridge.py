@@ -69,6 +69,11 @@ def main():
         assert supported["session_persistence"]["readable_schema_versions"] == [1, 2]
         assert supported["wave_location"]["environment_keys"] == ["WAVETERM_BLOCKID", "WAVETERM_TABID", "WAVETERM_VERSION"]
         assert not supported["wave_location"]["runs_wsh"] and not supported["wave_location"]["implements_navigation"]
+        assert supported["wave_navigation"]["scope"] == "shared-policy-and-injected-driver"
+        assert supported["wave_navigation"]["candidate_route"] == "tab-layout-focus"
+        assert supported["wave_navigation"]["default_route"] == "application-fallback-required"
+        assert not supported["wave_navigation"]["reports_visible_focus"]
+        assert not supported["wave_navigation"]["production_driver_installed"] and not supported["wave_navigation"]["runs_wsh"]
         checks += 1
 
         fixture_path = Path(__file__).resolve().parent.parent / "Tests/TideIslandCoreTests/Fixtures/Codex/lifecycle.json"

@@ -74,7 +74,7 @@ flowchart LR
 
 ## Wave 接入
 
-当前源码只通过 bundle identifier 唤起 Wave。T012 已核对本机 0.14.5 与固定版本源码：`wsh focusblock` 要求 Wave 认证及 tab 上下文，只聚焦标签内布局，不激活其他标签 / 窗口；内部 Electron / HTTP 切换服务不作为稳定第三方接口。公开列表还存在部分失败、非 JSON 空结果和字段差异，元数据只能有界提取 ID。版本、证据和 T013—T015 的实施边界见 [Wave 定位能力](wave-capabilities.md)。T013 已接入可选位置、严格 allowlist、独立有效期和有界列表解析；位置仅随当前已应用观察变化，来源不能确认时降为待确认，过期不改变生命周期。checkpoint 写 v2 并兼容旧 v1，原始输出与凭据不进入持久化。具体字段和迁移见 [Wave 位置元数据](wave-location.md)。解析器不执行 wsh，精确路线仍未实现或交互验证。
+当前源码只通过 bundle identifier 唤起 Wave。T012 已核对本机 0.14.5 与固定版本源码：`wsh focusblock` 要求 Wave 认证及 tab 上下文，只聚焦标签内布局，不激活其他标签 / 窗口；内部 Electron / HTTP 切换服务不作为稳定第三方接口。公开列表还存在部分失败、非 JSON 空结果和字段差异，元数据只能有界提取 ID。版本、证据和 T013—T015 的实施边界见 [Wave 定位能力](wave-capabilities.md)。T013 已接入可选位置、严格 allowlist、独立有效期和有界列表解析；位置仅随当前已应用观察变化，来源不能确认时降为待确认，过期不改变生命周期。checkpoint 写 v2 并兼容旧 v1，原始输出与凭据不进入持久化。具体字段和迁移见 [Wave 位置元数据](wave-location.md)。解析器不执行 wsh，T014 已增加共享路线策略及可注入编排器：使用原观察身份、近期已认证连接和完整目标复核后，才请求同标签布局聚焦；并发、取消和异常保留实际尝试路线。默认没有 driver，返回应用级回退建议；聚焦响应不证明可见定位，也未接入真实执行。详细契约见 [定位路线与结果](wave-navigation.md)。
 
 URL scheme 只识别 `tide-island://session?id=...`，只查找已有会话，不把链接参数拼接成 shell 命令。
 

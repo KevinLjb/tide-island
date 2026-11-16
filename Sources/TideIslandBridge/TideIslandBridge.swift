@@ -174,6 +174,12 @@ struct TideIslandBridge {
                 "valid_for_seconds": WaveLocationPolicy.standard.validFor,
                 "metadata_only": true, "runs_wsh": false, "implements_navigation": false,
             ],
+            "wave_navigation": [
+                "scope": "shared-policy-and-injected-driver", "reviewed_wave_version": WaveLocation.reviewedWaveVersion,
+                "candidate_route": "tab-layout-focus", "evidence_valid_for_seconds": WaveNavigationPolicy.standard.evidenceValidFor,
+                "default_route": "application-fallback-required", "reports_visible_focus": false,
+                "production_driver_installed": false, "runs_wsh": false,
+            ],
         ]
         FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .prettyPrinted]) + Data([0x0A]))
     }

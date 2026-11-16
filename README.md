@@ -4,11 +4,11 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 让 AI 的工作状态，在岛上一目了然。面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。
 
-> 当前阶段：会话与事件可靠性开发。已提供 v1 / v2 事件协议、轮次状态、新鲜度投影、会话注意力、增量 inbox、可预览清理、通道恢复与会话持久化、观察型 hook / notify CLI、hooks 配置管理、确定性回放、菜单栏及原生扩展源码。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
+> 当前阶段：Wave 适配开发。已提供 v1 / v2 事件协议、轮次状态、新鲜度投影、会话注意力、增量 inbox、可预览清理、通道恢复与会话持久化、观察型 hook / notify CLI、hooks 配置管理、确定性回放、菜单栏及原生扩展源码。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T013 已加入可选的 [Wave 位置元数据](docs/wave-location.md)、allowlist 采集、独立有效性投影和 checkpoint 兼容迁移，[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43917010695) 实际执行 170 / 声明 170 项测试全部通过，七项检查成功。T012 的已审阅版本为 Wave 0.14.5；原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T014 已加入 [定位路线策略与请求编排](docs/wave-navigation.md)：同标签候选、上下文 / 目标复核、旧行与并发保护及明确结果，等待本次共享 CI。当前没有真实 driver，应用仍只唤起 Wave；原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -46,6 +46,7 @@ docs/inbox-recovery.md        通道健康、监听重连、单接收者与中�
 docs/session-persistence.md   会话 / 偏好 checkpoint、跨重启保护与主动清除
 docs/wave-capabilities.md     Wave 版本、公开定位入口、认证与列表输出边界
 docs/wave-location.md         可选位置协议、allowlist、失效判断与 checkpoint 迁移
+docs/wave-navigation.md       定位路线、运行时 / 目标复核、请求编排与结果边界
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -101,7 +102,7 @@ swift run tide-island-bridge emit \
 
 CLI 将事件原子写入 `~/Library/Application Support/TideIsland/Events/`，并输出一行 v2 JSON。运行中的应用监听该目录。状态包括 `working`、`needsInput`、`completed`、`failed`、`interrupted` 和 `ended`；`completed` 只表示本轮结束。新读取器继续兼容已有的 v1 记录。
 
-`--inbox <目录>` 可隔离调试数据；默认只采集 `WAVETERM_BLOCKID`、`WAVETERM_TABID`、`WAVETERM_VERSION`。`--wave-block <ID>`、`--wave-tab <UUID>`、`--wave-version <版本>` 可显式提供独立的位置参数组，不与环境混用，详见 [位置元数据](docs/wave-location.md)。应用当前只唤起 Wave，**尚未实现或验证精确分屏定位**。已核对的 Wave 0.14.5 `focusblock` 只处理标签内布局，需要认证和 tab 上下文；跨标签 / 窗口没有本轮可承诺的公开路线，详见 [Wave 定位能力](docs/wave-capabilities.md)。
+`--inbox <目录>` 可隔离调试数据；默认只采集 `WAVETERM_BLOCKID`、`WAVETERM_TABID`、`WAVETERM_VERSION`。`--wave-block <ID>`、`--wave-tab <UUID>`、`--wave-version <版本>` 可显式提供独立的位置参数组，不与环境混用，详见 [位置元数据](docs/wave-location.md)。应用当前只唤起 Wave；共享层已实现 [条件性同标签请求编排](docs/wave-navigation.md)，尚未接入真实执行 driver 或验证精确可见定位。已核对的 Wave 0.14.5 `focusblock` 只处理标签内布局，需要认证和 tab 上下文；跨标签 / 窗口没有本轮可承诺的公开路线，详见 [Wave 定位能力](docs/wave-capabilities.md)。
 
 ## 回放生命周期事件
 
@@ -170,7 +171,7 @@ notify = ["/absolute/path/to/tide-island-bridge", "notify", "--payload"]
 
 ## 当前能力与后续计划
 
-- 已实现：v1 / v2 元数据事件、可选 Wave 位置与有效性投影、增量 inbox、可预览历史清理、通道恢复与单接收者、会话 / 偏好持久化和清除、轮次状态机、有界重复 / 退役轮次 / 工具窗口、会话新鲜度与展示过期、已读 / 忽略 / 置顶 / 选择与可解释排序、Codex hook / notify 转换、hooks 配置管理、确定性回放与逐步断言、隔离 CLI 检查、菜单栏与原生扩展源码。
+- 已实现：v1 / v2 元数据事件、可选 Wave 位置与有效性投影、定位路线策略与可注入请求编排、增量 inbox、可预览历史清理、通道恢复与单接收者、会话 / 偏好持久化和清除、轮次状态机、有界重复 / 退役轮次 / 工具窗口、会话新鲜度与展示过期、已读 / 忽略 / 置顶 / 选择与可解释排序、Codex hook / notify 转换、hooks 配置管理、确定性回放与逐步断言、隔离 CLI 检查、菜单栏与原生扩展源码。
 - 待验证：macOS 27.3 原生编译、签名安装、灵动岛更新与点击、触摸交互及系统活动协调。
 - 待开发：完整接入与 notify 共存、普通问答 / 最终失败补充来源、可靠进程存活证据、Wave 精确定位、额度信息与小宠物。
 

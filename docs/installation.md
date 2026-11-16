@@ -1,0 +1,80 @@
+# 安装、升级与卸载流程
+
+T025 提供明确目录内的 hooks + notify 统一配置入口。源码及隔离检查不代表当前用户配置已启用；原生安装包、签名和真实 Codex 链路继续由 T026 / 27.3 验收。
+
+## 使用前提
+
+- 后续使用已构建、验证的 TideIsland.app，保持在稳定路径；[交付说明](bridge-delivery.md)区分摘要完整性与系统签名。
+- 确认要修改的 Codex 配置目录。工具只处理该目录的 hooks.json 和 config.toml，不搜索其他配置层、项目目录、用户正文或信任记录。
+- 原生应用仍需 27.3；当前持续开发阶段不要求升级 beta、运行安装命令或接受 Xcode 许可。
+
+先停止对目标文件的并发编辑；真实接入时需核对 Codex 使用的是哪个配置层，并在重启 / 重载后按 `/hooks` 完成信任审查。文件写入不表示 Codex 已采纳或信任。
+
+## 安装与升级
+
+以下示例用于后续实际交付，默认只预览，不创建配置、备份、inbox 或安装 hooks：
+
+```bash
+"/Applications/TideIsland.app/Contents/Helpers/tide-island-bridge" integration install \
+  --codex-directory /absolute/path/to/codex --app /Applications/TideIsland.app
+```
+
+预览将两份配置、相同 bundle / inbox 及数据选择绑定为一个 plan_fingerprint，分别显示 hooks / notify 是否需要变化。app 在两份预览之间改变、目录 / 操作 / inbox 不一致时拒绝组合。报告不输出旧 hook / notify 参数或 config.toml 正文。
+
+核对后使用相同参数和指纹：
+
+```bash
+"/Applications/TideIsland.app/Contents/Helpers/tide-island-bridge" integration install \
+  --codex-directory /absolute/path/to/codex --app /Applications/TideIsland.app \
+  --apply --expect FINGERPRINT --backup-dir /absolute/path/to/retained-backups
+```
+
+安装先应用六类观察 hooks，再配置完成 notify 共存；各文件先备份原始字节，再通过原有锁 / 指纹 / 身份检查发布。重复安装返回 unchanged，内容一致的文件不重写、不增加备份。完成 notify 使用 [argv 共存](notify-integration.md)转发原通知工具，其他 hooks、TOML 字段、profile 和内联配置保留。
+
+相同路径升级后重新预览，bundle 版本 / helper 摘要改变使旧指纹失效，即使命令文本不变。移动应用后，使用新包内 helper 和新的 `--app` 路径重新预览 / 应用，更新自身 handler 及 notify wrapper，原通知工具参数保留。
+
+首版原生接收器监听默认 `~/Library/Application Support/TideIsland/Events/`。`--inbox /absolute/path` 同时配置两类观察，但自定义目录目前用于 CLI 隔离开发，应用不会自动切换监听路径。
+
+## 卸载与数据选择
+
+完整卸载时，先在应用设置关闭登录启动，再退出应用；配置工具不操作系统登录项。使用当前可运行的 helper 预览移除接入，最后再删除应用包。
+
+```bash
+"/Applications/TideIsland.app/Contents/Helpers/tide-island-bridge" integration uninstall \
+  --codex-directory /absolute/path/to/codex
+# 核对后追加 --apply --expect FINGERPRINT --backup-dir /absolute/path
+```
+
+卸载先恢复原 notify，再移除自身六类 hook；没有受管配置时保持原文件。无需读取旧应用包，不删除配置文件、其他工具条目或信任数据。
+
+| 选择 | 实际行为 |
+| --- | --- |
+| 默认 / `--data keep` | 保留事件、会话 checkpoint、已读 / 忽略 / 置顶 / 选择和应用显示 / 提醒设置 |
+| `--data clear-state` | 使用现有 fingerprint / 接收者 lease 清除指定 inbox 的会话状态和会话偏好，保存旧文件导入边界；原始事件和应用显示 / 提醒 / 登录设置保留 |
+
+清除状态必须显式指定已经由 TideIsland 管理的绝对 inbox。没有该目录时不创建空通道冒充清除；默认 keep 不读取或维护事件目录。
+
+```bash
+"/Applications/TideIsland.app/Contents/Helpers/tide-island-bridge" integration uninstall \
+  --codex-directory /absolute/path/to/codex \
+  --data clear-state --inbox /absolute/path/to/TideIsland/Events
+# 预览包含事件数量与 state_path；核对后追加 apply / expect / backup-dir
+```
+
+自定义 checkpoint 可附带 `--state-directory`。清除预览受默认扫描预算约束，必要时显式提供 `--scan-limit` / `--read-budget-bytes`；超限不接受不完整批次。保持 keep 时不接受这些清除选项。
+
+清除状态先于两份配置变更执行。接收者 lease 忙时会在配置变更前失败；事件或 checkpoint 在预览后改变会使总指纹失效。清除不删除事件文件，不触碰 Codex 聊天或项目文件，不把显示设置的 UserDefaults 当成会话偏好。
+
+## 中断恢复与回退
+
+多个文件之间没有原子事务。某一步失败时返回非零及 JSON `mode: incomplete`、completed_steps、failed_step、固定 failure_code 和已完成步骤的备份路径；阶段完成不一定代表文件写过，具体是否变化由预览及备份记录区分。
+
+例如 hooks 已更新而 notify 的锁忙时，报告只确认 hooks，保留它的备份；解除繁忙后重新预览当前状态，会显示只需更新 notify，再应用新的总指纹。不会用自动回滚覆盖并发编辑，也不会把部分成功报告成安装完成。
+
+备份根目录下按操作保存独立的 hooks / notify 原始字节与 receipt；资料权限与说明见 [hooks 配置](codex-hooks.md)和 [notify 配置](notify-integration.md)。若需要完整回退某文件，对照 receipt、当前差异及原权限后恢复对应 before 文件；原文件原本不存在时，先确认没有后续内容再决定是否删除。状态清除不是自动回退配置的替代，事件文件始终保留。
+
+## 验证边界
+
+共享测试核对跨文件 scope、操作、bundle / inbox 一致性，以及配置和状态变更对总指纹的影响。[隔离 CLI 检查](../scripts/check-integration.py)执行安装 / no-op / 移动 / 升级 / notify 锁造成的部分成功及重试，再验证默认数据保留、事件变化使预览失效、接收锁忙先失败和显式清除状态。
+
+所有检查只在合成应用、Codex 目录和 inbox 中运行。原生构建、签名、真实 hooks / notify、Codex 信任 / 重载以及应用卸载仍须 V003 / V004 / V010 验收。

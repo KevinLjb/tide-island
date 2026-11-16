@@ -63,6 +63,7 @@ jobs:
           python3 scripts/check-hooks.py --temporary-root "${{ runner.temp }}"
           python3 scripts/check-delivery.py --temporary-root "${{ runner.temp }}"
           python3 scripts/check-notify.py --temporary-root "${{ runner.temp }}"
+          python3 scripts/check-integration.py --temporary-root "${{ runner.temp }}"
       - name: Exercise deterministic event replay
         run: python3 scripts/check-replay.py --temporary-root "${{ runner.temp }}"
       - name: Exercise inbox maintenance

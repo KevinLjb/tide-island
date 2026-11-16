@@ -285,6 +285,87 @@ import Testing
     #expect(!FileManager.default.fileExists(atPath: fixture.root.appendingPathComponent("unexpected").path))
 }
 
+@Test func integrationFingerprintBindsBothConfigurationDocuments() throws {
+    let fixture = try notifyFixture(); defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let first = try integrationPlans(fixture.root, bridge: fixture.bridge)
+    let hookEdit = try integrationPlans(fixture.root, bridge: fixture.bridge, hooks: Data("{\"future\":7}".utf8))
+    let notifyEdit = try integrationPlans(fixture.root, bridge: fixture.bridge, notify: Data("notify=['foreign']\n".utf8))
+    let plan = try CodexIntegrationPlan(hooks: first.hooks, notify: first.notify)
+    let changedHook = try CodexIntegrationPlan(hooks: hookEdit.hooks, notify: first.notify)
+    let changedNotify = try CodexIntegrationPlan(hooks: first.hooks, notify: notifyEdit.notify)
+    #expect(plan.fingerprint != changedHook.fingerprint && plan.fingerprint != changedNotify.fingerprint)
+    #expect(plan.dataAction == .keep && plan.stateFile == nil && plan.resetPreview == nil)
+}
+
+@Test func integrationRejectsDifferentDirectoriesAndMismatchedActions() throws {
+    let fixture = try notifyFixture(); defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let current = try integrationPlans(fixture.root, bridge: fixture.bridge)
+    let other = try integrationPlans(fixture.root.appendingPathComponent("other"), bridge: fixture.bridge)
+    let uninstall = try integrationPlans(fixture.root, bridge: nil, action: .uninstall)
+    #expect(throws: IntegrationConfigurationError.inconsistentPlans) { try CodexIntegrationPlan(hooks: current.hooks, notify: other.notify) }
+    #expect(throws: IntegrationConfigurationError.inconsistentPlans) { try CodexIntegrationPlan(hooks: current.hooks, notify: uninstall.notify) }
+}
+
+@Test func integrationRejectsMixedBundleEvidenceAndDifferentInboxOptions() throws {
+    let fixture = try notifyFixture(); defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let original = try integrationPlans(fixture.root, bridge: fixture.bridge)
+    let option = try integrationPlans(fixture.root, bridge: fixture.bridge, inbox: "/different/Events")
+    #expect(throws: IntegrationConfigurationError.inconsistentPlans) { try CodexIntegrationPlan(hooks: original.hooks, notify: option.notify) }
+    let infoURL = fixture.bridge.applicationURL.appendingPathComponent("Contents/Info.plist")
+    let raw = try PropertyListSerialization.propertyList(from: Data(contentsOf: infoURL), format: nil)
+    var info = try #require(raw as? [String: Any]); info["CFBundleVersion"] = "2"
+    try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0).write(to: infoURL)
+    let bridge = try BundledBridge.inspect(applicationURL: fixture.bridge.applicationURL)
+    let updated = try integrationPlans(fixture.root, bridge: bridge)
+    #expect(throws: IntegrationConfigurationError.inconsistentPlans) { try CodexIntegrationPlan(hooks: original.hooks, notify: updated.notify) }
+}
+
+@Test func integrationClearStateRequiresUninstallAndAConsistentExplicitPreview() throws {
+    let fixture = try notifyFixture(); defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let install = try integrationPlans(fixture.root, bridge: fixture.bridge)
+    let uninstall = try integrationPlans(fixture.root, bridge: nil, action: .uninstall)
+    #expect(throws: IntegrationConfigurationError.inconsistentPlans) {
+        try CodexIntegrationPlan(hooks: uninstall.hooks, notify: uninstall.notify, dataAction: .clearSessionState)
+    }
+    let inbox = EventInbox(directory: fixture.root.appendingPathComponent("Events"))
+    try inbox.write(AgentEvent(sessionID: "integration", projectName: "fixture", phase: .working))
+    let state = SessionStateFile(inbox: inbox), reset = try state.previewReset()
+    #expect(throws: IntegrationConfigurationError.inconsistentPlans) {
+        try CodexIntegrationPlan(hooks: install.hooks, notify: install.notify, dataAction: .clearSessionState, stateFile: state, resetPreview: reset)
+    }
+    #expect(throws: IntegrationConfigurationError.inconsistentPlans) {
+        try CodexIntegrationPlan(hooks: uninstall.hooks, notify: uninstall.notify, stateFile: state, resetPreview: reset)
+    }
+    let otherState = SessionStateFile(inbox: EventInbox(directory: fixture.root.appendingPathComponent("OtherEvents")))
+    #expect(throws: IntegrationConfigurationError.inconsistentPlans) {
+        try CodexIntegrationPlan(hooks: uninstall.hooks, notify: uninstall.notify, dataAction: .clearSessionState, stateFile: otherState, resetPreview: reset)
+    }
+}
+
+@Test func integrationStateChoiceAndChangedEventsInvalidateTheCombinedPreview() throws {
+    let fixture = try notifyFixture(); defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let uninstall = try integrationPlans(fixture.root, bridge: nil, action: .uninstall)
+    let keep = try CodexIntegrationPlan(hooks: uninstall.hooks, notify: uninstall.notify)
+    let inbox = EventInbox(directory: fixture.root.appendingPathComponent("Events")), state = SessionStateFile(inbox: inbox)
+    try inbox.write(AgentEvent(sessionID: "integration-a", projectName: "fixture", phase: .working))
+    let firstReset = try state.previewReset()
+    let clear = try CodexIntegrationPlan(hooks: uninstall.hooks, notify: uninstall.notify, dataAction: .clearSessionState, stateFile: state, resetPreview: firstReset)
+    try inbox.write(AgentEvent(sessionID: "integration-b", projectName: "fixture", phase: .working))
+    let nextReset = try state.previewReset()
+    let changed = try CodexIntegrationPlan(hooks: uninstall.hooks, notify: uninstall.notify, dataAction: .clearSessionState, stateFile: state, resetPreview: nextReset)
+    #expect(keep.fingerprint != clear.fingerprint && clear.fingerprint != changed.fingerprint)
+    #expect(firstReset.eventFiles == 1 && nextReset.eventFiles == 2)
+}
+
+private func integrationPlans(_ directory: URL, bridge: BundledBridge?, action: HookConfigurationAction = .install,
+                              hooks: Data? = nil, notify: Data? = nil, inbox: String? = nil) throws -> (hooks: HookConfigurationPlan, notify: NotifyConfigurationPlan) {
+    let hookPlan = try CodexHookConfiguration.plan(action: action, existing: hooks, bridgePath: bridge?.executableURL.path, inboxPath: inbox,
+                                                  configurationPath: directory.appendingPathComponent("hooks.json").path, bundledBridge: bridge)
+    let notifyPlan = try CodexNotifyConfiguration.plan(action: action, existing: notify, configurationPath: directory.appendingPathComponent("config.toml").path,
+                                                      bundledBridge: bridge, inboxPath: inbox)
+    return (hookPlan, notifyPlan)
+}
+
 private func notifyPlan(_ data: Data?, bridge: BundledBridge) throws -> NotifyConfigurationPlan {
     try CodexNotifyConfiguration.plan(action: .install, existing: data, configurationPath: bridge.applicationURL.deletingLastPathComponent().appendingPathComponent("config.toml").path, bundledBridge: bridge)
 }

@@ -44,7 +44,7 @@ T024 将 `tide-island-bridge` 放到应用包内固定的 `Contents/Helpers/`，
 
 升级保持相同应用路径时，hooks 命令通常不变，新的预览只更新检查依据；不会为无变化的配置制造备份或写入。应用移动到新路径后，旧命令可能已不可执行，需要用新包内 helper 和新 `--app` 路径重新预览；它会报告受管配置需要修复，再显式应用。
 
-只更新本项目完整保留标记识别的 handler，保留其他命令、matcher、字段和空分组；原始字节先备份。既有 notify、config.toml 和 Codex 信任状态继续保持；完整完成通知共存和统一安装 / 卸载由 T025 接续。[hooks 配置管理](codex-hooks.md)说明并发、回退与信任审查。
+这个 hooks 命令只更新本项目完整保留标记识别的 handler，保留其他命令、matcher、字段和空分组；原始字节先备份。既有 notify、config.toml 和 Codex 信任状态继续保持；T025 的 [统一安装 / 卸载](installation.md)另外接入完成 notify 共存。[hooks 配置管理](codex-hooks.md)说明并发、回退与信任审查。
 
 未安装或检查失败时，不使用搜索到的同名可执行文件，不自动改配置，也不退回 `.build/debug` 路径。修复前六类观察可能无法送达，列表保留状态不能被当成当前活动证据。
 

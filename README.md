@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T025 的 [notify 共享计划](docs/notify-integration.md)已通过 394 项回归；文件预览 / 备份 / 恢复与 callback 源码已接入，统一安装 / 卸载待接续。新增 6 项共享测试，全量声明 400 项及独立 TOML / 回调 CLI 等待严格 CI。原生编译、签名和交互仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T025 的 [notify 共存](docs/notify-integration.md)已通过 400 项回归及独立 TOML / 回调 CLI；[统一安装、升级与卸载](docs/installation.md)源码已接入，包含总指纹、部分成功恢复和数据选择。新增 5 项共享测试，全量声明 405 项及统一流程 CLI 等待严格 CI。原生编译、签名和交互仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -59,6 +59,7 @@ docs/session-browser.md       项目筛选、匿名标签、只读详情与空�
 docs/system-status.md         独立系统权限、上次错误与菜单栏恢复入口
 docs/bridge-delivery.md       应用包内 bridge、完整性与移动 / 升级路径修复
 docs/notify-integration.md    完成 notify 共存、argv 边界与可撤销局部编辑
+docs/installation.md          统一配置安装 / 升级 / 卸载、数据选择与回退
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -72,6 +73,7 @@ python3 scripts/check-bridge.py
 python3 scripts/check-hooks.py
 python3 scripts/check-delivery.py
 python3 scripts/check-notify.py
+python3 scripts/check-integration.py
 python3 scripts/check-replay.py
 python3 scripts/check-inbox.py
 python3 scripts/check-state.py
@@ -178,12 +180,12 @@ CLI 提供两个独立入口：
 
 原生构建产物可用 `hooks install --app /Applications/TideIsland.app` 检查固定包内 bridge；移动 / 升级后重新预览修复受管路径。该参数与 `--bridge` 互斥，校验清单不替代签名 / 公证验证；安装包当前仍未发布。
 
-hooks 工具保持 `config.toml`、既有 notify 和内联 hooks 原样。新增的独立 `notify-config` 工具只编辑明确指定 config.toml 的顶层 notify，保留并转发原命令参数，默认预览，显式应用后才安装 callback；卸载恢复旧 notify。详见 [完成通知共存](docs/notify-integration.md)，统一安装 / 卸载由 T025 接续：
+hooks 工具保持 `config.toml`、既有 notify 和内联 hooks 原样。独立 `notify-config` 工具只编辑明确指定 config.toml 的顶层 notify，保留并转发原命令参数，卸载恢复旧 notify，详见 [完成通知共存](docs/notify-integration.md)。完整接入使用 [统一配置流程](docs/installation.md)，默认预览、显式应用，总指纹覆盖两个文件：
 
 ```bash
 # 未来有实际应用包时，先检查预览。尚未修改当前用户配置。
-"/Applications/TideIsland.app/Contents/Helpers/tide-island-bridge" notify-config install \
-  --config /absolute/path/to/codex/config.toml --app /Applications/TideIsland.app
+"/Applications/TideIsland.app/Contents/Helpers/tide-island-bridge" integration install \
+  --codex-directory /absolute/path/to/codex --app /Applications/TideIsland.app
 ```
 
 单独配置 notify 只覆盖本轮结束；其他已支持事件需要相应 hooks。`Stop`、压缩触发的 `SessionStart` 和子代理输入不会直接改变主会话状态。普通问答的准确等待与整轮最终失败尚无本适配器确认的自动来源；真实配置安装、完整会话恢复和后续来源适配仍待开发。
@@ -192,7 +194,7 @@ hooks 工具保持 `config.toml`、既有 notify 和内联 hooks 原样。新增
 
 - 已实现：v1 / v2 元数据事件、可选 Wave 位置与有效性投影、定位路线策略与可注入请求编排、应用级返回流程和严格会话链接、共享实时活动展示 / 客户端 / 更新调度、增量 inbox、可预览历史清理、通道恢复与单接收者、会话 / 偏好持久化和清除、轮次状态机、有界重复 / 退役轮次 / 工具窗口、会话新鲜度与展示过期、已读 / 忽略 / 置顶 / 选择与可解释排序、Codex hook / notify 转换、hooks 配置管理、确定性回放与逐步断言、隔离 CLI 检查、菜单栏与原生扩展源码。
 - 待验证：macOS 27.3 原生编译、签名安装、灵动岛更新与点击、触摸交互及系统活动协调。
-- 待开发：完整接入与 notify 共存、普通问答 / 最终失败补充来源、可靠进程存活证据、Wave 精确定位、额度信息与小宠物。
+- 待开发：发布产物与原生 CI、诊断、普通问答 / 最终失败补充来源、可靠进程存活证据、Wave 精确定位、额度信息与小宠物。
 
 原生界面的尺寸、动画、更新频率由系统约束；小宠物和高频动画需通过实机验证后再确定。
 

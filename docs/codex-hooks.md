@@ -2,6 +2,8 @@
 
 应用交付源码已提供 `hooks install --app /absolute/path/TideIsland.app`，从包内固定 Helpers 目录检查 bridge，并在移动 / 升级后重新预览修复受管路径；与 `--bridge` 互斥。完整性、指纹和原生构建边界见 [应用内 bridge 交付](bridge-delivery.md)。
 
+同时接入完成 notify 时，使用 T025 的 [统一安装 / 卸载](installation.md)。本页的独立 hooks 命令继续只编辑 hooks.json。
+
 T004 提供 `hooks.json` 的预览、幂等安装、路径升级、备份和卸载。命令默认只预览，必须同时提供 `--apply`、本次预览的 `--expect` 指纹和 `--backup-dir` 才写入。
 
 本轮仅用隔离目录测试，尚未安装到本机正在使用的 Codex。原生界面与真实会话链路仍按 [开发进度](development-progress.md) 单独验收。
@@ -10,7 +12,7 @@ T004 提供 `hooks.json` 的预览、幂等安装、路径升级、备份和卸�
 
 - 只编辑显式 `--config /absolute/path/hooks.json` 指定的文件，不推断全局或项目层。非 `hooks.json` 文件名、相对路径和文件符号链接均拒绝。
 - 保留已有 hooks、描述、未知 JSON 字段及数值字面量。变更时重新排版和排序对象键，原始字节另存备份；没有变更时保留原始字节。保留未知字段不代表当前 Codex 能接受这些字段。
-- `config.toml`、既有 notify、内联 hooks、Codex 的信任与禁用状态均不读取或修改。单独安装这六类 hook 不会自动接入完成通知；`agent-turn-complete` 仍需 notify 入口，完整接入与共存策略由 T025 处理。
+- `config.toml`、既有 notify、内联 hooks、Codex 的信任与禁用状态均不读取或修改。单独安装这六类 hook 不会自动接入完成通知；`agent-turn-complete` 由独立 [notify 共存](notify-integration.md)接入。
 - 安装六类事件：`UserPromptSubmit`、`PreToolUse`、`PermissionRequest`、`PostToolUse`、`Interrupt`、`SessionEnd`。不安装 `Stop` 或 `SessionStart`，转换边界见 [事件契约](codex-events.md)。
 - 输入上限 1 MiB、嵌套深度上限 64；重复键、损坏 JSON 和不支持的 hooks 结构会阻止修改，不尝试修复用户配置。
 

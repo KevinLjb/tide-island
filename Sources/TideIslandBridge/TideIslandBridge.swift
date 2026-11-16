@@ -25,6 +25,7 @@ struct TideIslandBridge {
             return
         }
         let rest = Array(arguments.dropFirst())
+        if command == "integration" { try IntegrationCommand.run(rest); return }
         if command == "notify-config" { try NotifyConfigurationCommand.run(rest); return }
         if command == "notify-dispatch" { try NotifyDispatchCommand.run(rest); return }
         if command == "state" {
@@ -164,6 +165,12 @@ struct TideIslandBridge {
                 "callback_stdout": "empty", "callback_failure_exit_code": 0,
                 "callback_uses_shell": false, "manages_codex_trust": false,
             ],
+            "integration": [
+                "default_mode": "preview", "scope": "explicit-codex-directory",
+                "default_data_action": "keep", "optional_data_action": "clear-state",
+                "preserves_event_files": true, "preserves_display_preferences": true,
+                "cross_file_transaction": false, "reports_completed_steps": true,
+            ],
             "inbox_maintenance": [
                 "default_mode": "preview", "requires_managed_marker": true,
                 "protects_unresolved_session_history": true, "capacity_targets_are_soft": true,
@@ -247,6 +254,12 @@ struct TideIslandBridge {
                           [--inbox /DIRECTORY] [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
     notify-config uninstall --config /PATH/config.toml
                             [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
+    integration install --codex-directory /DIRECTORY --app /PATH/TideIsland.app
+                        [--inbox /DIRECTORY] [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
+    integration uninstall --codex-directory /DIRECTORY [--data keep|clear-state]
+                          [--inbox /DIRECTORY] [--state-directory /DIRECTORY]
+                          [--scan-limit COUNT] [--read-budget-bytes BYTES]
+                          [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
     capabilities
 
     emit/notify write an event and print JSON. hook reads stdin and keeps stdout
@@ -262,6 +275,10 @@ struct TideIslandBridge {
     It preserves existing command arguments, restores them on uninstall, and
     never edits hook trust. Its internal callback observes metadata and forwards
     the original payload as one argument without a shell or stdout output.
+    integration previews both files with one fingerprint and reports partial
+    progress on apply failure; it does not promise a cross-file transaction.
+    Uninstall keeps data by default. clear-state requires an explicit inbox and
+    a free receiver lease; event files and display settings are preserved.
     inbox cleanup previews expired whole-session history. Apply requires the
     exact fingerprint; active/uncertain histories and unknown files stay intact.
     inbox recover previews interrupted operations. Apply completes only valid

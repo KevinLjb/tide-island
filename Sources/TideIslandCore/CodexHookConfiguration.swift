@@ -19,6 +19,7 @@ public struct HookConfigurationPlan: Sendable {
     let proposedData: Data?
     let bridgePath: String?
     let configurationPath: String?
+    let inboxPath: String?
 }
 
 /// Edits only a hooks.json document. config.toml, notify, inline hooks, and
@@ -126,7 +127,7 @@ public enum CodexHookConfiguration {
             action: action, fingerprint: digest(token), managedHooksBefore: before,
             managedHooksAfter: action == .install ? CodexHookEvent.allCases.count : 0,
             command: command, bundledBridge: bundledBridge, originalData: existing,
-            proposedData: proposed, bridgePath: bridgePath, configurationPath: configurationPath
+            proposedData: proposed, bridgePath: bridgePath, configurationPath: configurationPath, inboxPath: inboxPath
         )
     }
 

@@ -11,6 +11,7 @@ public struct NotifyConfigurationPlan: Sendable {
     let configurationPath: String
     let originalData: Data?
     let proposedData: Data?
+    let inboxPath: String?
 }
 
 public enum CodexNotifyConfiguration {
@@ -44,6 +45,6 @@ public enum CodexNotifyConfiguration {
         return NotifyConfigurationPlan(action: action, fingerprint: CodexHookConfiguration.digest(try JSONEncoder().encode(token)),
                                        managedBefore: managed != nil, managedAfter: action == .install,
                                        forwardsExistingCommand: !originalArguments.isEmpty, bundledBridge: bundledBridge,
-                                       configurationPath: configurationPath, originalData: existing, proposedData: proposed)
+                                       configurationPath: configurationPath, originalData: existing, proposedData: proposed, inboxPath: inboxPath)
     }
 }

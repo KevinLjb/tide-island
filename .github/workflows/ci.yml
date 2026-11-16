@@ -18,7 +18,20 @@ jobs:
       - name: Test shared logic
         env:
           TIDE_ISLAND_TEST_TMPDIR: ${{ runner.temp }}/tide-island-tests
-        run: swift test
+        run: |
+          if swift test 2>&1 | tee "$RUNNER_TEMP/tide-island-swift-test.log"; then
+            exit 0
+          fi
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          tide_log = Path(os.environ["RUNNER_TEMP"]) / "tide-island-swift-test.log"
+          excerpt = "\n".join(tide_log.read_text().splitlines()[-100:])
+          escaped = excerpt.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          print("::error title=Shared logic test diagnostics::" + escaped)
+          PY
+          exit 1
       - name: Build event bridge
         run: swift build --product tide-island-bridge
       - name: Exercise event bridge

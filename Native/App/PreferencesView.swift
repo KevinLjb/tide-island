@@ -6,6 +6,7 @@ struct PreferencesView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            SystemStatusView(model: model)
             Form {
                 Section("会话提醒") {
                     Toggle("启用提醒", isOn: Binding(get: { model.preferences.reminders.enabled }, set: model.setRemindersEnabled))
@@ -71,5 +72,40 @@ struct PreferencesView: View {
             guard let hour = fields.hour, let minute = fields.minute else { return }
             model.setQuietHoursMinute(hour * 60 + minute, start: start)
         })
+    }
+}
+
+/// Shared by the session window and settings. Recovery stays available even
+/// when a damaged preference record makes the editable form read-only.
+struct SystemStatusView: View {
+    @ObservedObject var model: SessionModel
+
+    var body: some View {
+        let status = model.systemStatus
+        VStack(alignment: .leading, spacing: 6) {
+            Label(status.activitySummary, systemImage: status.attentionCount > 0 ? "exclamationmark.circle" : "info.circle")
+                .font(.callout)
+            DisclosureGroup(status.attentionCount > 0 ? "系统状态 · \(status.attentionCount) 项需关注" : "系统状态") {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(status.notices) { notice in
+                        VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(notice.title).font(.callout.bold())
+                                Text(notice.detail).font(.caption).foregroundStyle(.secondary)
+                            }
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityElement(children: .combine)
+                            switch notice.action {
+                            case .none, .checkAgain: EmptyView()
+                            case .reminderSettings: SettingsLink { Text("查看提醒设置") }
+                            case .loginSettings: Button("前往登录项设置") { model.openLoginItemSettings() }
+                            }
+                        }
+                    }
+                    Button(model.systemStatusBusy ? "正在检查…" : "重新检查系统状态") { model.recheckSystemStatus() }
+                        .disabled(model.systemStatusBusy)
+                }.padding(.top, 8)
+            }.font(.caption)
+        }
     }
 }

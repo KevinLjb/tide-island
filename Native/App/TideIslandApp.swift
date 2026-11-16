@@ -54,6 +54,7 @@ private struct MenuContent: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
+        Text(model.systemStatus.activitySummary)
         Button("打开会话") {
             openWindow(id: "sessions")
             NSApplication.shared.activate(ignoringOtherApps: true)
@@ -61,6 +62,8 @@ private struct MenuContent: View {
         Button("加载演示会话") { model.loadDemo() }
         SettingsLink { Label("设置…", systemImage: "gearshape") }
             .keyboardShortcut(",")
+        Button("重新检查系统状态") { model.recheckSystemStatus() }
+            .disabled(model.systemStatusBusy)
         Divider()
         Button("退出 TideIsland") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")

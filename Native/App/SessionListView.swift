@@ -31,6 +31,7 @@ struct SessionListView: View {
                 Spacer()
                 managementMenu
             }
+            SystemStatusView(model: model)
             Picker("项目", selection: $projectID) {
                 Text("所有项目").tag(nil as String?)
                 ForEach(browser.projects) { project in
@@ -53,7 +54,7 @@ struct SessionListView: View {
                 Text("选择的会话暂不可用，已按优先级回退。").font(.caption).foregroundStyle(.secondary)
             }
             if let highlighted = model.snapshot?.activitySession, let reason = model.snapshot?.activitySelectionReason {
-                Text("岛上优先：\(model.displayName(for: highlighted)) · \(reason.title)")
+                Text("活动候选：\(model.displayName(for: highlighted)) · \(reason.title)")
                     .font(.caption).foregroundStyle(.secondary).lineLimit(2)
             }
             Toggle("显示已忽略（\(browser.ignoredSessions.count)）", isOn: $showsIgnored).toggleStyle(.checkbox)

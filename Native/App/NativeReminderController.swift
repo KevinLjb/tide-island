@@ -28,6 +28,9 @@ final class NativeReminderController: NSObject, UNUserNotificationCenterDelegate
         try await client.center.requestAuthorization(options: [.alert, .sound])
     }
 
+    /// Read-only; never prompts and never posts a notification.
+    func authorization() async -> SessionReminderAuthorization { await client.authorization() }
+
     func shutdown() async { await coordinator.shutdown() }
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,

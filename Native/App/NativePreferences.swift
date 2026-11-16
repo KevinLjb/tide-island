@@ -22,21 +22,9 @@ final class NativePreferences {
     }
 }
 
-enum NativeLoginItemState: Equatable {
-    case disabled, enabled, requiresApproval, unavailable
-    var isRequested: Bool { self == .enabled || self == .requiresApproval }
-    var message: String? {
-        switch self {
-        case .disabled, .enabled: nil
-        case .requiresApproval: "等待系统允许，可前往登录项设置查看。"
-        case .unavailable: "请先安装潮汐岛，再设置登录时启动。"
-        }
-    }
-}
-
 @MainActor
 struct NativeLoginItemClient {
-    func state() -> NativeLoginItemState {
+    func state() -> LoginItemState {
         switch SMAppService.mainApp.status {
         case .enabled: .enabled
         case .requiresApproval: .requiresApproval
@@ -45,7 +33,7 @@ struct NativeLoginItemClient {
         @unknown default: .unavailable
         }
     }
-    func setEnabled(_ enabled: Bool) async throws -> NativeLoginItemState {
+    func setEnabled(_ enabled: Bool) async throws -> LoginItemState {
         if enabled { try SMAppService.mainApp.register() }
         else { try await SMAppService.mainApp.unregister() }
         return state()

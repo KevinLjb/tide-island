@@ -27,6 +27,14 @@ final class NativeActivityController {
         client.stopMonitoring()
         return await scheduler.shutdown()
     }
+
+    /// Authorization is not hardware discovery or evidence of visible UI.
+    func availability() -> NativeActivityAvailability {
+        if #available(macOS 27.3, *) {
+            return ActivityAuthorizationInfo().areActivitiesEnabled ? .allowed : .disabled
+        }
+        return .unavailable
+    }
 }
 
 @MainActor

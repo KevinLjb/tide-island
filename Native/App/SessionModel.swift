@@ -13,7 +13,12 @@ final class SessionModel: ObservableObject {
     @Published private(set) var preferencesMessage: String?
     @Published private(set) var notificationBusy = false
     @Published private(set) var loginBusy = false
-    @Published private(set) var loginItemState = NativeLoginItemState.disabled
+    @Published private(set) var loginItemState = LoginItemState.disabled
+    @Published private(set) var systemStatusBusy = false
+    @Published private var activityAvailability = NativeActivityAvailability.unknown
+    @Published private var notificationAuthorization: SessionReminderAuthorization?
+    @Published private var activityProblem: IslandActivityError?
+    @Published private var reminderProblem: SessionReminderProblem?
 
     var sessions: [SessionStatus] { snapshot?.sessions ?? [] }
     var ignoredSessions: [SessionStatus] { snapshot?.ignoredSessions ?? [] }
@@ -25,6 +30,8 @@ final class SessionModel: ObservableObject {
     private var notificationTask: Task<Void, Never>?
     private var loginTask: Task<Void, Never>?
     private var notificationRevision: UInt64 = 0
+    private var systemStatusTask: Task<Void, Never>?
+    private var systemStatusRevision: UInt64 = 0
     private var receiver: InboxReceiver?
     private var frameTask: Task<Void, Never>?
     private var activityTask: Task<Void, Never>?
@@ -40,8 +47,6 @@ final class SessionModel: ObservableObject {
     private var returnRevision: UInt64 = 0
     private var returnMessage: String?
     private var channelMessage: String?
-    private var activityMessage: String?
-    private var reminderMessage: String?
 
     init() {
         preferences = preferenceStore.document.preferences
@@ -54,35 +59,69 @@ final class SessionModel: ObservableObject {
         reminderTask = Task { [weak self] in
             for await delivery in reminderDeliveries {
                 guard !Task.isCancelled, let self else { break }
-                reminderMessage = delivery.problem == nil ? nil : "会话提醒暂不可用，请检查提醒设置与系统通知权限。"
-                refreshStatusMessage()
+                reminderProblem = delivery.problem
             }
         }
         let deliveries = activities.frames
         activityTask = Task { [weak self] in
             for await delivery in deliveries {
                 guard !Task.isCancelled, let self else { break }
-                activityMessage = delivery.problem == nil ? nil : "原生实时活动暂不可用，请检查系统的实时活动设置。"
-                refreshStatusMessage()
+                activityProblem = delivery.problem
             }
         }
         let changes = activities.changes
         systemActivityTask = Task { [weak self] in
             for await _ in changes {
                 guard !Task.isCancelled, let self else { break }
+                refreshSystemStatus()
                 reloadInbox()
             }
         }
         NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)
             .merge(with: NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification))
             .sink { [weak self] _ in
-                Task { @MainActor [weak self] in self?.reloadInbox(); self?.refreshLoginItemState() }
+                Task { @MainActor [weak self] in self?.reloadInbox(); self?.refreshSystemStatus() }
             }
             .store(in: &subscriptions)
         connectReceiver()
+        refreshSystemStatus()
     }
 
     var preferencesReadOnly: Bool { preferenceStore.document.problem != nil }
+
+    var systemStatus: SystemStatusProjection {
+        SystemStatusProjection(activity: activityAvailability, hasConfirmedSource: activityScope == .application,
+                               activityProblem: activityProblem, remindersEnabled: preferences.reminders.enabled,
+                               notificationAuthorization: notificationAuthorization, reminderProblem: reminderProblem,
+                               login: loginItemState)
+    }
+
+    /// Query public settings only. The revision rejects results from an older
+    /// activation / refresh even when the OS ignores task cancellation.
+    func refreshSystemStatus() {
+        guard !stopping else { return }
+        systemStatusRevision &+= 1
+        let revision = systemStatusRevision
+        systemStatusTask?.cancel()
+        activityAvailability = activities.availability()
+        refreshLoginItemState()
+        notificationAuthorization = nil
+        systemStatusBusy = true
+        systemStatusTask = Task { [weak self] in
+            guard let self else { return }
+            let authorization = await reminders.authorization()
+            guard !Task.isCancelled, !stopping, systemStatusRevision == revision else { return }
+            notificationAuthorization = authorization
+            systemStatusBusy = false; systemStatusTask = nil
+        }
+    }
+
+    func recheckSystemStatus() {
+        refreshSystemStatus()
+        // Forced synchronization still goes through the source receiver,
+        // ordered scheduler and existing ownership / dismissal safeguards.
+        reloadInbox()
+    }
 
     func displayedSessions(at now: Date) -> [SessionStatus] { preferences.visibleStatuses(sessions, at: now) }
     func displayedIgnoredSessions(at now: Date) -> [SessionStatus] { preferences.visibleStatuses(ignoredSessions, at: now) }
@@ -137,9 +176,11 @@ final class SessionModel: ObservableObject {
                 guard !Task.isCancelled, !stopping, notificationRevision == revision else { return }
                 if allowed { updatePreferences { $0.reminders.enabled = true } }
                 else { preferencesMessage = "系统未允许通知，请在系统设置的通知中允许潮汐岛。"; refreshStatusMessage() }
+                refreshSystemStatus()
             } catch {
                 guard !Task.isCancelled, !stopping, notificationRevision == revision else { return }
                 preferencesMessage = "暂时无法请求通知权限，请稍后重试。"; refreshStatusMessage()
+                refreshSystemStatus()
             }
         }
     }
@@ -339,6 +380,7 @@ final class SessionModel: ObservableObject {
         subscriptions.removeAll()
         frameTask?.cancel(); systemActivityTask?.cancel(); activityTask?.cancel()
         reminderTask?.cancel()
+        systemStatusRevision &+= 1; systemStatusTask?.cancel()
         notificationRevision &+= 1; notificationTask?.cancel(); loginTask?.cancel()
         returnRevision &+= 1; returnTask?.cancel()
         // Keep the receiver lease until activity operations have settled. A
@@ -356,7 +398,7 @@ final class SessionModel: ObservableObject {
     }
 
     private func refreshStatusMessage() {
-        statusMessage = channelMessage ?? activityMessage ?? reminderMessage ?? preferencesMessage ?? returnMessage
+        statusMessage = channelMessage ?? preferencesMessage ?? returnMessage
     }
 
     deinit {
@@ -364,6 +406,7 @@ final class SessionModel: ObservableObject {
         activityTask?.cancel()
         systemActivityTask?.cancel()
         reminderTask?.cancel()
+        systemStatusTask?.cancel()
         notificationTask?.cancel(); loginTask?.cancel()
         returnTask?.cancel()
         let activities = self.activities, reminders = self.reminders, receiver = self.receiver

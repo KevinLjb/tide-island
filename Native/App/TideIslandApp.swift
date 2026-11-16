@@ -11,6 +11,8 @@ struct TideIslandApp: App {
         }
         .defaultSize(width: 480, height: 420)
 
+        Settings { PreferencesView(model: delegate.model) }
+
         MenuBarExtra("TideIsland", systemImage: "water.waves") {
             MenuContent(model: delegate.model)
         }
@@ -57,6 +59,8 @@ private struct MenuContent: View {
             NSApplication.shared.activate(ignoringOtherApps: true)
         }
         Button("加载演示会话") { model.loadDemo() }
+        SettingsLink { Label("设置…", systemImage: "gearshape") }
+            .keyboardShortcut(",")
         Divider()
         Button("退出 TideIsland") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")

@@ -17,8 +17,10 @@ final class NativeActivityController {
         client.startMonitoring()
     }
 
-    func submit(snapshot: SessionSnapshot, sequence: UInt64, scope: IslandActivityScope, force: Bool = false) async {
-        await scheduler.submit(snapshot: snapshot, sequence: sequence, scope: scope, forceReconciliation: force)
+    func submit(snapshot: SessionSnapshot, sequence: UInt64, scope: IslandActivityScope, force: Bool = false,
+                showsProjectName: Bool = true) async {
+        await scheduler.submit(snapshot: snapshot, sequence: sequence, scope: scope,
+                               forceReconciliation: force, showsProjectName: showsProjectName)
     }
 
     func shutdown() async -> Bool {

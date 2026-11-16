@@ -9,13 +9,22 @@ final class SessionModel: ObservableObject {
     @Published private(set) var statusMessage: String?
     @Published private(set) var cleanupPlan: InboxCleanupPlan?
     @Published private(set) var channelNeedsRecovery = false
+    @Published private(set) var preferences = AppPreferences()
+    @Published private(set) var preferencesMessage: String?
+    @Published private(set) var notificationBusy = false
+    @Published private(set) var loginBusy = false
+    @Published private(set) var loginItemState = NativeLoginItemState.disabled
 
     var sessions: [SessionStatus] { snapshot?.sessions ?? [] }
     var ignoredSessions: [SessionStatus] { snapshot?.ignoredSessions ?? [] }
 
     private let activities = NativeActivityController()
     private let reminders = NativeReminderController()
-    private var reminderSettings = SessionReminderSettings()
+    private let preferenceStore = NativePreferences()
+    private let loginItems = NativeLoginItemClient()
+    private var notificationTask: Task<Void, Never>?
+    private var loginTask: Task<Void, Never>?
+    private var notificationRevision: UInt64 = 0
     private var receiver: InboxReceiver?
     private var frameTask: Task<Void, Never>?
     private var activityTask: Task<Void, Never>?
@@ -35,6 +44,11 @@ final class SessionModel: ObservableObject {
     private var reminderMessage: String?
 
     init() {
+        preferences = preferenceStore.document.preferences
+        if preferenceStore.document.problem != nil {
+            preferencesMessage = "设置暂时无法读取，原记录已保留。可恢复显示与提醒默认值后重新设置。"
+        }
+        loginItemState = loginItems.state()
         reminders.onOpenSession = { [weak self] url in self?.openSession(url: url) }
         let reminderDeliveries = reminders.frames
         reminderTask = Task { [weak self] in
@@ -62,10 +76,101 @@ final class SessionModel: ObservableObject {
         NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)
             .merge(with: NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification))
             .sink { [weak self] _ in
-                Task { @MainActor [weak self] in self?.reloadInbox() }
+                Task { @MainActor [weak self] in self?.reloadInbox(); self?.refreshLoginItemState() }
             }
             .store(in: &subscriptions)
         connectReceiver()
+    }
+
+    var preferencesReadOnly: Bool { preferenceStore.document.problem != nil }
+
+    func displayedSessions(at now: Date) -> [SessionStatus] { preferences.visibleStatuses(sessions, at: now) }
+    func displayedIgnoredSessions(at now: Date) -> [SessionStatus] { preferences.visibleStatuses(ignoredSessions, at: now) }
+    func displayName(for status: SessionStatus) -> String { preferences.projectName(for: status) }
+
+    func updatePreferences(_ change: (inout AppPreferences) -> Void) {
+        guard !stopping else { return }
+        var value = preferences; change(&value)
+        do {
+            try preferenceStore.save(value)
+            preferences = value; preferencesMessage = nil
+            submitActivity()
+        } catch { preferencesMessage = "设置尚未保存，原记录已保留；请先恢复默认值后重试。" }
+        refreshStatusMessage()
+    }
+
+    func setRemindersEnabled(_ enabled: Bool) {
+        guard !stopping, !notificationBusy, !preferencesReadOnly else { return }
+        guard enabled else { updatePreferences { $0.reminders.enabled = false }; return }
+        notificationBusy = true
+        notificationRevision &+= 1
+        let revision = notificationRevision
+        notificationTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                if notificationRevision == revision { notificationBusy = false; notificationTask = nil }
+            }
+            do {
+                let allowed = try await reminders.requestAuthorization()
+                guard !Task.isCancelled, !stopping, notificationRevision == revision else { return }
+                if allowed { updatePreferences { $0.reminders.enabled = true } }
+                else { preferencesMessage = "系统未允许通知，请在系统设置的通知中允许潮汐岛。"; refreshStatusMessage() }
+            } catch {
+                guard !Task.isCancelled, !stopping, notificationRevision == revision else { return }
+                preferencesMessage = "暂时无法请求通知权限，请稍后重试。"; refreshStatusMessage()
+            }
+        }
+    }
+
+    func setQuietHoursEnabled(_ enabled: Bool) {
+        do {
+            let hours: SessionQuietHours?
+            if enabled { hours = try SessionQuietHours(startMinute: 22 * 60, endMinute: 8 * 60) }
+            else { hours = nil }
+            updatePreferences { $0.reminders.quietHours = hours }
+        } catch { preferencesMessage = "安静时段暂时无法设置。"; refreshStatusMessage() }
+    }
+
+    func setQuietHoursMinute(_ minute: Int, start: Bool) {
+        guard let hours = preferences.reminders.quietHours else { return }
+        do {
+            let value = try SessionQuietHours(startMinute: start ? minute : hours.startMinute, endMinute: start ? hours.endMinute : minute)
+            updatePreferences { $0.reminders.quietHours = value }
+        } catch { preferencesMessage = "开始时间和结束时间需要不同。"; refreshStatusMessage() }
+    }
+
+    func refreshLoginItemState() { if !stopping { loginItemState = loginItems.state() } }
+    func openLoginItemSettings() { loginItems.openSettings() }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        guard !stopping, !loginBusy, !preferencesReadOnly else { return }
+        loginBusy = true
+        loginTask = Task { [weak self] in
+            guard let self else { return }
+            defer { loginBusy = false; loginTask = nil }
+            do {
+                let state = try await loginItems.setEnabled(enabled)
+                guard !Task.isCancelled, !stopping else { return }
+                loginItemState = state
+                updatePreferences { $0.launchAtLogin = state.isRequested }
+            } catch {
+                guard !Task.isCancelled, !stopping else { return }
+                refreshLoginItemState()
+                preferencesMessage = "登录启动设置未完成，请在系统设置的登录项中检查。"; refreshStatusMessage()
+            }
+        }
+    }
+
+    func resetPreferences() {
+        guard !stopping else { return }
+        notificationRevision &+= 1; notificationTask?.cancel(); notificationTask = nil; notificationBusy = false
+        let value = AppPreferences(launchAtLogin: loginItemState.isRequested)
+        do {
+            try preferenceStore.reset(value)
+            preferences = value; preferencesMessage = nil
+            submitActivity()
+        } catch { preferencesMessage = "暂时无法恢复设置，请稍后重试。" }
+        refreshStatusMessage()
     }
 
     private func connectReceiver() {
@@ -198,9 +303,10 @@ final class SessionModel: ObservableObject {
         activitySequence &+= 1
         let sequence = activitySequence
         let activities = self.activities, scope = activityScope
-        let reminders = self.reminders, settings = reminderSettings
+        let reminders = self.reminders, settings = preferences.reminders
         Task {
-            await activities.submit(snapshot: snapshot, sequence: sequence, scope: scope, force: force)
+            await activities.submit(snapshot: snapshot, sequence: sequence, scope: scope, force: force,
+                                    showsProjectName: settings.showsProjectName)
             await reminders.submit(snapshot: snapshot, sequence: sequence, isPrimary: scope == .application, settings: settings)
         }
     }
@@ -211,6 +317,7 @@ final class SessionModel: ObservableObject {
         subscriptions.removeAll()
         frameTask?.cancel(); systemActivityTask?.cancel(); activityTask?.cancel()
         reminderTask?.cancel()
+        notificationRevision &+= 1; notificationTask?.cancel(); loginTask?.cancel()
         returnRevision &+= 1; returnTask?.cancel()
         // Keep the receiver lease until activity operations have settled. A
         // secondary process must not adopt while this instance is cleaning up.
@@ -227,7 +334,7 @@ final class SessionModel: ObservableObject {
     }
 
     private func refreshStatusMessage() {
-        statusMessage = channelMessage ?? activityMessage ?? reminderMessage ?? returnMessage
+        statusMessage = channelMessage ?? activityMessage ?? reminderMessage ?? preferencesMessage ?? returnMessage
     }
 
     deinit {
@@ -235,6 +342,7 @@ final class SessionModel: ObservableObject {
         activityTask?.cancel()
         systemActivityTask?.cancel()
         reminderTask?.cancel()
+        notificationTask?.cancel(); loginTask?.cancel()
         returnTask?.cancel()
         let activities = self.activities, reminders = self.reminders, receiver = self.receiver
         Task {

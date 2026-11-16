@@ -5,6 +5,26 @@
     };
     "objectVersion" = "56";
     "objects" = {
+        "D5E409F8B83C6106CA0A7DD1" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Native/App/PreferencesView.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "C7A12590D3656F1084E1875D" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "D5E409F8B83C6106CA0A7DD1";
+        };
+        "A86DCF40F0135734E3C4AFB3" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Native/App/NativePreferences.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "50D7392E9AC2CAE40DA79BB8" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "A86DCF40F0135734E3C4AFB3";
+        };
         "46C3E37B99F98D891C0F97E9" = {
             "isa" = "PBXFileReference";
             "lastKnownFileType" = "sourcecode.swift";
@@ -109,6 +129,8 @@
             "name" = "App";
             "sourceTree" = "<group>";
             "children" = (
+                "D5E409F8B83C6106CA0A7DD1",
+                "A86DCF40F0135734E3C4AFB3",
                 "C3BF8CCD3D25F1D7DEC197B8",
                 "2DCDEEF55B5F175B8C322C3C",
                 "B00C8E7B6A79869F89CD5690",
@@ -361,6 +383,8 @@
             "isa" = "PBXSourcesBuildPhase";
             "buildActionMask" = 2147483647;
             "files" = (
+                "C7A12590D3656F1084E1875D",
+                "50D7392E9AC2CAE40DA79BB8",
                 "04A8DA0B3DF7B6777AA30F04",
                 "35BD5CC380D57BFED184CF5E",
                 "AE6CB36B1A74E9AC5C180079",

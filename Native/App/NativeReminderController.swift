@@ -23,10 +23,9 @@ final class NativeReminderController: NSObject, UNUserNotificationCenterDelegate
         await coordinator.submit(snapshot: snapshot, sequence: sequence, isPrimary: isPrimary, settings: settings)
     }
 
-    /// Called only by the explicit settings action added in T021.
-    func requestAuthorization() async -> Bool {
-        do { return try await client.center.requestAuthorization(options: [.alert, .sound]) }
-        catch { return false }
+    /// Called only by the explicit settings action.
+    func requestAuthorization() async throws -> Bool {
+        try await client.center.requestAuthorization(options: [.alert, .sound])
     }
 
     func shutdown() async { await coordinator.shutdown() }

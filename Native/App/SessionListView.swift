@@ -8,7 +8,14 @@ struct SessionListView: View {
     @State private var resetFingerprint: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        TimelineView(.periodic(from: .now, by: 60)) { context in content(at: context.date) }
+    }
+
+    private func content(at now: Date) -> some View {
+        let sessions = model.displayedSessions(at: now)
+        let ignoredSessions = model.displayedIgnoredSessions(at: now)
+        let unreadCount = sessions.filter { $0.attention.isUnread }.count
+        return VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Label("潮汐岛", systemImage: "water.waves")
                     .font(.title2.bold())
@@ -17,7 +24,7 @@ struct SessionListView: View {
             }
 
             HStack {
-                Text("未读 \(model.snapshot?.unreadCount ?? 0) · 待处理 \(model.snapshot?.waitingCount ?? 0)")
+                Text("未读 \(unreadCount) · 待处理 \(model.snapshot?.waitingCount ?? 0)")
                     .font(.callout).foregroundStyle(.secondary)
                 Spacer()
                 if model.snapshot?.preferredSessionID != nil {
@@ -25,40 +32,40 @@ struct SessionListView: View {
                 }
             }
 
-            if let selected = model.snapshot?.selectedSession {
-                Text("已选择：\(selected.session.projectName)").font(.caption)
+            if let selected = sessions.first(where: { $0.attention.isSelected }) {
+                Text("已选择：\(model.displayName(for: selected))").font(.caption)
             } else if model.snapshot?.preferredSessionID != nil {
                 Text("选择的会话暂不可用，已按优先级回退。")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if let highlighted = model.snapshot?.activitySession,
                let reason = model.snapshot?.activitySelectionReason {
-                Text("岛上优先：\(highlighted.session.projectName) · \(reason.title)")
+                Text("岛上优先：\(model.displayName(for: highlighted)) · \(reason.title)")
                     .font(.caption).foregroundStyle(.secondary)
             }
 
-            if !model.ignoredSessions.isEmpty {
-                Toggle("显示已忽略（\(model.ignoredSessions.count)）", isOn: $showsIgnored)
+            if !ignoredSessions.isEmpty {
+                Toggle("显示已忽略（\(ignoredSessions.count)）", isOn: $showsIgnored)
                     .toggleStyle(.checkbox)
             }
 
-            if model.sessions.isEmpty && model.ignoredSessions.isEmpty {
+            if sessions.isEmpty && ignoredSessions.isEmpty {
                 ContentUnavailableView(
                     "等待开发会话", systemImage: "terminal",
                     description: Text("会话开始后，在这里查看状态并返回 Wave。")
                 )
             } else {
                 List {
-                    if model.sessions.isEmpty {
+                    if sessions.isEmpty {
                         Text("当前状态均已忽略，可展开已忽略列表恢复。")
                             .foregroundStyle(.secondary)
                     }
-                    ForEach(model.sessions) { session in
+                    ForEach(sessions) { session in
                         sessionRow(session)
                     }
-                    if showsIgnored && !model.ignoredSessions.isEmpty {
+                    if showsIgnored && !ignoredSessions.isEmpty {
                         Section("已忽略") {
-                            ForEach(model.ignoredSessions) { session in
+                            ForEach(ignoredSessions) { session in
                                 sessionRow(session)
                             }
                         }
@@ -115,7 +122,7 @@ struct SessionListView: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: session.symbolName).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
-                Text(session.session.projectName).font(.headline)
+                Text(model.displayName(for: session)).font(.headline)
                 Text(session.title).foregroundStyle(.secondary)
                 if let detail = session.detail {
                     Text(detail).font(.caption).foregroundStyle(.secondary)

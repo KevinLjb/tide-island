@@ -165,7 +165,7 @@ public actor SessionReminderCoordinator {
               input.viewing?.matches(status, at: time) != true,
               let url = SessionLink.url(for: id) else { return nil }
         return SessionReminder(reference: status.reference, episodeID: episode, kind: kind,
-                               projectName: status.session.projectName, occurredAt: status.session.updatedAt,
+                               projectName: settings.showsProjectName ? status.session.projectName : "开发会话", occurredAt: status.session.updatedAt,
                                sound: settings.sound, sessionURL: url)
     }
 

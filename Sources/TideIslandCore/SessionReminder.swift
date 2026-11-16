@@ -42,16 +42,17 @@ public struct SessionQuietHours: Codable, Equatable, Sendable {
 
 /// Permission is requested only by an explicit native settings action.
 public struct SessionReminderSettings: Codable, Equatable, Sendable {
-    public let enabled: Bool
-    public let needsInput: Bool
-    public let turnEnded: Bool
-    public let sound: Bool
-    public let quietHours: SessionQuietHours?
+    public var enabled: Bool
+    public var needsInput: Bool
+    public var turnEnded: Bool
+    public var sound: Bool
+    public var showsProjectName: Bool
+    public var quietHours: SessionQuietHours?
 
     public init(enabled: Bool = false, needsInput: Bool = true, turnEnded: Bool = true,
-                sound: Bool = false, quietHours: SessionQuietHours? = nil) {
+                sound: Bool = false, showsProjectName: Bool = true, quietHours: SessionQuietHours? = nil) {
         self.enabled = enabled; self.needsInput = needsInput; self.turnEnded = turnEnded
-        self.sound = sound; self.quietHours = quietHours
+        self.sound = sound; self.showsProjectName = showsProjectName; self.quietHours = quietHours
     }
 }
 

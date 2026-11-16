@@ -285,7 +285,10 @@ private let lifecycleEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     let first = await fixture.scheduler.shutdown(), failed = await fixture.scheduler.current()
     let accepted = await fixture.scheduler.submit(snapshot: snapshot, sequence: 2, forceReconciliation: true)
     let second = await fixture.scheduler.shutdown(), stopped = await fixture.scheduler.current()
+    let repeated = await fixture.scheduler.shutdown(), final = await fixture.scheduler.current()
+    let operations = await fixture.client.operations
     #expect(!first && failed.problem == .endFailed && !accepted && second && stopped.phase == .stopped)
+    #expect(repeated && final.phase == .stopped && operations == ["request", "end:created-1", "end:created-1"])
 }
 
 private func lifecycleSnapshot(_ session: String?, time: TimeInterval = 0) throws -> SessionSnapshot {

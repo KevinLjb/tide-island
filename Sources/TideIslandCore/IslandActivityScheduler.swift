@@ -39,7 +39,6 @@ public actor IslandActivityScheduler {
     private var sourceScope: IslandActivityScope = .ownedOnly
     private var accepting = true
     private var shutdownTask: Task<Bool, Never>?
-    private var shutdownRevision: UInt64 = 0
 
     public init(client: any IslandActivityClient, now: @escaping @Sendable () -> Date = { Date() },
                 uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
@@ -82,26 +81,24 @@ public actor IslandActivityScheduler {
     /// up in an uncancelled task. Failed cleanup can be explicitly retried.
     @discardableResult
     public func shutdown() async -> Bool {
+        if let shutdownTask { return await shutdownTask.value }
         accepting = false; pending = nil; delayTask?.cancel()
         phase = .stopping; emit()
-        if shutdownTask == nil {
-            shutdownRevision &+= 1
-            let inFlight = worker, controller = self.controller
-            shutdownTask = Task { [weak self] in
-                await inFlight?.value
-                do {
-                    try await controller.shutdown()
-                    await self?.finishShutdown(problem: nil)
-                    return true
-                } catch {
-                    await self?.finishShutdown(problem: (error as? IslandActivityError) ?? .endFailed)
-                    return false
-                }
+        let inFlight = worker, controller = self.controller
+        let task = Task { [weak self] in
+            await inFlight?.value
+            do {
+                try await controller.shutdown()
+                await self?.finishShutdown(problem: nil)
+                return true
+            } catch {
+                await self?.finishShutdown(problem: (error as? IslandActivityError) ?? .endFailed)
+                return false
             }
         }
-        let revision = shutdownRevision
-        let succeeded = await shutdownTask!.value
-        if !succeeded, revision == shutdownRevision { shutdownTask = nil }
+        shutdownTask = task
+        let succeeded = await task.value
+        if !succeeded { shutdownTask = nil }
         return succeeded
     }
 

@@ -85,32 +85,33 @@ final class SessionModel: ObservableObject {
     }
 
     func previewCleanup() {
-        guard let receiver else { return }
+        guard !stopping, let receiver else { return }
         Task { await receiver.previewCleanup() }
     }
 
     func applyCleanup() {
-        guard let receiver else { return }
+        guard !stopping, let receiver else { return }
         Task { await receiver.applyCleanup() }
     }
 
     func previewReset() async -> SessionResetPreview? {
-        guard let receiver else { return nil }
+        guard !stopping, let receiver else { return nil }
         return await receiver.previewReset()
     }
 
     func applyReset(expectedFingerprint: String) {
-        guard let receiver else { return }
+        guard !stopping, let receiver else { return }
         Task { await receiver.applyReset(expectedFingerprint: expectedFingerprint) }
     }
 
     func loadDemo() {
-        guard let receiver else { return }
+        guard !stopping, let receiver else { return }
         let event = AgentEvent(sessionID: "tide-island-demo", projectName: "演示 · TideIsland", phase: .working)
         Task { await receiver.submit(event) }
     }
 
     func openSession(url: URL) {
+        guard !stopping else { return }
         guard let snapshot else {
             showReturnMessage("会话列表尚未准备好，请稍后重试。", invalidatesPending: true)
             return
@@ -126,6 +127,7 @@ final class SessionModel: ObservableObject {
     }
 
     private func openWave(for reference: SessionReference) {
+        guard !stopping else { return }
         guard let receiver, let waveReturn else {
             showReturnMessage("事件通道尚未准备好，请稍后重试。", invalidatesPending: true)
             return
@@ -154,12 +156,12 @@ final class SessionModel: ObservableObject {
     }
 
     func perform(_ action: SessionAction, on session: SessionStatus) {
-        guard let receiver else { return }
+        guard !stopping, let receiver else { return }
         Task { await receiver.perform(action, for: session.reference) }
     }
 
     func clearSelection() {
-        guard let receiver else { return }
+        guard !stopping, let receiver else { return }
         Task { await receiver.clearSelection() }
     }
 

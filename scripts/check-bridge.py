@@ -79,6 +79,12 @@ def main():
         assert not supported["wave_application_return"]["reports_exact_focus"]
         assert not supported["wave_application_return"]["launches_app_from_cli"]
         assert not supported["wave_application_return"]["native_runtime_verified"]
+        assert supported["island_activity"]["scope"] == "shared-presentation-and-client"
+        assert supported["island_activity"]["content_fields"] == 6
+        assert supported["island_activity"]["shared_json_development_budget_bytes"] > 0
+        assert not supported["island_activity"]["formal_sdk_limit_verified"]
+        assert not supported["island_activity"]["native_runtime_verified"]
+        assert not supported["island_activity"]["runs_native_api_from_cli"]
         checks += 1
 
         fixture_path = Path(__file__).resolve().parent.parent / "Tests/TideIslandCoreTests/Fixtures/Codex/lifecycle.json"

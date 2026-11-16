@@ -62,7 +62,7 @@ flowchart LR
 
 ## 原生显示
 
-原生目标最低 macOS 27.3，使用 ActivityKit + WidgetKit；系统负责灵动岛 / 菜单栏的展示和交互边界。应用和扩展共享同一 ActivityAttributes 声明，内容状态只传选中会话及聚合计数。
+原生目标最低 macOS 27.3，使用 ActivityKit + WidgetKit；系统负责灵动岛 / 菜单栏的展示和交互边界。应用和扩展共享同一 ActivityAttributes 声明；ContentState 别名到共享 IslandActivityContent，延续六字段元数据。T016 将时间投影、内容校验、基本自有活动控制和客户端协议移到共享层，原生适配只调用 SDK。共享 JSON 的 3 KiB 是开发预算，正式 SDK 传输限制仍待核对；详见 [实时活动展示与客户端](activity-presentation.md)。
 
 源码未采用自行绘制的 NSPanel 作为系统原生岛的替代。27.3 SDK 是原生编译的前提，27.3 系统是运行前提；27.2 环境只能验证共享层。源码与结构检查不能证明原生目标已编译或运行。
 

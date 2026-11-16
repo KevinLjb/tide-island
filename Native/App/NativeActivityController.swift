@@ -4,34 +4,43 @@ import TideIslandCore
 
 @MainActor
 final class NativeActivityController {
-    private var activity: Activity<TideIslandAttributes>?
+    private let controller: IslandActivityController
 
-    func update(snapshot: SessionSnapshot) async throws {
-        try Task.checkCancellation()
-        guard let highlighted = snapshot.activitySession,
-              let staleAt = snapshot.activityStaleAt, staleAt > Date() else {
-            await activity?.end(nil, dismissalPolicy: .immediate)
-            activity = nil
-            return
-        }
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            throw ActivityError.disabled
-        }
-        let state = TideIslandAttributes.ContentState(
-            sessionID: highlighted.id,
-            projectName: highlighted.session.projectName,
-            phase: highlighted.session.phase,
-            workingCount: snapshot.workingCount,
-            waitingCount: snapshot.waitingCount,
-            updatedAt: highlighted.session.updatedAt
-        )
-        let content = ActivityContent(state: state, staleDate: staleAt)
-        if let activity {
-            await activity.update(content)
-        } else {
-            activity = try Activity.request(attributes: TideIslandAttributes(), content: content, pushType: nil)
-        }
+    init() {
+        controller = IslandActivityController(client: NativeActivityKitClient())
     }
 
-    private enum ActivityError: Error { case disabled }
+    func update(snapshot: SessionSnapshot) async throws {
+        try await controller.update(snapshot: snapshot)
+    }
+}
+
+@MainActor
+private final class NativeActivityKitClient: IslandActivityClient {
+    private var owned: [String: Activity<TideIslandAttributes>] = [:]
+
+    func isEnabled() async -> Bool { ActivityAuthorizationInfo().areActivitiesEnabled }
+
+    func request(_ presentation: IslandActivityPresentation) async throws -> String {
+        try Task.checkCancellation()
+        let content = ActivityContent(state: presentation.state, staleDate: presentation.staleAt)
+        let activity = try Activity.request(attributes: TideIslandAttributes(), content: content, pushType: nil)
+        owned[activity.id] = activity
+        return activity.id
+    }
+
+    func update(_ identifier: String, presentation: IslandActivityPresentation) async throws {
+        try Task.checkCancellation()
+        guard let activity = owned[identifier] else { throw ClientError.activityMissing }
+        await activity.update(ActivityContent(state: presentation.state, staleDate: presentation.staleAt))
+    }
+
+    func end(_ identifier: String) async throws {
+        try Task.checkCancellation()
+        guard let activity = owned[identifier] else { throw ClientError.activityMissing }
+        await activity.end(nil, dismissalPolicy: .immediate)
+        owned.removeValue(forKey: identifier)
+    }
+
+    private enum ClientError: Error { case activityMissing }
 }

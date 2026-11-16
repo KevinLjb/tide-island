@@ -185,6 +185,12 @@ struct TideIslandBridge {
                 "resolves_current_session_links": true, "reports_exact_focus": false,
                 "launches_app_from_cli": false, "native_runtime_verified": false,
             ],
+            "island_activity": [
+                "scope": "shared-presentation-and-client", "content_fields": 6,
+                "shared_json_development_budget_bytes": IslandActivityPresentationPolicy.standard.maximumContentBytes,
+                "formal_sdk_limit_verified": false, "native_runtime_verified": false,
+                "runs_native_api_from_cli": false,
+            ],
         ]
         FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .prettyPrinted]) + Data([0x0A]))
     }

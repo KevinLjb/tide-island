@@ -42,7 +42,7 @@ T018 已加入清单协调、授权变化、系统已结束 / 用户关闭活动
 
 `NativeActivityController` 委托共享调度器及其基本控制器；`NativeActivityKitClient` 在主 actor 使用公开 ActivityAuthorizationInfo、Activity.request、update、end，并保留本次请求 / 经主接收器授权接管的 SDK 对象。ContentState 与 staleDate 直接取共享投影，不在适配层重新计算计数或刷新时间。
 
-没有新增 Native 文件，两个 target 的共享声明和本地 package 依赖保持现有结构。原生类型别名、客户端隔离、授权、系统生命周期和显示效果均未编译 / 运行；工程结构检查只确认文件和 target，不代替这些验收。
+T016 重构本身没有新增 Native 文件，两个 target 的共享声明和本地 package 依赖保持现有结构。原生类型别名、客户端隔离、授权、系统生命周期和显示效果均未编译 / 运行；工程结构检查只确认文件和 target，不代替这些验收。
 
 ## 验证与后续
 

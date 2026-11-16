@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T021 已加入 [持久化偏好与主动授权源码](docs/preferences.md)：提醒 / 声音 / 安静时段、项目名显示、1 / 6 / 24 小时历史显示及登录启动入口。新增 20 项共享测试，全量声明 322 项，等待严格 CI。默认不启用提醒或注册登录项，真实配置与系统操作未执行；原生编译、签名和交互仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T021 已加入 [持久化偏好与主动授权源码](docs/preferences.md)：提醒 / 声音 / 安静时段、项目名显示、1 / 6 / 24 小时历史显示及登录启动入口。新增 20 项共享测试，[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43957522027) 实际执行 322 / 声明 322 项全部通过，七项检查成功。默认不启用提醒或注册登录项，真实配置与系统操作未执行；原生编译、签名和交互仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 

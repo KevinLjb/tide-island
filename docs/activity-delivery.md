@@ -45,7 +45,7 @@ T017 将最新状态合并、去重、节流与结果通知移到共享 `IslandA
 
 `SessionModel` 在主 actor 为每个不同的共享帧快照分配序号，再提交给 `NativeActivityController` 的调度器。原 UI 中的 pendingSnapshot / 更新循环已移除；延迟到达的提交按来源序号拒绝。独立任务订阅 delivery 流，继续让通道 / 保存错误优先于活动错误和返回 Wave 提示。
 
-原生适配仍只使用公开 ActivityKit / WidgetKit，未新增 Native 源文件或自绘浮层。SDK 客户端实际调用、消息交互、线程隔离和系统效果尚未编译 / 运行，继续待 27.3 正式环境。
+原生适配仍只使用公开 ActivityKit / WidgetKit；T017 调度接入本身未新增 Native 源文件，后续提醒 / 设置成员见开发进度。没有采用自绘浮层。SDK 客户端实际调用、消息交互、线程隔离和系统效果尚未编译 / 运行，继续待 27.3 正式环境。
 
 ## 验证与后续
 

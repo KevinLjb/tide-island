@@ -81,6 +81,13 @@ public struct SessionRegistry: Sendable {
         }
     }
 
+    /// Read-only membership, including ignored observations. This is the
+    /// existing bounded dedup window, not an applied-event or arrival log.
+    func metadataEventIDs(for reference: SessionReference) -> Set<UUID>? {
+        guard let state = storage[reference.sessionID], state.session.lastEventID == reference.eventID else { return nil }
+        return Set(state.seen.orderedValues).union([state.session.lastEventID])
+    }
+
     @discardableResult
     public mutating func apply(_ event: AgentEvent) throws -> Bool {
         try applyResult(event) == .applied

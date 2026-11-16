@@ -85,4 +85,8 @@ public struct SessionStore: Sendable {
     public mutating func clearSelection() {
         preferredSessionID = nil
     }
+
+    func metadataEventIDs(for reference: SessionReference) -> Set<UUID>? {
+        registry.metadataEventIDs(for: reference)
+    }
 }

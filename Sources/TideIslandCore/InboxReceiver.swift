@@ -148,6 +148,30 @@ public actor InboxReceiver {
                    health: health, cleanupPlan: cleanupPlan, notice: notice, persistence: persistence, resetPreview: resetPreview)
     }
 
+    /// Reads already confirmed, remembered metadata only. No disk read, source
+    /// refresh, preference action, replay or new cleanup intent occurs here.
+    public func metadataHistory(for reference: SessionReference, limit: Int = 8) -> Result<SessionMetadataHistory, SessionMetadataProblem> {
+        guard (1...SessionMetadataHistory.maximumResults).contains(limit) else { return .failure(.invalidLimit) }
+        let time = now()
+        guard time.timeIntervalSince1970.isFinite else { return .failure(.invalidClock) }
+        guard started, health.state == .healthy, let confirmedAt = health.lastSuccessAt,
+              confirmedAt.timeIntervalSince1970.isFinite else { return .failure(.sourceUnavailable) }
+        let snapshot = store.snapshot(at: time, confirmedEvents: confirmedEvents)
+        guard let status = (snapshot.sessions + snapshot.ignoredSessions).first(where: { $0.reference == reference }),
+              let ids = store.metadataEventIDs(for: reference) else { return .failure(.staleSelection) }
+        guard status.sourceIssue == nil else { return .failure(.sourceUnavailable) }
+        // At most the existing 512 UUID window plus its current observation
+        // can match. A reset's suppressed import index never becomes history.
+        let remembered = confirmedEvents.values.filter { $0.sessionID == reference.sessionID && ids.contains($0.id) }.sorted {
+            if $0.occurredAt != $1.occurredAt { return $0.occurredAt > $1.occurredAt }
+            if ($0.id == reference.eventID) != ($1.id == reference.eventID) { return $0.id == reference.eventID }
+            return $0.id.uuidString < $1.id.uuidString
+        }
+        return .success(SessionMetadataHistory(reference: reference,
+            entries: remembered.prefix(limit).map { SessionEventMetadata(event: $0, currentEventID: reference.eventID) },
+            availableCount: remembered.count, confirmedAt: confirmedAt))
+    }
+
     @discardableResult
     public func perform(_ action: SessionAction, for reference: SessionReference) -> Bool {
         guard stateFile == nil || loadedState else { return false }

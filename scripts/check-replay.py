@@ -76,6 +76,11 @@ def main():
         pending_report = json.loads(pending.stdout)
         assert not pending_report["passed"] and pending_report["mismatchCount"] > 0
         assert pending_report["scenarios"][0]["name"] == "late-previous-turn-notify"
+        pending_steps = pending_report["scenarios"][0]["steps"]
+        assert all(not item["mismatches"] for item in pending_steps[:2])
+        assert pending_steps[-1]["mismatches"] == ["disposition", "sessions"]
+        assert pending_steps[-1]["event"]["context"]["turnID"] == "turn-old"
+        assert pending_steps[-1]["expected"]["sessions"] == pending_steps[1]["sessions"]
         checks += 1
 
         missing = invoke("--scenario", "missing-scenario")

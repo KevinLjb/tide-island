@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T024 已加入 [应用内 bridge 交付](docs/bridge-delivery.md)构建阶段、只读完整性检查及 `hooks install --app` 移动 / 升级修复。新增 10 项共享测试，全量声明 376 项及隔离交付 CLI 等待严格 CI；此前 T023 的 366 项已通过。原生编译、签名和交互仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T024 的 [应用内 bridge 交付](docs/bridge-delivery.md)提供构建阶段、只读完整性检查及 `hooks install --app` 移动 / 升级修复。[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43972840349)实际执行 376 / 声明 376 项测试，七项检查通过，包括隔离交付 CLI。下一步 T025 完成通知共存及完整安装 / 卸载；原生编译、签名和交互仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 

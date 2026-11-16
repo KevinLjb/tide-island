@@ -278,7 +278,7 @@ private struct SessionState: Codable, Sendable {
     }
 }
 
-fileprivate extension SessionState {
+extension SessionState {
     enum CodingKeys: String, CodingKey {
         case session, seen, retired, toolIDs, tools, turnAnchor, sawStart, waitingToolIDs, pending
     }

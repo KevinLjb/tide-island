@@ -24,6 +24,7 @@ public struct SessionStatus: Identifiable, Equatable, Sendable {
     public let freshUntil: Date
     public let expiresAt: Date?
     public let nextTransitionAt: Date?
+    public internal(set) var attention = SessionAttention()
 
     public var id: String { session.id }
 
@@ -49,12 +50,28 @@ public struct SessionStatus: Identifiable, Equatable, Sendable {
 
 public struct SessionSnapshot: Equatable, Sendable {
     public let sessions: [SessionStatus]
+    public let ignoredSessions: [SessionStatus]
+    public let preferredSessionID: String?
     public let nextTransitionAt: Date?
 
     public var workingCount: Int { sessions.filter { $0.isLiveActivity && $0.activity == .working }.count }
     public var waitingCount: Int { sessions.filter { $0.isLiveActivity && $0.activity == .needsInput }.count }
     public var unknownCount: Int { sessions.filter { $0.activity == .unknown }.count }
-    public var activitySession: SessionStatus? { sessions.first(where: \.isLiveActivity) }
+    public var unreadCount: Int { sessions.filter { $0.attention.isUnread }.count }
+    public var selectedSession: SessionStatus? { sessions.first { $0.attention.isSelected } }
+
+    public var activitySession: SessionStatus? {
+        if let waiting = sessions.first(where: { $0.isLiveActivity && $0.activity == .needsInput }) { return waiting }
+        if let selectedSession, selectedSession.isLiveActivity { return selectedSession }
+        return sessions.first(where: \.isLiveActivity)
+    }
+
+    public var activitySelectionReason: SessionAttentionReason? {
+        guard let activitySession else { return nil }
+        if activitySession.activity == .needsInput { return .needsInput }
+        if activitySession.attention.isSelected { return .selected }
+        return activitySession.attention.isPinned ? .pinned : .working
+    }
 
     /// A suspended app must not leave aggregate counts fresh beyond the first
     /// participating session's deadline, even when the highlighted one is newer.
@@ -105,22 +122,5 @@ public struct SessionStatusPolicy: Sendable {
         }
         return SessionStatus(session: session, activity: activity, freshness: freshness,
                              freshUntil: freshUntil, expiresAt: expiresAt, nextTransitionAt: next)
-    }
-
-    func snapshot(for sessions: [AgentSession], at now: Date) -> SessionSnapshot {
-        let visible = sessions.map { status(for: $0, at: now) }
-            .filter { $0.freshness != .expired }
-            .sorted {
-                let left = priority($0), right = priority($1)
-                if left != right { return left < right }
-                if $0.session.updatedAt != $1.session.updatedAt { return $0.session.updatedAt > $1.session.updatedAt }
-                return $0.id < $1.id
-            }
-        return SessionSnapshot(sessions: visible, nextTransitionAt: visible.compactMap(\.nextTransitionAt).min())
-    }
-
-    private func priority(_ status: SessionStatus) -> Int {
-        if status.freshness == .fresh { return status.session.phase.attentionPriority }
-        return status.activity == .unknown ? 6 : 7
     }
 }

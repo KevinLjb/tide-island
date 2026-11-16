@@ -7,8 +7,11 @@ import TideIslandCore
 
 @MainActor
 final class SessionModel: ObservableObject {
-    @Published private(set) var sessions: [SessionStatus] = []
+    @Published private(set) var snapshot: SessionSnapshot?
     @Published private(set) var statusMessage: String?
+
+    var sessions: [SessionStatus] { snapshot?.sessions ?? [] }
+    var ignoredSessions: [SessionStatus] { snapshot?.ignoredSessions ?? [] }
 
     private var store = SessionStore()
     private let activities = NativeActivityController()
@@ -16,7 +19,6 @@ final class SessionModel: ObservableObject {
     private var monitor: InboxMonitor?
     private var updateTask: Task<Void, Never>?
     private var pendingSnapshot: SessionSnapshot?
-    private var currentSnapshot: SessionSnapshot?
     private var refreshTask: Task<Void, Never>?
     private var subscriptions: Set<AnyCancellable> = []
 
@@ -75,6 +77,7 @@ final class SessionModel: ObservableObject {
     }
 
     func openWave(for session: SessionStatus) {
+        guard perform(.select, on: session) else { return }
         // Block metadata is retained for the next adapter. App activation is
         // deliberately not reported as a successful exact block jump.
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "dev.commandline.waveterm") else {
@@ -88,13 +91,25 @@ final class SessionModel: ObservableObject {
         }
     }
 
+    @discardableResult
+    func perform(_ action: SessionAction, on session: SessionStatus) -> Bool {
+        let accepted = store.perform(action, for: session.reference, at: Date())
+        if !accepted { statusMessage = "状态已变化，请使用当前会话记录重试。" }
+        publish()
+        return accepted
+    }
+
+    func clearSelection() {
+        store.clearSelection()
+        publish()
+    }
+
     private func publish() {
         let now = Date()
         let snapshot = store.snapshot(at: now)
         scheduleRefresh(at: snapshot.nextTransitionAt, now: now)
-        guard snapshot != currentSnapshot else { return }
-        currentSnapshot = snapshot
-        sessions = snapshot.sessions
+        guard snapshot != self.snapshot else { return }
+        self.snapshot = snapshot
         pendingSnapshot = snapshot
         guard updateTask == nil else { return }
         updateTask = Task { [weak self] in

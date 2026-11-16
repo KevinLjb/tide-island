@@ -72,6 +72,6 @@ tide-island-bridge hook --inbox /absolute/path/to/isolated-inbox < hook-input.js
 
 ## 配置与验证边界
 
-本轮没有安装或修改 `~/.codex/hooks.json`、`~/.codex/config.toml` 或项目活动 `.codex/` 配置。真实安装、既有 notify / hooks 的合并与卸载由 T004 继续实现；启用后的 live 运行另行记录。
+本机尚未安装或修改正在使用的 `~/.codex/hooks.json`、`~/.codex/config.toml` 或项目活动 `.codex/` 配置。T004 已提供 [hooks 配置管理](codex-hooks.md) 的源码与隔离检查：只编辑显式指定的 `hooks.json`，既有 notify 与内联 hooks 保持原样。完成 notify 的完整接入与共存由 T025 继续实现；启用后的 live 运行另行记录。
 
 本轮验证覆盖固定版本协议 fixture、v1 / v2 兼容、转换含义、数据排除、CLI 的 stdin / stdout / 退出码及隔离 inbox。单测与 CLI 检查通过不表示用户当前 Codex 已启用这些 hooks，也不代表 27.3 原生扩展验证完成。

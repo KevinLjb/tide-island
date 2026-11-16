@@ -4,7 +4,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 让 AI 的工作状态，在岛上一目了然。面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。
 
-> 当前阶段：Codex 生命周期桥接开发。已提供 v1 / v2 事件协议、会话共享层、观察型 hook / notify CLI、菜单栏及原生扩展源码。真实 hooks 配置安装和原生运行尚未完成，暂未发布可安装版本。
+> 当前阶段：Codex 接入与配置管理开发。已提供 v1 / v2 事件协议、会话共享层、观察型 hook / notify CLI、hooks 配置预览与安装卸载、菜单栏及原生扩展源码。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
 
 ## 开发进度
 
@@ -36,6 +36,7 @@ scripts/                      工程结构检查与原生 SDK 检查
 docs/architecture.md          架构、能力边界与后续步骤
 docs/development-progress.md  开发计划、任务进度与 27.3 统一验收清单
 docs/codex-events.md          固定版本的 Codex 事件契约、转换矩阵与兼容范围
+docs/codex-hooks.md           hooks 配置预览、合并、备份、卸载与信任审查
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -46,6 +47,7 @@ Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共
 swift test
 swift build --product tide-island-bridge
 python3 scripts/check-bridge.py
+python3 scripts/check-hooks.py
 python3 scripts/check-project.py
 ```
 
@@ -98,7 +100,9 @@ CLI 提供两个独立入口：
 
 事件契约按本机 Codex CLI 0.169.0 核对，详细字段、合成测试数据与能力边界见 [Codex 事件契约](docs/codex-events.md)。`swift run tide-island-bridge capabilities` 可查看本程序支持的契约。
 
-当前工程不会自动修改 `~/.codex/config.toml` 或安装 hooks。后续接入可将已构建的桥接程序配置为 notify 命令，并让 Codex 追加 JSON 参数：
+`hooks install` / `hooks uninstall` 默认只预览，显式应用时备份并合并 `hooks.json`，保留已有条目。用法、指纹、回退和 Codex `/hooks` 信任审查见 [hooks 配置管理](docs/codex-hooks.md)。本轮尚未应用到用户的真实配置。
+
+配置工具保持 `config.toml`、既有 notify 和内联 hooks 原样。完成通知仍需将稳定路径的桥接程序配置为 notify 命令，并让 Codex 追加 JSON 参数；与既有 notify 共存的完整接入流程由 T025 继续实现：
 
 ```toml
 # 仅为接入示意。使用实际的稳定绝对路径，并合并已有配置。
@@ -109,9 +113,9 @@ notify = ["/absolute/path/to/tide-island-bridge", "notify", "--payload"]
 
 ## 当前能力与后续计划
 
-- 已实现：v1 / v2 元数据事件、本地 inbox、基础事件去重 / 时间过滤、多会话注意力排序、Codex hook / notify 转换、隔离 CLI 检查、菜单栏与原生扩展源码。
+- 已实现：v1 / v2 元数据事件、本地 inbox、基础事件去重 / 时间过滤、多会话注意力排序、Codex hook / notify 转换、hooks 配置预览 / 合并 / 备份 / 卸载、隔离 CLI 检查、菜单栏与原生扩展源码。
 - 待验证：macOS 27.3 原生编译、签名安装、灵动岛更新与点击、触摸交互及系统活动协调。
-- 待开发：hooks 配置安装 / 卸载、普通问答 / 最终失败补充来源、跨轮状态与存活判断、Wave 精确定位、事件保留策略、额度信息与小宠物。
+- 待开发：完整接入与 notify 共存、普通问答 / 最终失败补充来源、跨轮状态与存活判断、Wave 精确定位、事件保留策略、额度信息与小宠物。
 
 原生界面的尺寸、动画、更新频率由系统约束；小宠物和高频动画需通过实机验证后再确定。
 

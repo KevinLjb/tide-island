@@ -230,5 +230,6 @@ T016—T017 的纯逻辑检查可先执行。T018—T023 先完成源码，原�
 | 2026-11-16 | T011、K004、K013、K015、K016、B008 | 接入状态 / 偏好 checkpoint、原精度时间和完整 FIFO / 工具 / 待绑定窗口；重启重扫事件并按摘要避免旧文件重放，清理先保存终态保护；原子清除保存导入边界，CLI 与原生源码均提供预览 / 确认入口 | 新增 24 项共享测试（全量声明 143 项）及隔离 state CLI，加入既有七项 CI；基础结构、完整源文件样式、Python 语法与文档链接检查后提交严格 CI；原生未编译 / 运行，真实配置和数据未改 | 完成 T011 严格 CI 后核对持久化与清除边界 |
 | 2026-11-16 | T011、K013、K016、B008 | 清理前强制复核 checkpoint revision，即使内存没有新改动也不依赖旧成功标记；恢复无未保存改动时可重新加载修复后的文件；补齐 SessionEnd 的源 turn 提示与跟踪 turn 分离及首次读取失败不落空快照的断言 | 首批源码 `db7aca9` 已提交 [CI](https://github.com/KevinLjb/tide-island/actions/runs/43881084783)，等待 runner / 完整结果；补充仍为 143 项声明，原生未验证 | 完成当前源码的严格 CI，保留独立原生验收状态 |
 | 2026-11-16 | T011、B008 | 修正私有 SessionState 扩展显式声明 fileprivate 导致的编译错误，使用由类型自身限定的扩展访问范围 | `61e970b` 的 [CI](https://github.com/KevinLjb/tide-island/actions/runs/43882897646) 在共享模块编译时正确失败，未执行单测；修正后等待完整重验 | 实际编译 / 执行全部 143 项及七项检查 |
+| 2026-11-16 | T011、B008 | 将共享 CI 的 runner 明确为标准 macos-15-intel，缓解默认 ARM 队列长期未启动；同步更正会话状态与清理文档中的旧内存限制 | GitHub [官方 runner 列表](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)确认 macos-15-intel 为标准 Intel runner、macos-15 为 ARM；当前 `4eeda70` 的 [CI](https://github.com/KevinLjb/tide-island/actions/runs/43883470630) 仍在排队，待新 runner 结果 | 完成 Intel 共享逻辑检查；原生 / 本机架构验证仍待 27.3 |
 
 后续每轮在本节追加一条记录，并同步修改相应任务行；如果统一验收发现问题，把相关行改为未通过并关联修复任务，不覆盖原验收记录。

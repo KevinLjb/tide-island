@@ -61,7 +61,7 @@ python3 scripts/check-state.py
 python3 scripts/check-project.py
 ```
 
-`check-project.py` 核对 plist、target、扩展嵌入、共享源码和版本约束，仅代表工程结构检查，不替代原生编译。GitHub Actions 目前只运行共享层及结构验证。
+`check-project.py` 核对 plist、target、扩展嵌入、共享源码和版本约束，仅代表工程结构检查，不替代原生编译。GitHub Actions 使用标准 `macos-15-intel` runner 运行共享层及结构验证；Intel 共享检查不替代本机架构或 macOS 27.3 原生验证。
 
 需要指定测试临时目录时，设置 `TIDE_ISLAND_TEST_TMPDIR`；SwiftPM 构建目录可通过 `--scratch-path` 指定。
 

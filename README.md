@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T021 的偏好 / 授权共享逻辑已通过 CI；T022 先加入 [最近元数据读取接口](docs/session-metadata-history.md)，遵守当前观察、来源确认及清除 / 重启边界。新增 15 项共享测试，[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43962997451) 实际执行 337 / 声明 337 项全部通过，七项检查成功；项目筛选与详情界面继续开发。原生编译、签名和交互仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T022 已加入 [项目筛选与会话详情](docs/session-browser.md)，接入 [只读最近元数据](docs/session-metadata-history.md)，保持当前引用 / 来源 / 清除边界。新增 14 项浏览共享测试，全量声明 351 项，等待严格 CI；此前读取接口的 337 项回归已通过。原生编译、签名和交互仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -55,6 +55,7 @@ docs/activity-views.md        各尺寸状态 / 数量 / 点击一致性、窄�
 docs/session-reminders.md     提醒周期、安静时段、可信查看、权限与不确定失败
 docs/preferences.md           有界偏好、主动授权、名称 / 历史显示与登录启动
 docs/session-metadata-history.md  当前引用的只读观察、记忆 / 清除边界和数量限制
+docs/session-browser.md       项目筛选、匿名标签、只读详情与空状态恢复
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。

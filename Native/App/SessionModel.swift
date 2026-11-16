@@ -88,6 +88,28 @@ final class SessionModel: ObservableObject {
     func displayedIgnoredSessions(at now: Date) -> [SessionStatus] { preferences.visibleStatuses(ignoredSessions, at: now) }
     func displayName(for status: SessionStatus) -> String { preferences.projectName(for: status) }
 
+    func browser(projectID: String?, showsIgnored: Bool, at now: Date) -> SessionBrowserProjection {
+        let current = snapshot ?? SessionSnapshot.empty
+        return SessionBrowserProjection(snapshot: current, preferences: preferences, projectID: projectID,
+                                        showsIgnored: showsIgnored, at: now)
+    }
+
+    func displayedSession(for reference: SessionReference, at now: Date) -> SessionStatus? {
+        (displayedSessions(at: now) + displayedIgnoredSessions(at: now)).first { $0.reference == reference }
+    }
+
+    func displayedSession(withID id: String, at now: Date) -> SessionStatus? {
+        (displayedSessions(at: now) + displayedIgnoredSessions(at: now)).first { $0.id == id }
+    }
+
+    func metadataHistory(for reference: SessionReference) async -> Result<SessionMetadataHistory, SessionMetadataProblem> {
+        guard !stopping, let receiver else { return .failure(.sourceUnavailable) }
+        let result = await receiver.metadataHistory(for: reference)
+        guard !Task.isCancelled, !stopping, activityScope == .application else { return .failure(.sourceUnavailable) }
+        guard displayedSession(for: reference, at: Date()) != nil else { return .failure(.staleSelection) }
+        return result
+    }
+
     func updatePreferences(_ change: (inout AppPreferences) -> Void) {
         guard !stopping else { return }
         var value = preferences; change(&value)

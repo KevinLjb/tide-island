@@ -219,34 +219,41 @@ private let recoveryEpoch = Date(timeIntervalSince1970: 1_800_000_000)
 @Test func sharedReceiverExpiresLiveCountsWithoutAnotherFilesystemEvent() async throws {
     let fixture = try RecoveryFixture()
     defer { fixture.remove() }
-    let receiver = InboxReceiver(inbox: fixture.inbox)
-    let at = Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970) - 298)
+    let clock = RecoveryClock(recoveryEpoch.addingTimeInterval(298))
+    let receiver = InboxReceiver(inbox: fixture.inbox, now: { clock.read() })
+    let at = recoveryEpoch
     let event = AgentEvent(sessionID: "timer", projectName: "project", phase: .working, occurredAt: at)
     try fixture.inbox.write(event)
-    let first = await receiver.start()
-    #expect(first.snapshot.workingCount == 1)
-    // Consume emitted frames: polling current() would recompute time and hide
-    // a missing timer, while the native app relies on a real stream update.
-    let expired = try await waitForRecoveryStream(receiver.frames) { $0.snapshot.unknownCount == 1 }
-    #expect(expired.health.state == .healthy && expired.snapshot.workingCount == 0)
-    #expect(expired.snapshot.sessions[0].session.updatedAt == at)
+    do {
+        let first = await receiver.start()
+        #expect(first.snapshot.workingCount == 1)
+        // Advance only after startup: parallel CI scheduling must not consume
+        // the initial freshness window. The real one-shot timer still has to
+        // emit a frame; no getter/reconnect is called to fabricate that frame.
+        clock.set(recoveryEpoch.addingTimeInterval(300))
+        let expired = try await waitForRecoveryStream(receiver.frames) { $0.snapshot.unknownCount == 1 }
+        #expect(expired.health.state == .healthy && expired.snapshot.workingCount == 0)
+        #expect(expired.snapshot.sessions[0].session.updatedAt == at)
+    } catch { _ = await receiver.stop(); throw error }
     _ = await receiver.stop()
 }
 
 @Test func sharedReceiverEmitsLocationExpiryWhileLifecycleRemainsFresh() async throws {
     let fixture = try RecoveryFixture()
     defer { fixture.remove() }
-    let now = Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970))
+    let now = recoveryEpoch.addingTimeInterval(298)
+    let clock = RecoveryClock(now)
     let location = WaveLocation(blockID: UUID(), tabID: UUID(), waveVersion: "0.14.5",
                                 observedAt: now.addingTimeInterval(-298), source: .environment)
     let event = AgentEvent(version: 2, sessionID: "location-timer", projectName: "project", phase: .working,
                            occurredAt: now, waveLocation: location,
                            context: EventContext(source: .manual, kind: .status, receivedAt: now))
     try fixture.inbox.write(event)
-    let receiver = InboxReceiver(inbox: fixture.inbox)
+    let receiver = InboxReceiver(inbox: fixture.inbox, now: { clock.read() })
     do {
         let first = await receiver.start()
         #expect(first.snapshot.sessions[0].waveLocation.validity == .recent && first.snapshot.workingCount == 1)
+        clock.set(now.addingTimeInterval(2))
         let expired = try await waitForRecoveryStream(receiver.frames) { frame in
             frame.snapshot.sessions.first?.waveLocation.validity == .stale
         }
@@ -500,11 +507,21 @@ private func waitForRecoveryStream(_ stream: AsyncStream<InboxFrame>,
             throw CancellationError()
         }
         group.addTask {
-            try await Task.sleep(for: .seconds(5))
+            // A bounded failure timeout, separate from the logical event
+            // clock and the receiver's real two-second expiry notification.
+            try await Task.sleep(for: .seconds(15))
             throw InboxError.fileOperation
         }
         defer { group.cancelAll() }
         guard let frame = try await group.next() else { throw InboxError.fileOperation }
         return frame
     }
+}
+
+private final class RecoveryClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var date: Date
+    init(_ date: Date) { self.date = date }
+    func read() -> Date { lock.withLock { date } }
+    func set(_ date: Date) { lock.withLock { self.date = date } }
 }

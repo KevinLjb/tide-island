@@ -27,6 +27,7 @@ public struct ReplaySessionSnapshot: Codable, Equatable, Sendable {
     public let updatedAt: Date
     public let lastEventID: UUID
     public let waveBlockID: String?
+    public let waveLocation: WaveLocation?
     public let context: EventContext?
     public let turnID: String?
 
@@ -37,12 +38,13 @@ public struct ReplaySessionSnapshot: Codable, Equatable, Sendable {
         updatedAt = session.updatedAt
         lastEventID = session.lastEventID
         waveBlockID = session.waveBlockID
+        waveLocation = session.waveLocation
         context = session.context
         turnID = session.turnID
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, projectName, phase, updatedAt, lastEventID, waveBlockID, context, turnID
+        case id, projectName, phase, updatedAt, lastEventID, waveBlockID, waveLocation, context, turnID
     }
 
     public init(from decoder: any Decoder) throws {
@@ -53,6 +55,7 @@ public struct ReplaySessionSnapshot: Codable, Equatable, Sendable {
         updatedAt = try fields.decode(Date.self, forKey: .updatedAt)
         lastEventID = try fields.decode(UUID.self, forKey: .lastEventID)
         waveBlockID = try fields.decodeIfPresent(String.self, forKey: .waveBlockID)
+        waveLocation = try fields.decodeIfPresent(WaveLocation.self, forKey: .waveLocation)
         context = try fields.decodeIfPresent(EventContext.self, forKey: .context)
         turnID = try fields.decodeIfPresent(String.self, forKey: .turnID) ?? context?.turnID
     }
@@ -61,7 +64,7 @@ public struct ReplaySessionSnapshot: Codable, Equatable, Sendable {
         try AgentEvent(
             version: context == nil ? 1 : AgentEvent.currentVersion,
             id: lastEventID, sessionID: id, projectName: projectName, phase: phase,
-            occurredAt: updatedAt, waveBlockID: waveBlockID, context: context
+            occurredAt: updatedAt, waveBlockID: waveBlockID, waveLocation: waveLocation, context: context
         ).validate()
         try EventContext(source: .manual, kind: .status, receivedAt: updatedAt, turnID: turnID).validate(phase: phase)
     }

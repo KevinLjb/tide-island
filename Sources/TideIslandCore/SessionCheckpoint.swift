@@ -26,6 +26,7 @@ public struct SessionStateSnapshot: Sendable {
     public let store: SessionStore
     public let revision: SessionStateRevision
     public let existed: Bool
+    public let schemaVersion: Int?
     let importIndex: [String: String]
 }
 
@@ -61,6 +62,7 @@ struct SessionCheckpoint: Codable {
 }
 
 enum SessionCheckpointCodec {
+    static let currentVersion = 2
     static let maximumBytes = 32 * 1024 * 1024
     static let maximumSessions = 2048
     static let maximumFiles = 65_536
@@ -70,7 +72,7 @@ enum SessionCheckpointCodec {
             let persisted = store.persistedState()
             _ = try SessionStore(persisted: persisted)
             try validateIndex(index)
-            let checkpoint = SessionCheckpoint(kind: "tide-island-session-state", version: 1, scope: scope,
+            let checkpoint = SessionCheckpoint(kind: "tide-island-session-state", version: currentVersion, scope: scope,
                                                store: persisted, importIndex: index)
             let encoder = JSONEncoder()
             // Date's native numeric representation preserves the exact source
@@ -83,18 +85,19 @@ enum SessionCheckpointCodec {
         catch { throw SessionStateError.invalidData }
     }
 
-    static func decode(_ data: Data, scope: String) throws -> (store: SessionStore, index: [String: String]) {
+    static func decode(_ data: Data, scope: String) throws -> (store: SessionStore, index: [String: String], version: Int) {
         guard data.count <= maximumBytes else { throw SessionStateError.limitExceeded }
         do {
             struct Header: Decodable { let version: Int }
             let decoder = JSONDecoder()
             let header = try decoder.decode(Header.self, from: data)
-            guard header.version == 1 else { throw SessionStateError.unsupportedVersion }
+            guard header.version == 1 || header.version == currentVersion else { throw SessionStateError.unsupportedVersion }
             let checkpoint = try decoder.decode(SessionCheckpoint.self, from: data)
             guard checkpoint.kind == "tide-island-session-state" else { throw SessionStateError.invalidData }
             guard checkpoint.scope == scope else { throw SessionStateError.scopeMismatch }
             try validateIndex(checkpoint.importIndex)
-            return (try SessionStore(persisted: checkpoint.store), checkpoint.importIndex)
+            if header.version == 1 { try checkpoint.store.registry.validateLegacyLocations() }
+            return (try SessionStore(persisted: checkpoint.store), checkpoint.importIndex, checkpoint.version)
         } catch let error as SessionStateError { throw error }
         catch { throw SessionStateError.invalidData }
     }

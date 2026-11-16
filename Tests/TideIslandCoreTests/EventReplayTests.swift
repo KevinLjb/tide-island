@@ -2,6 +2,47 @@ import Foundation
 import Testing
 @testable import TideIslandCore
 
+@Test func waveLocationReplayPreservesMetadataAndClearsItOnlyOnAppliedObservations() throws {
+    let data = try replayFixture("wave-location")
+    let first = try EventReplay.run(data)
+    let second = try EventReplay.run(data)
+    #expect(first.passed && first.scenarioCount == 3 && first.stepCount == 7)
+    let firstBytes = try EventReplay.encode(first)
+    let secondBytes = try EventReplay.encode(second)
+    #expect(firstBytes == secondBytes)
+    let scenarios = first.scenarios
+    #expect(scenarios[0].steps[0].event?.waveLocation?.source == .environment)
+    #expect(scenarios[0].steps[1].sessions[0].waveLocation?.observedAt == scenarios[0].steps[0].sessions[0].waveLocation?.observedAt)
+    #expect(scenarios[0].finalSessions[0].waveLocation == nil)
+    #expect(scenarios[1].finalSessions[0].waveLocation?.source == .explicitArguments)
+    #expect(scenarios[2].steps[2].sessions == scenarios[2].steps[1].sessions)
+    #expect(scenarios[2].steps[2].registryDecision == .retiredTurn)
+    #expect(!String(decoding: firstBytes, as: UTF8.self).contains("fixture-private"))
+}
+
+@Test func replayLocationDefinitionsRejectUnknownExpectedFieldsAndInvalidMetadata() throws {
+    let original = try #require(JSONSerialization.jsonObject(with: replayFixture("wave-location")) as? [String: Any])
+    for invalidExpected in [false, true] {
+        var book = original
+        var scenarios = try #require(book["scenarios"] as? [[String: Any]])
+        var steps = try #require(scenarios[0]["steps"] as? [[String: Any]])
+        if invalidExpected {
+            var expectation = try #require(steps[0]["expect"] as? [String: Any])
+            var sessions = try #require(expectation["sessions"] as? [[String: Any]])
+            var location = try #require(sessions[0]["waveLocation"] as? [String: Any])
+            location["jwt"] = "fixture-private"
+            sessions[0]["waveLocation"] = location
+            expectation["sessions"] = sessions; steps[0]["expect"] = expectation
+        } else {
+            var location = try #require(steps[0]["waveLocation"] as? [String: Any])
+            location["version"] = 999; steps[0]["waveLocation"] = location
+        }
+        scenarios[0]["steps"] = steps; book["scenarios"] = scenarios
+        let invalid = try JSONSerialization.data(withJSONObject: book)
+        #expect(throws: ReplayError.invalidFixture) { try EventReplay.run(invalid) }
+    }
+}
+
 @Test func lifecycleReplayChecksAllGoldenStatesAndProducesIdenticalBytes() throws {
     let data = try replayFixture("lifecycle")
     let first = try EventReplay.run(data)

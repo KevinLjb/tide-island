@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import TideIslandCore
 
@@ -46,24 +47,24 @@ struct TideIslandBridge {
         }
         let allowed: Set<String>
         switch command {
-        case "emit": allowed = ["--session", "--project", "--phase", "--turn", "--wave-block", "--inbox"]
-        case "notify": allowed = ["--payload", "--wave-block", "--inbox"]
-        case "hook": allowed = ["--wave-block", "--inbox"]
+        case "emit": allowed = ["--session", "--project", "--phase", "--turn", "--wave-block", "--wave-tab", "--wave-version", "--inbox"]
+        case "notify": allowed = ["--payload", "--wave-block", "--wave-tab", "--wave-version", "--inbox"]
+        case "hook": allowed = ["--wave-block", "--wave-tab", "--wave-version", "--inbox"]
         default: throw CLIError.invalidArguments
         }
         let options = try parseOptions(rest, allowed: allowed)
-        let blockID = options["--wave-block"] ?? ProcessInfo.processInfo.environment["WAVETERM_BLOCKID"]
+        let now = Date()
+        let wave = try captureWaveLocation(options, at: now)
         let event: AgentEvent
         switch command {
         case "emit":
             guard let session = options["--session"], let project = options["--project"],
                   let phaseValue = options["--phase"], let phase = AgentPhase(rawValue: phaseValue)
             else { throw CLIError.invalidArguments }
-            let now = Date()
             event = AgentEvent(
                 version: AgentEvent.currentVersion,
                 sessionID: session, projectName: project, phase: phase,
-                occurredAt: now, waveBlockID: blockID,
+                occurredAt: now, waveBlockID: wave.waveBlockID, waveLocation: wave.location,
                 context: EventContext(source: .manual, kind: .status, receivedAt: now, turnID: options["--turn"])
             )
         case "notify":
@@ -73,12 +74,13 @@ struct TideIslandBridge {
                     throw CLIError.invalidNotification
                 }
                 let notification = try JSONDecoder().decode(CodexNotification.self, from: Data(payload.utf8))
-                event = try notification.event(waveBlockID: blockID)
+                event = try notification.event(at: now, waveBlockID: wave.waveBlockID, waveLocation: wave.location)
             } catch {
                 throw CLIError.invalidNotification
             }
         case "hook":
-            guard let observed = try CodexHookAdapter.event(from: readHookInput(), waveBlockID: blockID) else {
+            guard let observed = try CodexHookAdapter.event(from: readHookInput(), receivedAt: now,
+                                                          waveBlockID: wave.waveBlockID, waveLocation: wave.location) else {
                 return
             }
             event = observed
@@ -92,6 +94,18 @@ struct TideIslandBridge {
         if command != "hook" {
             FileHandle.standardOutput.write(try EventCodec.encode(event) + Data([0x0A]))
         }
+    }
+
+    static func captureWaveLocation(_ options: [String: String], at now: Date) throws -> WaveLocationCapture {
+        if ["--wave-block", "--wave-tab", "--wave-version"].contains(where: { options[$0] != nil }) {
+            return try WaveLocationCapture.explicit(blockID: options["--wave-block"], tabID: options["--wave-tab"],
+                                                    waveVersion: options["--wave-version"], observedAt: now)
+        }
+        var values: [String: String] = [:]
+        for key in ["WAVETERM_BLOCKID", "WAVETERM_TABID", "WAVETERM_VERSION"] {
+            if let value = getenv(key) { values[key] = String(cString: value) }
+        }
+        return WaveLocationCapture.environment(values, observedAt: now)
     }
 
     static func parseOptions(_ arguments: [String], allowed: Set<String>) throws -> [String: String] {
@@ -147,10 +161,18 @@ struct TideIslandBridge {
                 "cleanup_apply_requires_receiver_lease": true, "saves_turn_protection_before_cleanup": true,
             ],
             "session_persistence": [
-                "schema_version": 1, "metadata_only": true, "maximum_checkpoint_bytes": 33554432,
+                "schema_version": 2, "readable_schema_versions": [1, 2],
+                "metadata_only": true, "maximum_checkpoint_bytes": 33554432,
                 "maximum_sessions": 2048, "maximum_imported_files": 65536,
                 "clear_default_mode": "preview", "clear_preserves_inbox_files": true,
                 "clear_suppresses_existing_records": true, "validates_source_after_restart": true,
+            ],
+            "wave_location": [
+                "schema_version": WaveLocation.currentVersion, "optional_in_event_v2": true,
+                "environment_keys": ["WAVETERM_BLOCKID", "WAVETERM_TABID", "WAVETERM_VERSION"],
+                "reviewed_wave_version": WaveLocation.reviewedWaveVersion,
+                "valid_for_seconds": WaveLocationPolicy.standard.validFor,
+                "metadata_only": true, "runs_wsh": false, "implements_navigation": false,
             ],
         ]
         FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .prettyPrinted]) + Data([0x0A]))
@@ -163,6 +185,9 @@ struct TideIslandBridge {
          [--turn ID] [--wave-block ID] [--inbox DIRECTORY]
     notify --payload CODEX_NOTIFICATION_JSON [--wave-block ID] [--inbox DIRECTORY]
     hook [--wave-block ID] [--inbox DIRECTORY] < CODEX_HOOK_JSON
+    emit/notify/hook accept [--wave-block ID --wave-tab UUID --wave-version VERSION].
+    Explicit Wave arguments never inherit environment IDs; tab/version require
+    a full explicit block UUID. A legacy opaque --wave-block alone stays valid.
     replay --file SCENARIOS_JSON [--scenario NAME]
     inbox cleanup [--inbox /DIRECTORY] [--max-files COUNT] [--max-bytes BYTES]
                   [--max-age-days DAYS] [--scan-limit COUNT] [--read-budget-bytes BYTES]

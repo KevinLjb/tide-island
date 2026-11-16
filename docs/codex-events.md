@@ -43,7 +43,7 @@
 
 | 范围 | v1 | v2 |
 | --- | --- | --- |
-| 顶层字段 | 原有 id / sessionID / projectName / phase / occurredAt / waveBlockID | 保留上述字段，新增必需的 `context` |
+| 顶层字段 | 原有 id / sessionID / projectName / phase / occurredAt / waveBlockID | 保留上述字段，新增必需的 `context`，可选 `waveLocation`（独立 schema v1） |
 | phase | working / needsInput / completed / failed | 增加 interrupted / ended |
 | 来源 | 未记录，保持未知 | context.source = manual / codexHook / codexNotify |
 | 事件语义 | 未记录 | context.kind，且与 phase 校验一致性 |
@@ -51,6 +51,8 @@
 | 时间 | occurredAt | 保留 occurredAt，新增 receivedAt / 可选 sourceOccurredAt |
 
 0.169.0 的这些 hook / notify 输入没有源时间字段，因此本适配器保持 `sourceOccurredAt = nil`，使用 bridge 接收时间作为 `receivedAt` 与 `occurredAt`。不会把额外名为 timestamp 的字段直接提升为可信源时间，也不把接收时间当成上游执行时间。
+
+Wave 位置只作为可选元数据由 allowlist / 显式参数采集，hook / notify 不查询 Wave 或保存凭据，字段、兼容和有效性见 [位置协议](wave-location.md)。
 
 该版本兼容是“新读取器可读取旧记录”；旧 v1 读取器不能消费 v2，需要同步升级。状态机分开保存跟踪 turn 和当前观察 context，不向没有身份的旧事件补造来源；旧记录可以建立独立状态，不能猜测归属并替换已有明确轮次。
 

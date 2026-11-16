@@ -40,6 +40,8 @@ T006 新增：迟到上一轮通知、旧轮工具 / 开始、未知轮次与无
 
 ## fixture 格式 v1
 
+新增 `Fixtures/Replay/wave-location.json` 的 3 场景 / 7 步位置基线，覆盖 hook → notify 清空、手动事件保留和退役观察不改址；原生命周期基线保持 24 场景 / 116 步。预期会话可以包含 `waveLocation`，定义仍拒绝未知字段；字段与边界见 [位置协议](wave-location.md)。
+
 顶层包含 `schemaVersion: 1` 和非空 `scenarios` 数组，可选 `description`。每个场景包含唯一的 `name`、非空 `steps` 和可选说明。所有场景先完成定义校验，再选择 `--scenario` 指定的场景执行。
 
 | 步骤字段 | 含义 |
@@ -49,7 +51,8 @@ T006 新增：迟到上一轮通知、旧轮工具 / 开始、未知轮次与无
 | `source` | `hook` / `notify` / `event` |
 | `payload` | 原始 JSON 值；与 `payloadJSON` 二选一 |
 | `payloadJSON` | 原始 JSON 文本，可表达损坏输入等负向场景 |
-| `waveBlockID` | hook / notify 的可选 Wave 元数据；event 来源保留 payload 中的值 |
+| `waveBlockID` | hook / notify 的可选旧 Wave 元数据；event 来源保留 payload 中的值 |
+| `waveLocation` | hook / notify 的可选版本化位置；event 来源只从 payload 读取，不采环境、不更新观察时间 |
 | `expect` | 必需的 disposition、完整 sessions 数组；可选 errorCode / registryDecision |
 
 `event` 来源按现有协议读取，payload 的 ID 必须与步骤 ID 相同；其 `occurredAt` 和 context 来自原始事件，不由步骤的接收时间替换。hook / notify 保留真实适配器结果，只替换接收端 UUID，然后经过与 inbox 相同的事件编解码边界。

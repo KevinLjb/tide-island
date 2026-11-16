@@ -6,6 +6,7 @@ public struct AgentSession: Identifiable, Codable, Equatable, Sendable {
     public let phase: AgentPhase
     public let updatedAt: Date
     public let waveBlockID: String?
+    public let waveLocation: WaveLocation?
     public let lastEventID: UUID
     public let context: EventContext?
 
@@ -19,6 +20,7 @@ public struct AgentSession: Identifiable, Codable, Equatable, Sendable {
         phase = event.phase
         updatedAt = event.occurredAt
         waveBlockID = event.waveBlockID
+        waveLocation = event.waveLocation
         lastEventID = event.id
         context = event.context
         self.turnID = turnID ?? event.context?.turnID
@@ -52,6 +54,10 @@ public struct SessionRegistry: Sendable {
 
     struct PersistedState: Codable {
         fileprivate let storage: [String: SessionState]
+
+        func validateLegacyLocations() throws {
+            guard storage.values.allSatisfy({ !$0.hasWaveLocation }) else { throw SessionStateError.invalidData }
+        }
     }
 
     func persistedState() -> PersistedState { PersistedState(storage: storage) }
@@ -279,6 +285,10 @@ private struct SessionState: Codable, Sendable {
 }
 
 extension SessionState {
+    var hasWaveLocation: Bool {
+        session.waveLocation != nil || pending.contains { $0.waveLocation != nil }
+    }
+
     enum CodingKeys: String, CodingKey {
         case session, seen, retired, toolIDs, tools, turnAnchor, sawStart, waitingToolIDs, pending
     }
@@ -314,7 +324,8 @@ extension SessionState {
     func validateCheckpoint() throws {
         let observation = AgentEvent(version: session.context == nil ? 1 : 2, id: session.lastEventID,
                                      sessionID: session.id, projectName: session.projectName, phase: session.phase,
-                                     occurredAt: session.updatedAt, waveBlockID: session.waveBlockID, context: session.context)
+                                     occurredAt: session.updatedAt, waveBlockID: session.waveBlockID,
+                                     waveLocation: session.waveLocation, context: session.context)
         try observation.validate()
         guard seen.capacity == SessionRegistry.eventHistoryLimit,
               retired.capacity == SessionRegistry.retiredTurnLimit,

@@ -75,6 +75,7 @@ public enum EventReplay {
         let at: Date
         let source: ReplayInputSource
         let waveBlockID: String?
+        let waveLocation: WaveLocation?
         let payload: Data
         let expected: ReplayExpectation
     }
@@ -84,13 +85,14 @@ public enum EventReplay {
             let observed: AgentEvent
             switch step.source {
             case .hook:
-                guard let event = try CodexHookAdapter.event(from: step.payload, receivedAt: step.at, waveBlockID: step.waveBlockID) else {
+                guard let event = try CodexHookAdapter.event(from: step.payload, receivedAt: step.at,
+                                                           waveBlockID: step.waveBlockID, waveLocation: step.waveLocation) else {
                     return (nil, nil)
                 }
                 observed = event
             case .notify:
                 let notification = try JSONDecoder().decode(CodexNotification.self, from: step.payload)
-                observed = try notification.event(at: step.at, waveBlockID: step.waveBlockID)
+                observed = try notification.event(at: step.at, waveBlockID: step.waveBlockID, waveLocation: step.waveLocation)
             case .event:
                 observed = try EventCodec.decode(step.payload)
                 guard observed.id == step.id else { return (nil, .identityMismatch) }
@@ -100,7 +102,7 @@ public enum EventReplay {
             let event = AgentEvent(
                 version: observed.version, id: step.id, sessionID: observed.sessionID,
                 projectName: observed.projectName, phase: observed.phase, occurredAt: observed.occurredAt,
-                waveBlockID: observed.waveBlockID, context: observed.context
+                waveBlockID: observed.waveBlockID, waveLocation: observed.waveLocation, context: observed.context
             )
             // Model the actual writer/reader boundary before applying state.
             return (try EventCodec.decode(EventCodec.encode(event)), nil)
@@ -135,7 +137,7 @@ public enum EventReplay {
     }
 
     private static func parseStep(_ value: ConfigurationJSON) throws -> Step {
-        let fields = try object(value, allowed: ["id", "at", "source", "waveBlockID", "payload", "payloadJSON", "expect"])
+        let fields = try object(value, allowed: ["id", "at", "source", "waveBlockID", "waveLocation", "payload", "payloadJSON", "expect"])
         guard let identity = fields["id"]?.string, let id = UUID(uuidString: identity),
               let time = fields["at"], time.string != nil,
               let sourceName = fields["source"]?.string, let source = ReplayInputSource(rawValue: sourceName),
@@ -148,6 +150,13 @@ public enum EventReplay {
             guard source != .event, let text = value.string else { throw ReplayError.invalidFixture }
             wave = text
         } else { wave = nil }
+        let location: WaveLocation?
+        if let value = fields["waveLocation"] {
+            guard source != .event else { throw ReplayError.invalidFixture }
+            try validateLocationFields(value)
+            location = try EventCodec.jsonDecoder().decode(WaveLocation.self, from: value.encode())
+            try location?.validate(legacyBlockID: wave)
+        } else { location = nil }
         let payload: Data
         if let json = fields["payloadJSON"] {
             guard let text = json.string else { throw ReplayError.invalidFixture }
@@ -156,7 +165,8 @@ public enum EventReplay {
         let expectedFields = try object(expectation, allowed: ["disposition", "errorCode", "sessions", "registryDecision"])
         guard let sessions = expectedFields["sessions"]?.array else { throw ReplayError.invalidFixture }
         for session in sessions {
-            let sessionFields = try object(session, allowed: ["id", "projectName", "phase", "updatedAt", "lastEventID", "context", "waveBlockID", "turnID"])
+            let sessionFields = try object(session, allowed: ["id", "projectName", "phase", "updatedAt", "lastEventID", "context", "waveBlockID", "waveLocation", "turnID"])
+            if let location = sessionFields["waveLocation"], location != .null { try validateLocationFields(location) }
             if let context = sessionFields["context"], context != .null {
                 _ = try object(context, allowed: ["source", "kind", "receivedAt", "sourceOccurredAt", "turnID", "toolName", "toolUseID"])
             }
@@ -167,7 +177,11 @@ public enum EventReplay {
             throw ReplayError.invalidFixture
         }
         for session in expected.sessions { try session.validate() }
-        return Step(id: id, at: at, source: source, waveBlockID: wave, payload: payload, expected: expected)
+        return Step(id: id, at: at, source: source, waveBlockID: wave, waveLocation: location, payload: payload, expected: expected)
+    }
+
+    private static func validateLocationFields(_ value: ConfigurationJSON) throws {
+        _ = try object(value, allowed: ["version", "blockID", "tabID", "workspaceID", "windowID", "waveVersion", "observedAt", "source"])
     }
 
     private static func object(_ value: ConfigurationJSON, allowed: Set<String>) throws -> [String: ConfigurationJSON] {

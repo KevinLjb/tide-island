@@ -29,6 +29,7 @@ public struct SessionStatus: Identifiable, Equatable, Sendable {
     public let freshUntil: Date
     public let expiresAt: Date?
     public let nextTransitionAt: Date?
+    public let waveLocation: WaveLocationStatus
     public internal(set) var sourceIssue: SessionSourceIssue?
     public internal(set) var attention = SessionAttention()
 
@@ -59,8 +60,10 @@ public struct SessionStatus: Identifiable, Equatable, Sendable {
         let uncertain = issue != nil && (session.phase == .working || session.phase == .needsInput)
         var result = SessionStatus(session: session, activity: uncertain ? .unknown : activity,
                                    freshness: freshness, freshUntil: freshUntil,
-                                   expiresAt: expiresAt, nextTransitionAt: nextTransitionAt)
+                                   expiresAt: expiresAt, nextTransitionAt: nextTransitionAt,
+                                   waveLocation: waveLocation.confirming(issue))
         result.sourceIssue = issue
+        result.attention = attention
         return result
     }
 }
@@ -137,7 +140,11 @@ public struct SessionStatusPolicy: Sendable {
             }
             next = freshness == .fresh ? freshUntil : expiresAt
         }
+        let location = WaveLocationPolicy.standard.status(for: session.waveLocation,
+                                                         legacyBlockID: session.waveBlockID, at: now)
+        let transition = [next, location.nextTransitionAt].compactMap { $0 }.min()
         return SessionStatus(session: session, activity: activity, freshness: freshness,
-                             freshUntil: freshUntil, expiresAt: expiresAt, nextTransitionAt: next)
+                             freshUntil: freshUntil, expiresAt: expiresAt, nextTransitionAt: transition,
+                             waveLocation: location)
     }
 }

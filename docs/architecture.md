@@ -41,6 +41,7 @@ flowchart LR
 | `phase` | v1 的 working / needsInput / completed / failed；v2 增加 interrupted / ended |
 | `occurredAt` | ISO 8601 时间；本 Codex 适配器无上游时间字段，使用接收时间，按身份和状态规则处理顺序冲突 |
 | `waveBlockID` | 可选的 Wave 分屏元数据，不包含认证凭据 |
+| `waveLocation` | v2 可选、内部 schema v1：完整 block 及可选 tab / workspace / window、版本、观察时间和来源；与旧 block 同时存在时必须一致 |
 | `context` | v2 必需：source / kind / receivedAt，可选源时间、turn 和工具身份；v1 保持缺失 |
 
 每个标准化事件最多 16 KiB，hook 输入最多 1 MiB。不落盘 prompt、assistant reply、完整 cwd、工具输入输出、令牌或整个环境变量集合。Codex `agent-turn-complete` 被映射为本轮结束，不当作任务完成、测试通过或成功发布。
@@ -57,7 +58,7 @@ flowchart LR
 
 `EventReplay` 用 fixture 提供的 UUID 与接收时钟调用真实适配器，经 `EventCodec` 编解码后送入独立 `SessionRegistry`，按声明的到达顺序比较每一步完整会话快照。CLI 的 `replay` 入口仅有界读取文件并输出稳定 JSON，不写 inbox 或 Codex 配置，不启动原生组件。
 
-当前基线包含 24 个场景 / 116 步，覆盖生命周期、权限等待与恢复、中断、错误、非相邻重复、旧版本、跨轮、工具重排及会话隔离。T005 的跨轮迟到 notify 反例保留正确预期并迁入通过集合；其他 turn 的观察可有界暂存，显式开始后绑定回放。回放额外输出 `registryDecision` 与独立的跟踪 turnID，原始 context 保持观察语义。格式见 [事件回放](event-replay.md)，状态优先级、窗口和来源边界见 [会话状态](session-state.md)。
+当前生命周期基线包含 24 个场景 / 116 步，位置基线另有 3 个场景 / 7 步，覆盖生命周期、权限等待与恢复、中断、错误、非相邻重复、旧版本、跨轮、工具重排及会话隔离。T005 的跨轮迟到 notify 反例保留正确预期并迁入通过集合；其他 turn 的观察可有界暂存，显式开始后绑定回放。回放额外输出 `registryDecision` 与独立的跟踪 turnID，原始 context 保持观察语义。格式见 [事件回放](event-replay.md)，状态优先级、窗口和来源边界见 [会话状态](session-state.md)。
 
 ## 原生显示
 
@@ -73,7 +74,7 @@ flowchart LR
 
 ## Wave 接入
 
-当前源码只通过 bundle identifier 唤起 Wave。T012 已核对本机 0.14.5 与固定版本源码：`wsh focusblock` 要求 Wave 认证及 tab 上下文，只聚焦标签内布局，不激活其他标签 / 窗口；内部 Electron / HTTP 切换服务不作为稳定第三方接口。公开列表还存在部分失败、非 JSON 空结果和字段差异，元数据只能有界提取 ID。版本、证据和 T013—T015 的实施边界见 [Wave 定位能力](wave-capabilities.md)。精确路线仍未实现或交互验证。
+当前源码只通过 bundle identifier 唤起 Wave。T012 已核对本机 0.14.5 与固定版本源码：`wsh focusblock` 要求 Wave 认证及 tab 上下文，只聚焦标签内布局，不激活其他标签 / 窗口；内部 Electron / HTTP 切换服务不作为稳定第三方接口。公开列表还存在部分失败、非 JSON 空结果和字段差异，元数据只能有界提取 ID。版本、证据和 T013—T015 的实施边界见 [Wave 定位能力](wave-capabilities.md)。T013 已接入可选位置、严格 allowlist、独立有效期和有界列表解析；位置仅随当前已应用观察变化，来源不能确认时降为待确认，过期不改变生命周期。checkpoint 写 v2 并兼容旧 v1，原始输出与凭据不进入持久化。具体字段和迁移见 [Wave 位置元数据](wave-location.md)。解析器不执行 wsh，精确路线仍未实现或交互验证。
 
 URL scheme 只识别 `tide-island://session?id=...`，只查找已有会话，不把链接参数拼接成 shell 命令。
 

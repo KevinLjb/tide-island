@@ -3,8 +3,10 @@
 from pathlib import Path
 import argparse
 import json
+import os
 import subprocess
 import tempfile
+import traceback
 
 
 def main():
@@ -16,11 +18,14 @@ def main():
     if args.temporary_root:
         Path(args.temporary_root).mkdir(parents=True, exist_ok=True)
     checks = 0
+    # These checks never need the caller's Wave context or credentials.
+    base_environment = {"PATH": os.defpath, "LANG": "en_US.UTF-8"}
     with tempfile.TemporaryDirectory(prefix="tide-island-cli-", dir=args.temporary_root) as directory:
-        def invoke(*arguments, payload=None, inbox=None):
+        def invoke(*arguments, payload=None, inbox=None, environment=None):
             return subprocess.run(
                 [binary, *arguments, "--inbox", str(inbox or directory)],
                 input=payload, capture_output=True, text=True, timeout=15,
+                env={**base_environment, **(environment or {})},
             )
 
         emitted = invoke("emit", "--session", "smoke-session", "--project", "tide-island",
@@ -54,12 +59,16 @@ def main():
         assert len(list(Path(directory).glob("*.json"))) == 2
         checks += 1
 
-        capability = subprocess.run([binary, "capabilities"], capture_output=True, text=True, timeout=15)
+        capability = subprocess.run([binary, "capabilities"], capture_output=True, text=True, timeout=15, env=base_environment)
         assert capability.returncode == 0, capability.stderr
         supported = json.loads(capability.stdout)
         assert supported["event_protocol_versions"] == [1, 2]
         assert supported["contract_cli_version"] == "0.169.0"
         assert supported["hook_stdout"] == "empty"
+        assert supported["session_persistence"]["schema_version"] == 2
+        assert supported["session_persistence"]["readable_schema_versions"] == [1, 2]
+        assert supported["wave_location"]["environment_keys"] == ["WAVETERM_BLOCKID", "WAVETERM_TABID", "WAVETERM_VERSION"]
+        assert not supported["wave_location"]["runs_wsh"] and not supported["wave_location"]["implements_navigation"]
         checks += 1
 
         fixture_path = Path(__file__).resolve().parent.parent / "Tests/TideIslandCoreTests/Fixtures/Codex/lifecycle.json"
@@ -107,8 +116,91 @@ def main():
         assert result.returncode == 0 and not result.stdout
         assert "fixture-private" not in result.stderr
         checks += 1
+
+        block = "10000000-0000-0000-0000-000000000001"
+        tab = "20000000-0000-0000-0000-000000000001"
+        explicit_block = "10000000-0000-0000-0000-000000000002"
+        explicit_tab = "20000000-0000-0000-0000-000000000002"
+        wave_environment = {
+            "WAVETERM_BLOCKID": block, "WAVETERM_TABID": tab, "WAVETERM_VERSION": "0.14.5",
+            "WAVETERM_JWT": "fixture-private-jwt", "WAVE_AUTH_KEY": "fixture-private-key",
+            "WAVETERM_WORKSPACEID": "fixture-private-workspace", "WAVETERM_WINDOWID": "fixture-private-window",
+            "PWD": "/fixture-private-directory",
+        }
+        emit_arguments = ("emit", "--session", "location", "--project", "project", "--phase", "working")
+        captured = invoke(*emit_arguments, environment=wave_environment)
+        assert captured.returncode == 0 and not captured.stderr
+        observed = json.loads(captured.stdout)
+        location = observed["waveLocation"]
+        assert location["blockID"] == block and location["tabID"] == tab and location["source"] == "environment"
+        assert location["version"] == 1 and location["waveVersion"] == "0.14.5"
+        assert location["observedAt"] == observed["occurredAt"] == observed["context"]["receivedAt"]
+        assert "workspaceID" not in location and "windowID" not in location
+        checks += 1
+
+        notified = invoke("notify", "--payload", payload, environment=wave_environment)
+        assert notified.returncode == 0 and json.loads(notified.stdout)["waveLocation"]["blockID"] == block
+        before = set(Path(directory).glob("*.json"))
+        hooked = invoke("hook", payload=json.dumps(fixtures[0]["payload"]), environment=wave_environment)
+        assert hooked.returncode == 0 and not hooked.stdout and not hooked.stderr
+        added = set(Path(directory).glob("*.json")) - before
+        assert len(added) == 1
+        assert json.loads(next(iter(added)).read_text())["waveLocation"]["tabID"] == tab
+        checks += 1
+
+        for explicit in [explicit_block, "legacy-block"]:
+            result = invoke(*emit_arguments, "--wave-block", explicit, environment=wave_environment)
+            assert result.returncode == 0 and not result.stderr
+            event = json.loads(result.stdout)
+            assert event["waveBlockID"] == explicit
+            if explicit == "legacy-block":
+                assert "waveLocation" not in event
+            else:
+                assert event["waveLocation"]["source"] == "explicitArguments"
+                assert "tabID" not in event["waveLocation"] and "waveVersion" not in event["waveLocation"]
+            checks += 1
+
+        overridden = invoke(*emit_arguments, "--wave-block", explicit_block, "--wave-tab", explicit_tab,
+                            "--wave-version", "0.14.6", environment=wave_environment)
+        assert overridden.returncode == 0 and not overridden.stderr
+        override_location = json.loads(overridden.stdout)["waveLocation"]
+        assert override_location["blockID"] == explicit_block and override_location["tabID"] == explicit_tab
+        assert override_location["waveVersion"] == "0.14.6" and override_location["source"] == "explicitArguments"
+        checks += 1
+
+        malformed_environment = {**wave_environment, "WAVETERM_TABID": "bad", "WAVETERM_VERSION": "bad\nversion"}
+        partial = invoke(*emit_arguments, environment=malformed_environment)
+        assert partial.returncode == 0 and not partial.stderr
+        partial_location = json.loads(partial.stdout)["waveLocation"]
+        assert partial_location["blockID"] == block and "tabID" not in partial_location and "waveVersion" not in partial_location
+        absent = invoke(*emit_arguments, environment={**malformed_environment, "WAVETERM_BLOCKID": "bad\nblock"})
+        assert absent.returncode == 0 and "waveLocation" not in json.loads(absent.stdout)
+        assert "waveBlockID" not in json.loads(absent.stdout)
+        checks += 1
+
+        for arguments in [("--wave-tab", explicit_tab), ("--wave-version", "0.14.5"),
+                          ("--wave-block", block, "--wave-tab", "fixture-private-invalid"),
+                          ("--wave-block", "legacy-block", "--wave-version", "0.14.5")]:
+            before = set(Path(directory).glob("*.json"))
+            invalid = invoke(*emit_arguments, *arguments, environment=wave_environment)
+            assert invalid.returncode == 1 and not invalid.stdout
+            assert "fixture-private" not in invalid.stderr
+            hook_invalid = invoke("hook", *arguments, payload=json.dumps(fixtures[0]["payload"]), environment=wave_environment)
+            assert hook_invalid.returncode == 0 and not hook_invalid.stdout
+            assert "fixture-private" not in hook_invalid.stderr
+            assert set(Path(directory).glob("*.json")) == before
+            checks += 1
+
+        for path in Path(directory).glob("*.json"):
+            assert "fixture-private" not in path.read_text()
+        checks += 1
     print(json.dumps({"status": "passed", "checks": checks, "scope": "bridge-cli-isolated-inbox-and-hooks"}))
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        diagnostic = traceback.format_exc().replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        print("::error title=Bridge checks::" + diagnostic)
+        raise

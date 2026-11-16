@@ -6,12 +6,14 @@ T011 将必要的会话状态、轮次保护和展示偏好保存为有界 check
 
 默认位置是 inbox 父目录的 `State/<inbox 路径摘要>.json`。scope 绑定标准化 inbox 路径；Events 本身删除或重建不删除 checkpoint。自定义 inbox 使用自己的父目录，可通过 CLI 的 `--state-directory` 显式选择状态目录。
 
-版本 1 只保存类型明确的元数据：
+当前写 schema v2、读取 v1 / v2，只保存类型明确的元数据：
 
-- 当前展示观察：session ID、项目名称、phase、原事件 UUID / 时间、来源 context、可选 Wave block 与跟踪 turn。
+- 当前展示观察：session ID、项目名称、phase、原事件 UUID / 时间、来源 context、可选 Wave block / 版本化位置与跟踪 turn。
 - 既有 512 事件 UUID、64 退役 turn、256 工具状态、64 未绑定观察窗口，以及权限等待、FIFO 槽位与下一次淘汰位置。
 - 当前已读 / 忽略事件身份、按会话置顶和全局选择。
 - 当前合法事件文件名及内容摘要，作为已经导入的边界，避免重启重新回放旧文件扰乱窗口，也用于主动清除后的抑制。
+
+位置字段与当前观察一起保存，缺字段不沿用旧目标，恢复不刷新位置时间；详情见 [Wave 位置元数据](wave-location.md)。v1 checkpoint 正常读取为无结构化位置，读取本身不改写文件，下次正常保存写 v2；v1 声称带新位置（包括 pending 观察）时拒绝，未来版本仍保留原文件。inspect 返回实际加载版本。
 
 不保存聊天正文、工具输入输出、transcript、令牌、完整 cwd 或整个环境变量集合。checkpoint 不是聊天备份；CLI inspect 仅输出版本、数量与 revision，不输出 session ID、项目名或观察内容。
 

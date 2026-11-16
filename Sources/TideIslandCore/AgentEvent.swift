@@ -52,6 +52,7 @@ public struct AgentEvent: Codable, Equatable, Sendable {
     public let phase: AgentPhase
     public let occurredAt: Date
     public let waveBlockID: String?
+    public let waveLocation: WaveLocation?
     public let context: EventContext?
 
     public init(
@@ -62,6 +63,7 @@ public struct AgentEvent: Codable, Equatable, Sendable {
         phase: AgentPhase,
         occurredAt: Date = Date(),
         waveBlockID: String? = nil,
+        waveLocation: WaveLocation? = nil,
         context: EventContext? = nil
     ) {
         self.version = version
@@ -71,6 +73,7 @@ public struct AgentEvent: Codable, Equatable, Sendable {
         self.phase = phase
         self.occurredAt = occurredAt
         self.waveBlockID = waveBlockID
+        self.waveLocation = waveLocation
         self.context = context
     }
 
@@ -79,8 +82,8 @@ public struct AgentEvent: Codable, Equatable, Sendable {
             throw EventError.unsupportedVersion(version)
         }
         if version == 1 {
-            guard context == nil, phase != .interrupted, phase != .ended else {
-                throw EventError.invalidField("v1.context/phase")
+            guard context == nil, waveLocation == nil, phase != .interrupted, phase != .ended else {
+                throw EventError.invalidField("v1.context/phase/waveLocation")
             }
         } else {
             guard let context else { throw EventError.invalidField("context") }
@@ -103,6 +106,7 @@ public struct AgentEvent: Codable, Equatable, Sendable {
                   !waveBlockID.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains)
             else { throw EventError.invalidField("waveBlockID") }
         }
+        try waveLocation?.validate(legacyBlockID: waveBlockID)
     }
 }
 

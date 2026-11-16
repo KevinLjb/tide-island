@@ -233,6 +233,29 @@ private let recoveryEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     _ = await receiver.stop()
 }
 
+@Test func sharedReceiverEmitsLocationExpiryWhileLifecycleRemainsFresh() async throws {
+    let fixture = try RecoveryFixture()
+    defer { fixture.remove() }
+    let now = Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970))
+    let location = WaveLocation(blockID: UUID(), tabID: UUID(), waveVersion: "0.14.5",
+                                observedAt: now.addingTimeInterval(-298), source: .environment)
+    let event = AgentEvent(version: 2, sessionID: "location-timer", projectName: "project", phase: .working,
+                           occurredAt: now, waveLocation: location,
+                           context: EventContext(source: .manual, kind: .status, receivedAt: now))
+    try fixture.inbox.write(event)
+    let receiver = InboxReceiver(inbox: fixture.inbox)
+    do {
+        let first = await receiver.start()
+        #expect(first.snapshot.sessions[0].waveLocation.validity == .recent && first.snapshot.workingCount == 1)
+        let expired = try await waitForRecoveryStream(receiver.frames) { frame in
+            frame.snapshot.sessions.first?.waveLocation.validity == .stale
+        }
+        #expect(expired.snapshot.workingCount == 1 && expired.health.state == .healthy)
+        #expect(expired.snapshot.sessions[0].session.waveLocation == event.waveLocation)
+    } catch { _ = await receiver.stop(); throw error }
+    _ = await receiver.stop()
+}
+
 @Test func completeOrphanStageIsPreviewedWithoutMutationAndPublishedWithOriginalIdentity() throws {
     let fixture = try RecoveryFixture()
     defer { fixture.remove() }

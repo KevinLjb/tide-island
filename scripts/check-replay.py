@@ -50,6 +50,19 @@ def main():
         assert not list(alternate.iterdir())
         checks += 1
 
+        location_first = invoke(target=fixtures / "wave-location.json")
+        location_second = invoke(target=fixtures / "wave-location.json", cwd=alternate, block="different-wave-context")
+        assert location_first.returncode == location_second.returncode == 0
+        assert not location_first.stderr and not location_second.stderr
+        assert location_first.stdout == location_second.stdout
+        location_report = json.loads(location_first.stdout)
+        assert location_report["passed"] and location_report["scenarioCount"] == 3 and location_report["stepCount"] == 7
+        assert location_report["mismatchCount"] == 0
+        assert location_report["scenarios"][0]["finalSessions"][0].get("waveLocation") is None
+        assert location_report["scenarios"][1]["finalSessions"][0]["waveLocation"]["source"] == "explicitArguments"
+        assert location_report["scenarios"][2]["steps"][-1]["registryDecision"] == "retired-turn"
+        checks += 1
+
         for scenario in document["scenarios"]:
             result = invoke("--scenario", scenario["name"])
             assert result.returncode == 0 and not result.stderr
@@ -118,6 +131,7 @@ def main():
 
     print(json.dumps({"status": "passed", "checks": checks, "scenarios": report["scenarioCount"],
                       "steps": report["stepCount"], "cross_turn_regression": "passed",
+                      "location_scenarios": location_report["scenarioCount"], "location_steps": location_report["stepCount"],
                       "scope": "deterministic-in-memory-replay"}))
 
 

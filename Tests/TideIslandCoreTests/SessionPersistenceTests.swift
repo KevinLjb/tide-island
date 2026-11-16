@@ -5,6 +5,89 @@ import Testing
 
 private let persistenceEpoch = Date(timeIntervalSince1970: 1_800_000_000)
 
+@Test func checkpointV2PreservesLocationAndItsClockAcrossReceiverRestarts() async throws {
+    let fixture = try PersistenceFixture()
+    defer { fixture.remove() }
+    let location = WaveLocation(blockID: UUID(), tabID: UUID(), workspaceID: UUID(), waveVersion: "0.14.5",
+                                observedAt: persistenceEpoch.addingTimeInterval(-295), source: .blockListing)
+    let event = AgentEvent(version: 2, sessionID: "location", projectName: "project", phase: .working,
+                           occurredAt: persistenceEpoch, waveBlockID: location.blockID.uuidString, waveLocation: location,
+                           context: EventContext(source: .manual, kind: .status, receivedAt: persistenceEpoch))
+    try fixture.inbox.write(event)
+    let first = fixture.receiver(at: persistenceEpoch)
+    let initial = await first.start()
+    #expect(initial.snapshot.sessions[0].waveLocation.validity == .recent)
+    _ = await first.stop()
+    let loaded = try fixture.state.load()
+    let inspection = try fixture.state.inspect()
+    #expect(loaded.schemaVersion == 2 && inspection.version == 2)
+    let second = fixture.receiver()
+    let restored = await second.start()
+    #expect(restored.snapshot.sessions[0].session.waveLocation == location)
+    #expect(restored.snapshot.sessions[0].waveLocation.validity == .stale && restored.snapshot.workingCount == 1)
+    _ = await second.stop()
+}
+
+@Test func legacyCheckpointLoadsWithoutRewriteAndMigratesOnSuccessfulSave() throws {
+    let fixture = try PersistenceFixture()
+    defer { fixture.remove() }
+    var store = SessionStore()
+    let event = persistenceEvent(.working)
+    try store.receive([event])
+    let encoded = try SessionCheckpointCodec.encode(store: store, index: [:], scope: fixture.state.scope)
+    var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+    object["version"] = 1
+    let legacy = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+    try fixture.writeState(legacy)
+    let loaded = try fixture.state.load()
+    let inspection = try fixture.state.inspect()
+    let afterLoad = try Data(contentsOf: fixture.state.fileURL)
+    #expect(loaded.schemaVersion == 1 && inspection.version == 1 && afterLoad == legacy)
+    let restored = loaded.store.snapshot(at: persistenceEpoch)
+    #expect(restored.sessions[0].session.waveLocation == nil && restored.sessions[0].session.lastEventID == event.id)
+    _ = try fixture.state.save(loaded.store, index: loaded.importIndex, expected: loaded.revision)
+    let migrated = try fixture.state.inspect()
+    #expect(migrated.version == 2 && migrated.sessions == 1)
+}
+
+@Test func checkpointV1CannotHideLocationInCurrentOrPendingObservations() throws {
+    let location = WaveLocation(blockID: UUID(), tabID: UUID(), waveVersion: "0.14.5",
+                                observedAt: persistenceEpoch, source: .environment)
+    for pendingOnly in [false, true] {
+        var store = SessionStore()
+        let first = AgentEvent(version: 2, sessionID: "session", projectName: "project", phase: .working,
+                               occurredAt: persistenceEpoch, waveLocation: pendingOnly ? nil : location,
+                               context: EventContext(source: .codexHook, kind: .turnStarted, receivedAt: persistenceEpoch, turnID: "one"))
+        try store.receive([first])
+        if pendingOnly {
+            let future = AgentEvent(version: 2, sessionID: "session", projectName: "project", phase: .completed,
+                                    occurredAt: persistenceEpoch, waveLocation: location,
+                                    context: EventContext(source: .codexNotify, kind: .turnCompleted, receivedAt: persistenceEpoch, turnID: "two"))
+            try store.receive([future])
+        }
+        let encoded = try SessionCheckpointCodec.encode(store: store, index: [:], scope: "test-scope")
+        var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        object["version"] = 1
+        let downgraded = try JSONSerialization.data(withJSONObject: object)
+        #expect(throws: SessionStateError.invalidData) { try SessionCheckpointCodec.decode(downgraded, scope: "test-scope") }
+    }
+}
+
+@Test func invalidSavedLocationCannotBypassEventValidationOnRestore() throws {
+    var store = SessionStore()
+    let location = WaveLocation(blockID: UUID(), observedAt: persistenceEpoch, source: .environment)
+    let event = AgentEvent(version: 2, sessionID: "session", projectName: "project", phase: .working,
+                           occurredAt: persistenceEpoch, waveLocation: location,
+                           context: EventContext(source: .manual, kind: .status, receivedAt: persistenceEpoch))
+    try store.receive([event])
+    let encoded = try SessionCheckpointCodec.encode(store: store, index: [:], scope: "test-scope")
+    // Replace only the nested version token; the checkpoint header remains v2.
+    let text = String(decoding: encoded, as: UTF8.self)
+    let invalid = Data(text.replacingOccurrences(of: "\"version\":1", with: "\"version\":999").utf8)
+    #expect(invalid != encoded)
+    #expect(throws: SessionStateError.invalidData) { try SessionCheckpointCodec.decode(invalid, scope: "test-scope") }
+}
+
 @Test func checkpointRestoresReadPinnedIgnoredAndSelectedObservationsAcrossReceivers() async throws {
     let fixture = try PersistenceFixture()
     defer { fixture.remove() }

@@ -30,7 +30,8 @@ public enum CodexHookAdapter {
     public static func event(
         from data: Data,
         receivedAt: Date = Date(),
-        waveBlockID: String? = nil
+        waveBlockID: String? = nil,
+        waveLocation: WaveLocation? = nil
     ) throws -> AgentEvent? {
         guard data.count <= maximumInputBytes else { throw EventError.oversizedHookInput }
         let decoder = JSONDecoder()
@@ -56,6 +57,7 @@ public enum CodexHookAdapter {
             phase: phase,
             occurredAt: receivedAt,
             waveBlockID: waveBlockID,
+            waveLocation: waveLocation,
             context: EventContext(
                 source: .codexHook, kind: kind, receivedAt: receivedAt,
                 turnID: hook == .sessionEnd ? nil : input.turnID,

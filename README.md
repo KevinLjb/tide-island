@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T011 持久化已完成共享逻辑：143 项单测实际执行通过，七项严格 CI 步骤覆盖 bridge 构建、五类 CLI 与工程结构。元数据 / 偏好 checkpoint、跨重启保护、保存失败提示和主动清除规则见 [会话持久化](docs/session-persistence.md)。T012 已完成 0.14.5 的本机只读与固定源码核对，下一步为 T013 定位元数据；游标正文缓存仍在内存，原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T013 已加入可选的 [Wave 位置元数据](docs/wave-location.md)、allowlist 采集、独立有效性投影和 checkpoint 兼容迁移，当前共享验证待本次 CI。T012 的已审阅版本为 Wave 0.14.5；原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -45,6 +45,7 @@ docs/inbox-maintenance.md     增量游标、受保护历史与预览 / 应用�
 docs/inbox-recovery.md        通道健康、监听重连、单接收者与中断恢复
 docs/session-persistence.md   会话 / 偏好 checkpoint、跨重启保护与主动清除
 docs/wave-capabilities.md     Wave 版本、公开定位入口、认证与列表输出边界
+docs/wave-location.md         可选位置协议、allowlist、失效判断与 checkpoint 迁移
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -100,7 +101,7 @@ swift run tide-island-bridge emit \
 
 CLI 将事件原子写入 `~/Library/Application Support/TideIsland/Events/`，并输出一行 v2 JSON。运行中的应用监听该目录。状态包括 `working`、`needsInput`、`completed`、`failed`、`interrupted` 和 `ended`；`completed` 只表示本轮结束。新读取器继续兼容已有的 v1 记录。
 
-`--inbox <目录>` 可隔离调试数据；`--wave-block <ID>` 可显式携带分屏标识。在 Wave 中运行时，默认读取 `WAVETERM_BLOCKID`。应用当前只唤起 Wave，**尚未实现或验证精确分屏定位**。已核对的 Wave 0.14.5 `focusblock` 只处理标签内布局，需要认证和 tab 上下文；跨标签 / 窗口没有本轮可承诺的公开路线，详见 [Wave 定位能力](docs/wave-capabilities.md)。
+`--inbox <目录>` 可隔离调试数据；默认只采集 `WAVETERM_BLOCKID`、`WAVETERM_TABID`、`WAVETERM_VERSION`。`--wave-block <ID>`、`--wave-tab <UUID>`、`--wave-version <版本>` 可显式提供独立的位置参数组，不与环境混用，详见 [位置元数据](docs/wave-location.md)。应用当前只唤起 Wave，**尚未实现或验证精确分屏定位**。已核对的 Wave 0.14.5 `focusblock` 只处理标签内布局，需要认证和 tab 上下文；跨标签 / 窗口没有本轮可承诺的公开路线，详见 [Wave 定位能力](docs/wave-capabilities.md)。
 
 ## 回放生命周期事件
 
@@ -110,7 +111,7 @@ swift run tide-island-bridge replay \
   --scenario permission-wait-resume
 ```
 
-回放使用固定身份和时间，经实际适配器、事件编解码与 registry 检查状态；只输出元数据报告。24 个基线场景共 116 步，包含原来的跨轮迟到通知反例及下一轮观察先于开始到达的回归，预期不匹配时返回非零。格式见 [事件回放](docs/event-replay.md)，窗口与时间冲突规则见 [会话状态](docs/session-state.md)。
+回放使用固定身份和时间，经实际适配器、事件编解码与 registry 检查状态；只输出元数据报告。生命周期基线 24 场景 / 116 步，另有 `Fixtures/Replay/wave-location.json` 的位置基线 3 场景 / 7 步；预期不匹配时返回非零。格式见 [事件回放](docs/event-replay.md)，窗口与时间冲突规则见 [会话状态](docs/session-state.md)。
 
 ## 预览历史清理
 
@@ -169,7 +170,7 @@ notify = ["/absolute/path/to/tide-island-bridge", "notify", "--payload"]
 
 ## 当前能力与后续计划
 
-- 已实现：v1 / v2 元数据事件、增量 inbox、可预览历史清理、通道恢复与单接收者、会话 / 偏好持久化和清除、轮次状态机、有界重复 / 退役轮次 / 工具窗口、会话新鲜度与展示过期、已读 / 忽略 / 置顶 / 选择与可解释排序、Codex hook / notify 转换、hooks 配置管理、确定性回放与逐步断言、隔离 CLI 检查、菜单栏与原生扩展源码。
+- 已实现：v1 / v2 元数据事件、可选 Wave 位置与有效性投影、增量 inbox、可预览历史清理、通道恢复与单接收者、会话 / 偏好持久化和清除、轮次状态机、有界重复 / 退役轮次 / 工具窗口、会话新鲜度与展示过期、已读 / 忽略 / 置顶 / 选择与可解释排序、Codex hook / notify 转换、hooks 配置管理、确定性回放与逐步断言、隔离 CLI 检查、菜单栏与原生扩展源码。
 - 待验证：macOS 27.3 原生编译、签名安装、灵动岛更新与点击、触摸交互及系统活动协调。
 - 待开发：完整接入与 notify 共存、普通问答 / 最终失败补充来源、可靠进程存活证据、Wave 精确定位、额度信息与小宠物。
 

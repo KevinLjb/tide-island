@@ -13,7 +13,8 @@ public struct CodexNotification: Decodable, Sendable {
         case turnID = "turn-id"
     }
 
-    public func event(at date: Date = Date(), waveBlockID: String? = nil) throws -> AgentEvent {
+    public func event(at date: Date = Date(), waveBlockID: String? = nil,
+                      waveLocation: WaveLocation? = nil) throws -> AgentEvent {
         guard type == "agent-turn-complete" else { throw EventError.unsupportedNotification }
         let name = try CodexHookAdapter.projectName(from: cwd)
         let event = AgentEvent(
@@ -23,6 +24,7 @@ public struct CodexNotification: Decodable, Sendable {
             phase: .completed,
             occurredAt: date,
             waveBlockID: waveBlockID,
+            waveLocation: waveLocation,
             context: EventContext(
                 source: .codexNotify, kind: .turnCompleted, receivedAt: date, turnID: turnID
             )

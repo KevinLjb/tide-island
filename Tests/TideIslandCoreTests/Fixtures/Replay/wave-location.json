@@ -1,0 +1,360 @@
+{
+  "schemaVersion": 1,
+  "description": "Synthetic Wave location observations. Independently authored expected states; no Wave query or navigation.",
+  "scenarios": [
+    {
+      "name": "wave-hook-notify-clears-location",
+      "steps": [
+        {
+          "id": "90000000-0000-0000-0000-000000000000",
+          "at": "2026-11-17T00:00:00.000Z",
+          "source": "hook",
+          "payload": {
+            "hook_event_name": "UserPromptSubmit",
+            "session_id": "session",
+            "cwd": "/synthetic/project",
+            "turn_id": "one",
+            "prompt": "fixture-private"
+          },
+          "waveBlockID": "10000000-0000-0000-0000-000000000001",
+          "waveLocation": {
+            "version": 1,
+            "blockID": "10000000-0000-0000-0000-000000000001",
+            "tabID": "20000000-0000-0000-0000-000000000001",
+            "waveVersion": "0.14.5",
+            "observedAt": "2026-11-17T00:00:00.000Z",
+            "source": "environment"
+          },
+          "expect": {
+            "disposition": "applied",
+            "registryDecision": "applied",
+            "sessions": [
+              {
+                "id": "session",
+                "projectName": "project",
+                "phase": "working",
+                "updatedAt": "2026-11-17T00:00:00.000Z",
+                "lastEventID": "90000000-0000-0000-0000-000000000000",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-17T00:00:00.000Z",
+                  "turnID": "one"
+                },
+                "turnID": "one",
+                "waveBlockID": "10000000-0000-0000-0000-000000000001",
+                "waveLocation": {
+                  "version": 1,
+                  "blockID": "10000000-0000-0000-0000-000000000001",
+                  "tabID": "20000000-0000-0000-0000-000000000001",
+                  "waveVersion": "0.14.5",
+                  "observedAt": "2026-11-17T00:00:00.000Z",
+                  "source": "environment"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "90000000-0000-0000-0000-000000000001",
+          "at": "2026-11-17T00:00:01.000Z",
+          "source": "hook",
+          "payload": {
+            "hook_event_name": "PreToolUse",
+            "session_id": "session",
+            "cwd": "/synthetic/project",
+            "turn_id": "one",
+            "tool_name": "shell",
+            "tool_use_id": "tool"
+          },
+          "waveBlockID": "10000000-0000-0000-0000-000000000001",
+          "waveLocation": {
+            "version": 1,
+            "blockID": "10000000-0000-0000-0000-000000000001",
+            "tabID": "20000000-0000-0000-0000-000000000001",
+            "waveVersion": "0.14.5",
+            "observedAt": "2026-11-17T00:00:00.000Z",
+            "source": "environment"
+          },
+          "expect": {
+            "disposition": "applied",
+            "registryDecision": "applied",
+            "sessions": [
+              {
+                "id": "session",
+                "projectName": "project",
+                "phase": "working",
+                "updatedAt": "2026-11-17T00:00:01.000Z",
+                "lastEventID": "90000000-0000-0000-0000-000000000001",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "toolStarted",
+                  "receivedAt": "2026-11-17T00:00:01.000Z",
+                  "turnID": "one",
+                  "toolName": "shell",
+                  "toolUseID": "tool"
+                },
+                "turnID": "one",
+                "waveBlockID": "10000000-0000-0000-0000-000000000001",
+                "waveLocation": {
+                  "version": 1,
+                  "blockID": "10000000-0000-0000-0000-000000000001",
+                  "tabID": "20000000-0000-0000-0000-000000000001",
+                  "waveVersion": "0.14.5",
+                  "observedAt": "2026-11-17T00:00:00.000Z",
+                  "source": "environment"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "90000000-0000-0000-0000-000000000002",
+          "at": "2026-11-17T00:00:02.000Z",
+          "source": "notify",
+          "payload": {
+            "type": "agent-turn-complete",
+            "thread-id": "session",
+            "turn-id": "one",
+            "cwd": "/synthetic/project",
+            "last-assistant-message": "fixture-private"
+          },
+          "expect": {
+            "disposition": "applied",
+            "registryDecision": "applied",
+            "sessions": [
+              {
+                "id": "session",
+                "projectName": "project",
+                "phase": "completed",
+                "updatedAt": "2026-11-17T00:00:02.000Z",
+                "lastEventID": "90000000-0000-0000-0000-000000000002",
+                "context": {
+                  "source": "codexNotify",
+                  "kind": "turnCompleted",
+                  "receivedAt": "2026-11-17T00:00:02.000Z",
+                  "turnID": "one"
+                },
+                "turnID": "one"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wave-manual-event",
+      "steps": [
+        {
+          "id": "90000000-0000-0000-0000-000000000000",
+          "at": "2026-11-17T00:00:00.000Z",
+          "source": "event",
+          "payload": {
+            "version": 2,
+            "id": "90000000-0000-0000-0000-000000000000",
+            "sessionID": "session",
+            "projectName": "project",
+            "phase": "working",
+            "occurredAt": "2026-11-17T00:00:00.000Z",
+            "waveBlockID": "10000000-0000-0000-0000-000000000001",
+            "waveLocation": {
+              "version": 1,
+              "blockID": "10000000-0000-0000-0000-000000000001",
+              "tabID": "20000000-0000-0000-0000-000000000001",
+              "waveVersion": "0.14.5",
+              "observedAt": "2026-11-17T00:00:00.000Z",
+              "source": "explicitArguments"
+            },
+            "context": {
+              "source": "manual",
+              "kind": "status",
+              "receivedAt": "2026-11-17T00:00:00.000Z"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "registryDecision": "applied",
+            "sessions": [
+              {
+                "id": "session",
+                "projectName": "project",
+                "phase": "working",
+                "updatedAt": "2026-11-17T00:00:00.000Z",
+                "lastEventID": "90000000-0000-0000-0000-000000000000",
+                "context": {
+                  "source": "manual",
+                  "kind": "status",
+                  "receivedAt": "2026-11-17T00:00:00.000Z"
+                },
+                "waveBlockID": "10000000-0000-0000-0000-000000000001",
+                "waveLocation": {
+                  "version": 1,
+                  "blockID": "10000000-0000-0000-0000-000000000001",
+                  "tabID": "20000000-0000-0000-0000-000000000001",
+                  "waveVersion": "0.14.5",
+                  "observedAt": "2026-11-17T00:00:00.000Z",
+                  "source": "explicitArguments"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wave-retired-observation-keeps-location",
+      "steps": [
+        {
+          "id": "90000000-0000-0000-0000-000000000000",
+          "at": "2026-11-17T00:00:00.000Z",
+          "source": "hook",
+          "payload": {
+            "hook_event_name": "UserPromptSubmit",
+            "session_id": "session",
+            "cwd": "/synthetic/project",
+            "turn_id": "one",
+            "prompt": "fixture-private"
+          },
+          "waveBlockID": "10000000-0000-0000-0000-000000000001",
+          "waveLocation": {
+            "version": 1,
+            "blockID": "10000000-0000-0000-0000-000000000001",
+            "tabID": "20000000-0000-0000-0000-000000000001",
+            "waveVersion": "0.14.5",
+            "observedAt": "2026-11-17T00:00:00.000Z",
+            "source": "environment"
+          },
+          "expect": {
+            "disposition": "applied",
+            "registryDecision": "applied",
+            "sessions": [
+              {
+                "id": "session",
+                "projectName": "project",
+                "phase": "working",
+                "updatedAt": "2026-11-17T00:00:00.000Z",
+                "lastEventID": "90000000-0000-0000-0000-000000000000",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-17T00:00:00.000Z",
+                  "turnID": "one"
+                },
+                "turnID": "one",
+                "waveBlockID": "10000000-0000-0000-0000-000000000001",
+                "waveLocation": {
+                  "version": 1,
+                  "blockID": "10000000-0000-0000-0000-000000000001",
+                  "tabID": "20000000-0000-0000-0000-000000000001",
+                  "waveVersion": "0.14.5",
+                  "observedAt": "2026-11-17T00:00:00.000Z",
+                  "source": "environment"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "90000000-0000-0000-0000-000000000001",
+          "at": "2026-11-17T00:00:01.000Z",
+          "source": "hook",
+          "payload": {
+            "hook_event_name": "UserPromptSubmit",
+            "session_id": "session",
+            "cwd": "/synthetic/project",
+            "turn_id": "two",
+            "prompt": "fixture-private"
+          },
+          "waveBlockID": "10000000-0000-0000-0000-000000000002",
+          "waveLocation": {
+            "version": 1,
+            "blockID": "10000000-0000-0000-0000-000000000002",
+            "tabID": "20000000-0000-0000-0000-000000000001",
+            "waveVersion": "0.14.5",
+            "observedAt": "2026-11-17T00:00:01.000Z",
+            "source": "environment"
+          },
+          "expect": {
+            "disposition": "applied",
+            "registryDecision": "applied",
+            "sessions": [
+              {
+                "id": "session",
+                "projectName": "project",
+                "phase": "working",
+                "updatedAt": "2026-11-17T00:00:01.000Z",
+                "lastEventID": "90000000-0000-0000-0000-000000000001",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-17T00:00:01.000Z",
+                  "turnID": "two"
+                },
+                "turnID": "two",
+                "waveBlockID": "10000000-0000-0000-0000-000000000002",
+                "waveLocation": {
+                  "version": 1,
+                  "blockID": "10000000-0000-0000-0000-000000000002",
+                  "tabID": "20000000-0000-0000-0000-000000000001",
+                  "waveVersion": "0.14.5",
+                  "observedAt": "2026-11-17T00:00:01.000Z",
+                  "source": "environment"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "90000000-0000-0000-0000-000000000002",
+          "at": "2026-11-17T00:00:02.000Z",
+          "source": "notify",
+          "payload": {
+            "type": "agent-turn-complete",
+            "thread-id": "session",
+            "turn-id": "one",
+            "cwd": "/synthetic/project",
+            "last-assistant-message": "fixture-private"
+          },
+          "waveBlockID": "10000000-0000-0000-0000-000000000001",
+          "waveLocation": {
+            "version": 1,
+            "blockID": "10000000-0000-0000-0000-000000000001",
+            "tabID": "20000000-0000-0000-0000-000000000001",
+            "waveVersion": "0.14.5",
+            "observedAt": "2026-11-17T00:00:00.000Z",
+            "source": "environment"
+          },
+          "expect": {
+            "disposition": "discarded",
+            "registryDecision": "retired-turn",
+            "sessions": [
+              {
+                "id": "session",
+                "projectName": "project",
+                "phase": "working",
+                "updatedAt": "2026-11-17T00:00:01.000Z",
+                "lastEventID": "90000000-0000-0000-0000-000000000001",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-17T00:00:01.000Z",
+                  "turnID": "two"
+                },
+                "turnID": "two",
+                "waveBlockID": "10000000-0000-0000-0000-000000000002",
+                "waveLocation": {
+                  "version": 1,
+                  "blockID": "10000000-0000-0000-0000-000000000002",
+                  "tabID": "20000000-0000-0000-0000-000000000001",
+                  "waveVersion": "0.14.5",
+                  "observedAt": "2026-11-17T00:00:01.000Z",
+                  "source": "environment"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

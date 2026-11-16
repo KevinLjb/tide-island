@@ -36,15 +36,16 @@ public struct SessionStateFile: Sendable {
         let raw = try readBytes()
         let revision = revision(raw)
         guard let raw else {
-            return SessionStateSnapshot(store: SessionStore(), revision: revision, existed: false, importIndex: [:])
+            return SessionStateSnapshot(store: SessionStore(), revision: revision, existed: false, schemaVersion: nil, importIndex: [:])
         }
         let decoded = try SessionCheckpointCodec.decode(raw.data, scope: scope)
-        return SessionStateSnapshot(store: decoded.store, revision: revision, existed: true, importIndex: decoded.index)
+        return SessionStateSnapshot(store: decoded.store, revision: revision, existed: true,
+                                    schemaVersion: decoded.version, importIndex: decoded.index)
     }
 
     public func inspect() throws -> SessionStateInspection {
         let snapshot = try load()
-        return SessionStateInspection(exists: snapshot.existed, version: snapshot.existed ? 1 : nil,
+        return SessionStateInspection(exists: snapshot.existed, version: snapshot.schemaVersion,
                                       sessions: snapshot.store.sessionCount, preferences: snapshot.store.preferenceCount,
                                       importedFiles: snapshot.importIndex.count, revision: snapshot.revision.fingerprint)
     }
@@ -121,7 +122,8 @@ public struct SessionStateFile: Sendable {
             let store = SessionStore()
             let index = inventory.cursor.importIndex
             let saved = try save(store, index: index, expected: expected)
-            return (SessionStateSnapshot(store: store, revision: saved, existed: true, importIndex: index), inventory.cursor)
+            return (SessionStateSnapshot(store: store, revision: saved, existed: true,
+                                         schemaVersion: SessionCheckpointCodec.currentVersion, importIndex: index), inventory.cursor)
         }
     }
 

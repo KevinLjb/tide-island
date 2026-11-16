@@ -6,6 +6,10 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 > 当前阶段：初始化工程。已经提供事件协议、会话管理、事件 CLI、菜单栏应用源码及原生实时活动扩展源码。原生目标尚需在支持的 SDK / 系统上构建和实机验证，暂未发布可安装版本。
 
+## 开发进度
+
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。下一步先推进 Codex 生命周期事件接入；macOS 27.3 正式版发布前持续开发，原生编译、签名和真机验收集中到正式环境可用后执行。
+
 ## 环境要求
 
 | 范围 | 要求 |
@@ -30,6 +34,7 @@ Sources/
 Tests/TideIslandCoreTests/     协议、乱序事件、会话隔离、路由和 inbox 测试
 scripts/                      工程结构检查与原生 SDK 检查
 docs/architecture.md          架构、能力边界与后续步骤
+docs/development-progress.md  开发计划、任务进度与 27.3 统一验收清单
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -104,8 +109,6 @@ notify = ["/absolute/path/to/tide-island-bridge", "notify", "--payload"]
 
 原生界面的尺寸、动画、更新频率由系统约束；小宠物和高频动画需通过实机验证后再确定。
 
-## 参考与许可
-
-参考 [CodeIsland](https://github.com/wxtsky/CodeIsland) 的事件接入与会话设计、[boring.notch](https://github.com/TheBoredTeam/boring.notch) 的简洁交互、[codex-island](https://github.com/ericjypark/codex-island) 的额度展示思路。本次初始化代码独立编写，没有复制这些项目的源码或美术资源。
+## 许可
 
 TideIsland 使用 [MIT License](LICENSE)。未来引用第三方代码、字体或素材时逐项保留许可和来源；不能直接把 GPL 代码混入并当作仅 MIT 分发。

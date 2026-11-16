@@ -19,6 +19,8 @@ T007 在轮次状态机之外提供 `SessionStore`、`SessionStatusPolicy` 与 `
 
 新鲜度和保留期限一律基于标准化事件的 `occurredAt`，不使用文件修改时间、读取时间或重新启动时间。带源时间的事件不会因为 `context.receivedAt` 更晚而变新；当前固定 Codex 适配器仍以首次 bridge 接收时间填充 `occurredAt`。受来源限制，bridge 很晚才收到的上游观察无法精确还原真实执行时刻，见 [事件契约](codex-events.md)。
 
+T013 为可选 Wave 位置增加独立的时间 / 来源投影，位置过期不改变本节生命周期和计数；到期截止时间合入一次性投影通知，见 [位置有效性](wave-location.md)。
+
 ## 恢复与过期的边界
 
 应用通过共享 `SessionStore.receive` 处理 inbox 的有界批次，移除原先“只接收最近 15 分钟事件”的过滤。批次内两小时前的工作或待处理记录可以恢复为状态待确认，不会被宣称为实时工作，也不会仅因这个时间窗口消失。

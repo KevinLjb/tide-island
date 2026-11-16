@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T013 已加入可选的 [Wave 位置元数据](docs/wave-location.md)、allowlist 采集、独立有效性投影和 checkpoint 兼容迁移，当前共享验证待本次 CI。T012 的已审阅版本为 Wave 0.14.5；原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T013 已加入可选的 [Wave 位置元数据](docs/wave-location.md)、allowlist 采集、独立有效性投影和 checkpoint 兼容迁移，[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43917010695) 实际执行 170 / 声明 170 项测试全部通过，七项检查成功。T012 的已审阅版本为 Wave 0.14.5；原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 

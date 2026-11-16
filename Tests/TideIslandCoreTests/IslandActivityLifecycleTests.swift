@@ -302,7 +302,9 @@ private func lifecycleSnapshot(_ session: String?, time: TimeInterval = 0) throw
 }
 
 private func lifecycleRecord(_ identifier: String, session: String = "session", state: IslandActivityState = .active) throws -> IslandActivityRecord {
-    let presentation = try #require(IslandActivityPresentationPolicy.standard.presentation(for: lifecycleSnapshot(session), at: lifecycleEpoch))
+    let snapshot = try lifecycleSnapshot(session)
+    let projected = try IslandActivityPresentationPolicy.standard.presentation(for: snapshot, at: lifecycleEpoch)
+    let presentation = try #require(projected)
     return IslandActivityRecord(identifier: identifier, state: state, content: presentation.state, staleAt: presentation.staleAt)
 }
 

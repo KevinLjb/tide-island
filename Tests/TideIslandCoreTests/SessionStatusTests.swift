@@ -178,6 +178,7 @@ private let statusEpoch = Date(timeIntervalSince1970: 1_800_000_000)
                   statusEvent(.needsInput, session: "long-wait", at: statusEpoch),
                   statusEvent(.ended, session: "exited", at: statusEpoch)]
     for event in events { try inbox.write(event) }
+    let originalFiles = try Set(FileManager.default.contentsOfDirectory(atPath: directory.path))
     let now = statusEpoch.addingTimeInterval(2 * 60 * 60)
     var restored = SessionStore()
     try restored.receive(inbox.readRecent().events)
@@ -187,7 +188,7 @@ private let statusEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     var restarted = SessionStore()
     try restarted.receive(inbox.readRecent().events)
     #expect(restarted.snapshot(at: now) == snapshot)
-    #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).count == events.count)
+    #expect(try Set(FileManager.default.contentsOfDirectory(atPath: directory.path)) == originalFiles)
 }
 
 private func statusEvent(_ phase: AgentPhase, session: String = "session", at: Date) -> AgentEvent {

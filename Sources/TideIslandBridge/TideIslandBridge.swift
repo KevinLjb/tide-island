@@ -23,6 +23,10 @@ struct TideIslandBridge {
             return
         }
         let rest = Array(arguments.dropFirst())
+        if command == "inbox" {
+            try InboxCommand.run(rest)
+            return
+        }
         if command == "replay" {
             try ReplayCommand.run(rest)
             return
@@ -131,6 +135,10 @@ struct TideIslandBridge {
                 "format": "hooks.json", "default_mode": "preview",
                 "preserves_config_toml": true, "manages_codex_trust": false,
             ],
+            "inbox_maintenance": [
+                "default_mode": "preview", "requires_managed_marker": true,
+                "protects_unresolved_session_history": true, "capacity_targets_are_soft": true,
+            ],
         ]
         FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .prettyPrinted]) + Data([0x0A]))
     }
@@ -143,6 +151,9 @@ struct TideIslandBridge {
     notify --payload CODEX_NOTIFICATION_JSON [--wave-block ID] [--inbox DIRECTORY]
     hook [--wave-block ID] [--inbox DIRECTORY] < CODEX_HOOK_JSON
     replay --file SCENARIOS_JSON [--scenario NAME]
+    inbox cleanup [--inbox /DIRECTORY] [--max-files COUNT] [--max-bytes BYTES]
+                  [--max-age-days DAYS] [--scan-limit COUNT] [--read-budget-bytes BYTES]
+                  [--apply --expect FINGERPRINT]
     hooks install --config /PATH/hooks.json --bridge /STABLE/PATH/tide-island-bridge
                   [--inbox /DIRECTORY] [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
     hooks uninstall --config /PATH/hooks.json
@@ -156,6 +167,8 @@ struct TideIslandBridge {
     metadata report. Mismatches return 1; no inbox or Codex config is written.
     hooks defaults to preview; apply requires its exact preview fingerprint and
     a backup directory. It never edits config.toml or Codex hook trust records.
+    inbox cleanup previews expired whole-session history. Apply requires the
+    exact fingerprint; active/uncertain histories and unknown files stay intact.
     Default inbox: ~/Library/Application Support/TideIsland/Events
     """
 }

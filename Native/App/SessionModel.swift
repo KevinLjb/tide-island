@@ -9,6 +9,7 @@ import TideIslandCore
 final class SessionModel: ObservableObject {
     @Published private(set) var snapshot: SessionSnapshot?
     @Published private(set) var statusMessage: String?
+    @Published private(set) var cleanupPlan: InboxCleanupPlan?
 
     var sessions: [SessionStatus] { snapshot?.sessions ?? [] }
     var ignoredSessions: [SessionStatus] { snapshot?.ignoredSessions ?? [] }
@@ -16,10 +17,12 @@ final class SessionModel: ObservableObject {
     private var store = SessionStore()
     private let activities = NativeActivityController()
     private var inbox: EventInbox?
+    private var cursor = InboxCursor()
     private var monitor: InboxMonitor?
     private var updateTask: Task<Void, Never>?
     private var pendingSnapshot: SessionSnapshot?
     private var refreshTask: Task<Void, Never>?
+    private var inboxRetryTask: Task<Void, Never>?
     private var subscriptions: Set<AnyCancellable> = []
 
     init() {
@@ -47,15 +50,53 @@ final class SessionModel: ObservableObject {
         defer { publish() }
         do {
             guard let inbox else { return }
-            let batch = try inbox.readRecent()
-            // Restore the bounded batch even when its events are old. The
-            // shared policy marks unresolved old work as unknown, not live.
+            var nextCursor = cursor
+            let batch = try inbox.readIncrementally(using: &nextCursor)
             try store.receive(batch.events)
+            cursor = nextCursor
+            inboxRetryTask?.cancel()
+            inboxRetryTask = nil
+            if batch.changedFiles > 0 || batch.removedFiles > 0 || batch.directoryChanged { cleanupPlan = nil }
             if batch.rejectedFiles > 0 {
                 statusMessage = "已忽略 \(batch.rejectedFiles) 个无法识别的事件文件。"
+            } else if batch.scannedFiles > InboxRetentionPolicy().maximumFiles || batch.totalBytes > InboxRetentionPolicy().maximumBytes {
+                statusMessage = "事件历史超过容量目标，可预览历史清理。"
             }
+        } catch InboxError.busy {
+            inboxRetryTask?.cancel()
+            inboxRetryTask = Task { [weak self] in
+                do { try await Task.sleep(for: .milliseconds(100)) }
+                catch { return }
+                self?.reloadInbox()
+            }
+        } catch InboxError.limitExceeded {
+            statusMessage = "事件历史超过读取上限，暂未加载新状态；请通过命令行提高扫描上限后预览清理。"
         } catch {
             statusMessage = "读取会话事件失败。"
+        }
+    }
+
+    func previewCleanup() {
+        do {
+            guard let inbox else { return }
+            cleanupPlan = try inbox.previewCleanup(at: Date())
+        } catch {
+            cleanupPlan = nil
+            statusMessage = "无法生成清理预览，请检查事件目录后重试。"
+        }
+    }
+
+    func applyCleanup() {
+        guard let inbox, let plan = cleanupPlan else { return }
+        cleanupPlan = nil
+        do {
+            let result = try inbox.applyCleanup(plan, expectedFingerprint: plan.fingerprint)
+            statusMessage = result.failedFiles.isEmpty
+                ? "已清理 \(result.removedFiles) 个过期事件文件。"
+                : "部分事件未能清理，请重新预览。"
+            reloadInbox()
+        } catch {
+            statusMessage = "事件历史已变化或暂不可清理，请重新预览。"
         }
     }
 
@@ -141,7 +182,7 @@ final class SessionModel: ObservableObject {
         }
     }
 
-    deinit { refreshTask?.cancel() }
+    deinit { refreshTask?.cancel(); inboxRetryTask?.cancel() }
 }
 
 /// File events wake the app only when the inbox changes, without a polling loop.

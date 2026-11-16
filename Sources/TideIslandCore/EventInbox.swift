@@ -20,19 +20,15 @@ public struct EventInbox: Sendable {
     }
 
     public func prepare() throws {
-        try FileManager.default.createDirectory(
-            at: directory, withIntermediateDirectories: true,
-            attributes: [.posixPermissions: 0o700]
-        )
+        _ = try InboxDirectory(url: directory, create: true, requireMarker: true)
     }
 
     @discardableResult
     public func write(_ event: AgentEvent) throws -> URL {
         let data = try EventCodec.encode(event)
-        try prepare()
+        let files = try InboxDirectory(url: directory, create: true, requireMarker: true)
+        try files.write(data, id: event.id)
         let destination = directory.appendingPathComponent(event.id.uuidString + ".json")
-        try data.write(to: destination, options: [.atomic])
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
         return destination
     }
 

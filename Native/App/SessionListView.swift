@@ -64,6 +64,22 @@ struct SessionListView: View {
                 }
             }
 
+            HStack {
+                Button("预览历史清理") { model.previewCleanup() }
+                if let plan = model.cleanupPlan {
+                    Button("清理已预览历史") { model.applyCleanup() }
+                        .disabled(plan.removals.isEmpty)
+                }
+            }
+            if let plan = model.cleanupPlan {
+                Text("可清理 \(plan.removals.count) 个历史文件，保留 \(plan.protectedFiles) 个受保护事件。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            if let plan = model.cleanupPlan, !plan.targetsMetAfterCleanup {
+                Text("受保护或无法识别的记录仍超出容量目标，本次清理会保留它们。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
             if let message = model.statusMessage {
                 Text(message).font(.callout).foregroundStyle(.secondary)
                     .accessibilityLabel(message)

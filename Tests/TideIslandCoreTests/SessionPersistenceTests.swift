@@ -79,6 +79,16 @@ private let persistenceEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     #expect(terminal.sessions[0].session.updatedAt == persistenceEpoch.addingTimeInterval(4))
     try restored.receive([persistenceHook(.turnStarted, turn: "turn", time: 8)])
     #expect(restored.snapshot(at: persistenceEpoch.addingTimeInterval(10)).sessions[0].session.phase == .completed)
+    // The public v2 validator also accepts a source-supplied SessionEnd turn
+    // hint. Preserve that raw context separately from the tracked turn.
+    let endedAt = persistenceEpoch.addingTimeInterval(9)
+    let ended = AgentEvent(version: 2, sessionID: "session", projectName: "project", phase: .ended, occurredAt: endedAt,
+                           context: EventContext(source: .codexHook, kind: .sessionEnded, receivedAt: endedAt, turnID: "source-hint"))
+    try restored.receive([ended])
+    let beforeEndSave = try fixture.state.load()
+    _ = try fixture.state.save(restored, index: cursor.importIndex, expected: beforeEndSave.revision)
+    let endState = try fixture.state.load().store.snapshot(at: persistenceEpoch.addingTimeInterval(10))
+    #expect(endState.sessions[0].session.turnID == "next" && endState.sessions[0].session.context?.turnID == "source-hint")
 }
 
 @Test func checkpointPreservesEventFIFOSlotsAndNextEviction() throws {
@@ -118,6 +128,17 @@ private let persistenceEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     for event in history { try fixture.inbox.write(event) }
     let first = fixture.receiver()
     _ = await first.start()
+    let initialSave = await first.flushSavedState()
+    #expect(initialSave)
+    let validState = try Data(contentsOf: fixture.state.fileURL)
+    try fixture.writeState(Data("private-external-corruption".utf8))
+    await first.previewCleanup(); await first.applyCleanup()
+    for event in history { #expect(FileManager.default.fileExists(atPath: fixture.path(event).path)) }
+    let refused = await first.current()
+    #expect(refused.persistence.phase == .unavailable && refused.persistence.problem == .conflict)
+    try fixture.writeState(validState)
+    let repaired = await first.reconnect()
+    #expect(repaired.persistence.phase == .saved)
     await first.previewCleanup(); await first.applyCleanup()
     for event in history {
         #expect(!FileManager.default.fileExists(atPath: fixture.path(event).path))
@@ -430,6 +451,14 @@ private let persistenceEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     _ = await second.stop()
     let after = try Data(contentsOf: fixture.state.fileURL)
     #expect(after == original)
+    let fresh = try PersistenceFixture()
+    defer { fresh.remove() }
+    try fresh.inbox.write(persistenceEvent(.working))
+    let neverLoaded = InboxReceiver(inbox: fresh.inbox, limits: limits, persistence: fresh.state, now: { persistenceEpoch })
+    let initialFailure = await neverLoaded.start()
+    #expect(initialFailure.health.problem == .readLimitExceeded)
+    _ = await neverLoaded.stop()
+    #expect(!FileManager.default.fileExists(atPath: fresh.state.directory.path))
 }
 
 @Test func checkpointSaveUsesPrivateAtomicFilesAndExcludesProviderContent() throws {

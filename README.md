@@ -134,7 +134,7 @@ swift run tide-island-bridge inbox recover --inbox /absolute/path/to/TideIsland/
 
 ## 保存与清除本地会话
 
-原生接入已启用必要元数据和偏好的本地 checkpoint，保留原事件时间、轮次及去重窗口；重启后重新确认当前事件来源。清理历史前先保存状态。保存失败或数据损坏时会给出提示，不静默覆盖原文件。
+原生接入源码已启用必要元数据和偏好的本地 checkpoint，保留原事件时间、轮次及去重窗口；重启后重新确认当前事件来源。清理历史前先保存状态。保存失败或数据损坏时会给出提示，不静默覆盖原文件。
 
 ```bash
 swift run tide-island-bridge state inspect --inbox /absolute/path/to/TideIsland/Events

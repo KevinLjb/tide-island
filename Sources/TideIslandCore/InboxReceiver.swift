@@ -109,6 +109,7 @@ public actor InboxReceiver {
     @discardableResult
     public func reconnect() -> InboxFrame {
         guard started else { return start() }
+        if stateFile != nil, persistence.phase == .unavailable, !needsSave { loadedState = false }
         cancelScheduledReads()
         retryAttempt = 0
         cancelMonitors()
@@ -169,11 +170,11 @@ public actor InboxReceiver {
     /// Preferences are saved before their action returns. Event bursts share
     /// a maximum 300 ms save window; their original inbox files remain durable.
     @discardableResult
-    public func flushSavedState() -> Bool {
+    public func flushSavedState(forceVerification: Bool = false) -> Bool {
         saveTask?.cancel(); saveTask = nil
         guard let stateFile else { needsSave = false; return true }
         guard loadedState, let expected = stateRevision else { return false }
-        guard needsSave else { return true }
+        guard needsSave || (forceVerification && hasCheckpoint) else { return true }
         do {
             try lease?.verifyPath()
             guard lease != nil else { throw SessionStateError.conflict }
@@ -259,7 +260,7 @@ public actor InboxReceiver {
             guard health.state == .healthy || health.state == .degraded else {
                 notice = "事件历史尚未完整读取，暂不清理。"; emit(); return
             }
-            guard flushSavedState() else {
+            guard flushSavedState(forceVerification: true) else {
                 notice = "会话状态尚未保存，暂不清理历史，以免重启后丢失轮次保护。"
                 emit(); return
             }

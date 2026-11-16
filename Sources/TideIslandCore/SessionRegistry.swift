@@ -325,7 +325,7 @@ fileprivate extension SessionState {
               turnAnchor?.timeIntervalSince1970.isFinite != false,
               Set(toolIDs.orderedValues) == Set(tools.keys) else { throw SessionStateError.invalidData }
         if session.turnID != session.context?.turnID {
-            guard session.context?.kind == .sessionEnded, session.context?.turnID == nil else { throw SessionStateError.invalidData }
+            guard session.context?.kind == .sessionEnded else { throw SessionStateError.invalidData }
         }
         if let turn = session.turnID { try SessionCheckpointCodec.validateIdentifier(turn) }
         for turn in retired.orderedValues { try SessionCheckpointCodec.validateIdentifier(turn) }

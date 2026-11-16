@@ -91,7 +91,10 @@ private let recoveryEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     _ = await second.stop()
     let locks = try FileManager.default.contentsOfDirectory(at: fixture.root, includingPropertiesForKeys: nil)
         .filter { $0.pathExtension == "lock" }
-    #expect(locks.count == 1 && (try Data(contentsOf: locks[0])).isEmpty)
+    #expect(locks.count == 1)
+    let lock = try #require(locks.first)
+    let lockBytes = try Data(contentsOf: lock)
+    #expect(lockBytes.isEmpty)
 }
 
 @Test func staleWatcherCallbacksCannotInvalidateARearmedOrStoppedReceiver() async throws {

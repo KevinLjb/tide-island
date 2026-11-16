@@ -1,7 +1,7 @@
 import Foundation
 
 public enum IslandActivityDeliveryPhase: String, Sendable {
-    case idle, scheduled, updating, synchronized, failed
+    case idle, scheduled, updating, synchronized, failed, stopping, stopped
 }
 
 /// Client acknowledgement metadata, not proof of visible system presentation.
@@ -36,6 +36,10 @@ public actor IslandActivityScheduler {
     private var lastPresentation: IslandActivityPresentation?
     private var lastAttemptPresentation: IslandActivityPresentation?
     private var lastAttemptAt: TimeInterval?
+    private var sourceScope: IslandActivityScope = .ownedOnly
+    private var accepting = true
+    private var shutdownTask: Task<Bool, Never>?
+    private var shutdownRevision: UInt64 = 0
 
     public init(client: any IslandActivityClient, now: @escaping @Sendable () -> Date = { Date() },
                 uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
@@ -47,15 +51,18 @@ public actor IslandActivityScheduler {
     }
 
     @discardableResult
-    public func submit(snapshot: SessionSnapshot, sequence: UInt64) -> Bool {
-        guard sourceSequence.map({ sequence > $0 }) != false else { return false }
+    public func submit(snapshot: SessionSnapshot, sequence: UInt64, scope: IslandActivityScope = .ownedOnly,
+                       forceReconciliation: Bool = false) -> Bool {
+        guard accepting, sourceSequence.map({ sequence > $0 }) != false else { return false }
+        let force = forceReconciliation || pending?.force == true || scope != sourceScope
         sourceSequence = sequence
-        pending = Pending(sequence: sequence, snapshot: snapshot)
+        sourceScope = scope
+        pending = Pending(sequence: sequence, snapshot: snapshot, scope: scope, force: force)
         if worker == nil { phase = .scheduled }
         // A temporary throttle wait can be interrupted; an already dispatched
         // native operation is allowed to finish before the latest one follows.
         let presentation = try? policy.presentation(for: snapshot, at: now())
-        if isUrgent(presentation) { delayTask?.cancel() }
+        if force || isUrgent(presentation) { delayTask?.cancel() }
         emit()
         startWorker()
         return true
@@ -71,13 +78,42 @@ public actor IslandActivityScheduler {
         while let worker { await worker.value }
     }
 
+    /// Reject new input immediately, settle dispatched operations, then clean
+    /// up in an uncancelled task. Failed cleanup can be explicitly retried.
+    @discardableResult
+    public func shutdown() async -> Bool {
+        accepting = false; pending = nil; delayTask?.cancel()
+        phase = .stopping; emit()
+        if shutdownTask == nil {
+            shutdownRevision &+= 1
+            let inFlight = worker, controller = self.controller
+            shutdownTask = Task { [weak self] in
+                await inFlight?.value
+                do {
+                    try await controller.shutdown()
+                    await self?.finishShutdown(problem: nil)
+                    return true
+                } catch {
+                    await self?.finishShutdown(problem: (error as? IslandActivityError) ?? .endFailed)
+                    return false
+                }
+            }
+        }
+        let revision = shutdownRevision
+        let succeeded = await shutdownTask!.value
+        if !succeeded, revision == shutdownRevision { shutdownTask = nil }
+        return succeeded
+    }
+
     private struct Pending: Sendable {
         let sequence: UInt64
         let snapshot: SessionSnapshot
+        let scope: IslandActivityScope
+        let force: Bool
     }
 
     private func startWorker() {
-        guard worker == nil, pending != nil else { return }
+        guard accepting, worker == nil, pending != nil else { return }
         worker = Task { [weak self] in
             guard let self else { return }
             await self.drain()
@@ -94,13 +130,13 @@ public actor IslandActivityScheduler {
             pending = nil
             do {
                 let presentation = try policy.presentation(for: next.snapshot, at: now())
-                if hasSynchronized, presentation == lastPresentation {
+                if !next.force, hasSynchronized, presentation == lastPresentation {
                     synchronizedSequence = next.sequence
                     problem = nil; phase = pending == nil ? .synchronized : .scheduled
                     emit()
                     continue
                 }
-                let delay = try nextDelay(for: presentation)
+                let delay = next.force ? 0 : try nextDelay(for: presentation)
                 if delay > 0 {
                     pending = next
                     phase = .scheduled; emit()
@@ -129,12 +165,12 @@ public actor IslandActivityScheduler {
                 // A failed/lost response may still have changed the SDK state.
                 // Do not reuse an earlier successful dedup cache in that case.
                 hasSynchronized = false
-                let actual = try await controller.deliver(snapshot: next.snapshot)
+                let actual = try await controller.deliver(snapshot: next.snapshot, scope: next.scope)
                 lastPresentation = actual
                 if actual == nil { lastAttemptPresentation = nil }
                 hasSynchronized = true
                 synchronizedSequence = next.sequence
-                problem = nil; phase = pending == nil ? .synchronized : .scheduled
+                problem = nil; phase = !accepting ? .stopping : pending == nil ? .synchronized : .scheduled
                 emit()
             } catch is CancellationError {
                 if Task.isCancelled { return }
@@ -172,6 +208,13 @@ public actor IslandActivityScheduler {
 
     private func fail(_ error: IslandActivityError) {
         problem = error; phase = .failed
+        emit()
+    }
+
+    private func finishShutdown(problem: IslandActivityError?) {
+        hasSynchronized = false; lastPresentation = nil
+        self.problem = problem
+        phase = problem == nil ? .stopped : .failed
         emit()
     }
 

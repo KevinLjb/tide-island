@@ -23,7 +23,7 @@ T016 将 Activity 展示数据、时间检查和基本自有活动控制移到�
 
 ## 客户端与基本控制
 
-`IslandActivityClient` 只暴露授权查询、request、update、end。活动 ID 是由客户端返回的不透明、自有标识，不作为路径、进程身份或会话证明；SDK 对象不进入共享层。
+`IslandActivityClient` 暴露授权查询、request、update、end，以及 T018 的可选完整活动清单。活动 ID 是由客户端返回的不透明、自有标识，不作为路径、进程身份或会话证明；SDK 对象不进入共享层。
 
 `IslandActivityController` 当前执行基本的单活动流程：
 
@@ -34,11 +34,11 @@ T016 将 Activity 展示数据、时间检查和基本自有活动控制移到�
 5. end 成功才清空 ID；失败保留原所有权，供下一次明确操作重试。已发送后取消不会声称撤销成功。
 6. request / update / end 的未知客户端异常分别转为固定错误，不输出原异常。基本控制器并发调用返回 busy，不重叠执行 SDK 操作；T017 已由 [共享调度器](activity-delivery.md)独占基本控制器，负责最新状态、序号、去重、节流和合并。
 
-授权在查询后仍可能变化；T018 将处理授权变化、系统已结束活动、重启 / 遗留活动关联及退出清理。当前禁用错误不表示所有系统活动已被清理，也不提供跨进程事务或崩溃清理保证。
+T018 已加入清单协调、授权变化、系统已结束 / 用户关闭活动、重启关联及退出清理，完整规则见 [活动生命周期](activity-lifecycle.md)。禁用时先尝试清理管理中的活动；不提供跨进程事务、崩溃清理或原生运行保证。
 
 ## 原生适配源码
 
-`NativeActivityController` 委托共享调度器及其基本控制器；`NativeActivityKitClient` 在主 actor 使用公开 ActivityAuthorizationInfo、Activity.request、update、end，并仅保留本次请求得到的 SDK 对象。ContentState 与 staleDate 直接取共享投影，不在适配层重新计算计数或刷新时间。
+`NativeActivityController` 委托共享调度器及其基本控制器；`NativeActivityKitClient` 在主 actor 使用公开 ActivityAuthorizationInfo、Activity.request、update、end，并保留本次请求 / 经主接收器授权接管的 SDK 对象。ContentState 与 staleDate 直接取共享投影，不在适配层重新计算计数或刷新时间。
 
 没有新增 Native 文件，两个 target 的共享声明和本地 package 依赖保持现有结构。原生类型别名、客户端隔离、授权、系统生命周期和显示效果均未编译 / 运行；工程结构检查只确认文件和 target，不代替这些验收。
 
@@ -46,4 +46,4 @@ T016 将 Activity 展示数据、时间检查和基本自有活动控制移到�
 
 新增 17 项共享测试覆盖优先级及最早截止、来源 / 忽略 / 空闲过滤、旧聚合和时钟、六字段兼容与隐私、非法数据解码、合法 Unicode、客户端基本流程、失败保留所有权、授权等待过期、取消以及并发排斥。具体执行证据见 [开发进度](development-progress.md)。
 
-CLI 的 `island_activity` 能力说明明确区分共享预算与未验证的正式 SDK；CLI 不调用原生活动。T017 已实现 [共享合并 / 去重 / 串行调度](activity-delivery.md)，T018 继续完整处理系统活动生命周期，T019 完善视图与交互。
+CLI 的 `island_activity` 能力说明明确区分共享预算与未验证的正式 SDK；CLI 不调用原生活动。T017 已实现 [共享合并 / 去重 / 串行调度](activity-delivery.md)，T018 已加入 [系统活动生命周期](activity-lifecycle.md)，T019 完善视图与交互。

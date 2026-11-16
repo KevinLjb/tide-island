@@ -88,6 +88,9 @@ def main():
         assert supported["island_activity"]["latest_snapshot_scheduler"] and supported["island_activity"]["ordered_source_sequences"]
         assert supported["island_activity"]["minimum_ordinary_update_interval_seconds"] > 0
         assert supported["island_activity"]["delivery_stream"]
+        assert supported["island_activity"]["scoped_activity_inventory"]
+        assert supported["island_activity"]["forced_reconciliation"] and supported["island_activity"]["graceful_shutdown"]
+        assert supported["island_activity"]["system_dismissal_memory"] == "process-only"
         checks += 1
 
         fixture_path = Path(__file__).resolve().parent.parent / "Tests/TideIslandCoreTests/Fixtures/Codex/lifecycle.json"

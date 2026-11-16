@@ -17,7 +17,11 @@ final class SessionModel: ObservableObject {
     private var receiver: InboxReceiver?
     private var frameTask: Task<Void, Never>?
     private var activityTask: Task<Void, Never>?
+    private var systemActivityTask: Task<Void, Never>?
     private var activitySequence: UInt64 = 0
+    private var activityScope: IslandActivityScope = .ownedOnly
+    private var requiresActivityReconciliation = false
+    private var stopping = false
     private var subscriptions: Set<AnyCancellable> = []
     private var waveReturn: WaveReturnCoordinator?
     private var returnTask: Task<Void, Never>?
@@ -35,6 +39,13 @@ final class SessionModel: ObservableObject {
                 refreshStatusMessage()
             }
         }
+        let changes = activities.changes
+        systemActivityTask = Task { [weak self] in
+            for await _ in changes {
+                guard !Task.isCancelled, let self else { break }
+                reloadInbox()
+            }
+        }
         NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)
             .merge(with: NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification))
             .sink { [weak self] _ in
@@ -45,6 +56,7 @@ final class SessionModel: ObservableObject {
     }
 
     private func connectReceiver() {
+        guard !stopping else { return }
         do {
             let inbox = try EventInbox.applicationDefault()
             let receiver = InboxReceiver(inbox: inbox, persistence: SessionStateFile(inbox: inbox))
@@ -66,6 +78,8 @@ final class SessionModel: ObservableObject {
     }
 
     func reloadInbox() {
+        guard !stopping else { return }
+        requiresActivityReconciliation = true
         guard let receiver else { connectReceiver(); return }
         Task { await receiver.reconnect() }
     }
@@ -150,16 +164,38 @@ final class SessionModel: ObservableObject {
     }
 
     private func publish(_ frame: InboxFrame) {
+        guard !stopping else { return }
         channelMessage = frame.persistence.message ?? frame.health.message ?? frame.notice
         refreshStatusMessage()
         channelNeedsRecovery = frame.health.state != .healthy || frame.persistence.phase == .unavailable
         cleanupPlan = frame.cleanupPlan
-        guard frame.snapshot != snapshot else { return }
+        let scope: IslandActivityScope = frame.health.state == .healthy ? .application : .ownedOnly
+        guard frame.snapshot != snapshot || scope != activityScope || requiresActivityReconciliation else { return }
         snapshot = frame.snapshot
+        activityScope = scope
+        let force = requiresActivityReconciliation
+        requiresActivityReconciliation = false
+        submitActivity(force: force)
+    }
+
+    private func submitActivity(force: Bool = false) {
+        guard !stopping, let snapshot else { return }
         activitySequence &+= 1
         let sequence = activitySequence
-        let activities = self.activities
-        Task { await activities.submit(snapshot: frame.snapshot, sequence: sequence) }
+        let activities = self.activities, scope = activityScope
+        Task { await activities.submit(snapshot: snapshot, sequence: sequence, scope: scope, force: force) }
+    }
+
+    func shutdown() async {
+        guard !stopping else { return }
+        stopping = true
+        subscriptions.removeAll()
+        frameTask?.cancel(); systemActivityTask?.cancel(); activityTask?.cancel()
+        returnRevision &+= 1; returnTask?.cancel()
+        // Keep the receiver lease until activity operations have settled. A
+        // secondary process must not adopt while this instance is cleaning up.
+        _ = await activities.shutdown()
+        await receiver?.stop()
     }
 
     private func showReturnMessage(_ message: String?, invalidatesPending: Bool = false) {
@@ -175,8 +211,10 @@ final class SessionModel: ObservableObject {
     deinit {
         frameTask?.cancel()
         activityTask?.cancel()
+        systemActivityTask?.cancel()
         returnTask?.cancel()
-        if let receiver { Task { await receiver.stop() } }
+        let activities = self.activities, receiver = self.receiver
+        Task { _ = await activities.shutdown(); await receiver?.stop() }
     }
 }
 

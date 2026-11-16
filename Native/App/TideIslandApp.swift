@@ -2,18 +2,48 @@ import SwiftUI
 
 @main
 struct TideIslandApp: App {
-    @StateObject private var model = SessionModel()
+    @NSApplicationDelegateAdaptor(TideIslandApplicationDelegate.self) private var delegate
 
     var body: some Scene {
         Window("TideIsland · 潮汐岛", id: "sessions") {
-            SessionListView(model: model)
-                .onOpenURL { model.openSession(url: $0) }
+            SessionListView(model: delegate.model)
+                .onOpenURL { delegate.model.openSession(url: $0) }
         }
         .defaultSize(width: 480, height: 420)
 
         MenuBarExtra("TideIsland", systemImage: "water.waves") {
-            MenuContent(model: model)
+            MenuContent(model: delegate.model)
         }
+    }
+}
+
+@MainActor
+private final class TideIslandApplicationDelegate: NSObject, NSApplicationDelegate {
+    let model = SessionModel()
+    private var terminating = false
+    private var replied = false
+    private var timeout: Task<Void, Never>?
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard !terminating else { return .terminateLater }
+        terminating = true
+        Task {
+            await model.shutdown()
+            finishTermination(sender)
+        }
+        timeout = Task {
+            do { try await Task.sleep(for: .seconds(5)) } catch { return }
+            // Best effort only: forced quit/crash and an unresponsive SDK are
+            // recovered from public inventory on the next primary startup.
+            finishTermination(sender)
+        }
+        return .terminateLater
+    }
+
+    private func finishTermination(_ application: NSApplication) {
+        guard !replied else { return }
+        replied = true; timeout?.cancel(); timeout = nil
+        application.reply(toApplicationShouldTerminate: true)
     }
 }
 

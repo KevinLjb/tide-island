@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T017 已加入 [共享活动调度](docs/activity-delivery.md)：来源序号、最新状态合并、展示去重、普通限频、紧急打断与响应流，[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43936847860) 实际执行 243 / 声明 243 项测试全部通过，七项检查成功。原生编译、正式 SDK 限制、签名和真机验收继续待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T018 已加入 [活动生命周期协调](docs/activity-lifecycle.md)：遗留接管 / 重复清理、授权和系统关闭响应、强制同步与退出清理。新增 24 项共享测试，全量声明 267 项，等待本轮严格 CI。原生编译、正式 SDK 限制、签名和真机验收继续待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -50,6 +50,7 @@ docs/wave-navigation.md       定位路线、运行时 / 目标复核、请求�
 docs/wave-return.md           应用级返回、严格会话链接、安装 / 运行与错误反馈
 docs/activity-presentation.md 实时活动共享投影、客户端边界与验证范围
 docs/activity-delivery.md     来源顺序、最新状态合并、去重、限频与响应流
+docs/activity-lifecycle.md    遗留清单、授权 / 系统关闭、scope 与退出清理
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。

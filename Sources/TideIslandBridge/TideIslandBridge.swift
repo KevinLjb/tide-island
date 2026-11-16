@@ -193,6 +193,8 @@ struct TideIslandBridge {
                 "latest_snapshot_scheduler": true, "ordered_source_sequences": true,
                 "minimum_ordinary_update_interval_seconds": IslandActivityScheduler.minimumUpdateInterval,
                 "delivery_stream": true,
+                "scoped_activity_inventory": true, "forced_reconciliation": true,
+                "graceful_shutdown": true, "system_dismissal_memory": "process-only",
             ],
         ]
         FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .prettyPrinted]) + Data([0x0A]))

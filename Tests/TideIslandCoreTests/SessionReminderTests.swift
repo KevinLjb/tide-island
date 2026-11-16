@@ -215,7 +215,7 @@ private var reminderCalendar: Calendar { var value = Calendar(identifier: .grego
     }
 }
 
-@Test func remindersUncertainPostFailureNeverAutomaticallyRepostsTheSameEpisode() async {
+@Test func remindersUncertainPostFailureNeverAutomaticallyRepostsTheSameEpisode() async throws {
     let client = ReminderClient(loseResponse: true), fixture = ReminderFixture(client: client)
     await fixture.baseline(); let snapshot = reminderSnapshot(.needsInput)
     await fixture.submit(snapshot, 2); await fixture.coordinator.flush()
@@ -226,6 +226,14 @@ private var reminderCalendar: Calendar { var value = Calendar(identifier: .grego
     await fixture.submit(reminderSnapshot(.needsInput), 5); await fixture.coordinator.flush()
     let recovered = await fixture.coordinator.current()
     #expect(recovered.problem == nil && recovered.submittedCount == 1)
+    let gate = ReminderGate(), queuedClient = ReminderClient(postGate: gate, loseResponse: true)
+    let queued = ReminderFixture(client: queuedClient); await queued.baseline()
+    await queued.submit(reminderSnapshot(.needsInput), 2)
+    try await reminderEntered(gate.entries)
+    await queued.submit(reminderSnapshot(.completed), 3)
+    await gate.open(); await queued.coordinator.flush()
+    let pending = await queuedClient.posted, delivered = await queued.coordinator.current()
+    #expect(pending.count == 2 && pending.last?.kind == .turnEnded && delivered.submittedCount == 1)
 }
 
 @Test func remindersRecheckResumptionAndSourceAuthorityAfterPermissionAwait() async throws {
@@ -271,16 +279,19 @@ private var reminderCalendar: Calendar { var value = Calendar(identifier: .grego
 }
 
 @Test func remindersInvalidLatestSnapshotCannotLeaveAnOlderNotificationUsable() async throws {
-    let gate = ReminderGate(), fixture = ReminderFixture(client: ReminderClient(authorizationGate: gate))
-    await fixture.baseline()
-    let snapshot = reminderSnapshot(.needsInput)
-    await fixture.submit(snapshot, 2)
-    try await reminderEntered(gate.entries)
-    let invalid = SessionSnapshot(sessions: snapshot.sessions + snapshot.sessions, ignoredSessions: [], preferredSessionID: nil, nextTransitionAt: nil)
-    await fixture.submit(invalid, 3)
-    await gate.open(); await fixture.coordinator.flush()
-    let posted = await fixture.client.posted, result = await fixture.coordinator.current()
-    #expect(posted.isEmpty && result.problem == .invalidSnapshot && result.sourceSequence == 3)
+    for posting in [false, true] {
+        let gate = ReminderGate()
+        let fixture = ReminderFixture(client: ReminderClient(authorizationGate: posting ? nil : gate, postGate: posting ? gate : nil))
+        await fixture.baseline()
+        let snapshot = reminderSnapshot(.needsInput)
+        await fixture.submit(snapshot, 2)
+        try await reminderEntered(gate.entries)
+        let invalid = SessionSnapshot(sessions: snapshot.sessions + snapshot.sessions, ignoredSessions: [], preferredSessionID: nil, nextTransitionAt: nil)
+        await fixture.submit(invalid, 3)
+        await gate.open(); await fixture.coordinator.flush()
+        let posted = await fixture.client.posted, result = await fixture.coordinator.current()
+        #expect(posted.count == (posting ? 1 : 0) && result.problem == .invalidSnapshot && result.sourceSequence == 3)
+    }
 }
 
 @Test func remindersRejectLateSourceSequencesIncludingTheirAuthorityAndSettings() async {

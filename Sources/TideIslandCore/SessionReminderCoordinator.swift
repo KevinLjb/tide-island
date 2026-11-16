@@ -133,11 +133,15 @@ public actor SessionReminderCoordinator {
                     // The OS may have accepted a post whose response was lost.
                     // Do not post again in this episode on an ordinary refresh.
                     settle(status.id, episode: entry.episodeID, outcome: .uncertain)
-                    problem = .deliveryFailed; emit(); return
+                    if latest != nil { problem = .deliveryFailed }
+                    emit(); continue
                 }
                 submittedCount &+= 1
                 settle(status.id, episode: entry.episodeID, outcome: .settled)
-                problem = nil; emit()
+                // A completed older post cannot validate a newer malformed
+                // source that arrived while the SDK call was suspended.
+                if latest != nil { problem = nil }
+                emit()
             } catch let error as SessionReminderProblem {
                 settle(status.id, episode: entry.episodeID, outcome: .retryable)
                 problem = error; emit(); return

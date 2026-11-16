@@ -6,9 +6,10 @@ import TideIslandCore
 final class NativeActivityController {
     private var activity: Activity<TideIslandAttributes>?
 
-    func update(sessions: [AgentSession]) async throws {
+    func update(snapshot: SessionSnapshot) async throws {
         try Task.checkCancellation()
-        guard let highlighted = sessions.first else {
+        guard let highlighted = snapshot.activitySession,
+              let staleAt = snapshot.activityStaleAt, staleAt > Date() else {
             await activity?.end(nil, dismissalPolicy: .immediate)
             activity = nil
             return
@@ -18,21 +19,17 @@ final class NativeActivityController {
         }
         let state = TideIslandAttributes.ContentState(
             sessionID: highlighted.id,
-            projectName: highlighted.projectName,
-            phase: highlighted.phase,
-            workingCount: sessions.filter { $0.phase == .working }.count,
-            waitingCount: sessions.filter { $0.phase == .needsInput }.count,
-            updatedAt: highlighted.updatedAt
+            projectName: highlighted.session.projectName,
+            phase: highlighted.session.phase,
+            workingCount: snapshot.workingCount,
+            waitingCount: snapshot.waitingCount,
+            updatedAt: highlighted.session.updatedAt
         )
-        let content = ActivityContent(state: state, staleDate: Date().addingTimeInterval(5 * 60))
+        let content = ActivityContent(state: state, staleDate: staleAt)
         if let activity {
             await activity.update(content)
         } else {
             activity = try Activity.request(attributes: TideIslandAttributes(), content: content, pushType: nil)
-        }
-        if state.workingCount == 0, state.waitingCount == 0 {
-            await activity?.end(content, dismissalPolicy: .after(Date().addingTimeInterval(30)))
-            activity = nil
         }
     }
 

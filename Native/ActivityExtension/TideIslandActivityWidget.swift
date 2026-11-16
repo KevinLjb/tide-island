@@ -14,8 +14,8 @@ struct TideIslandActivityWidget: Widget {
             VStack(alignment: .leading, spacing: 8) {
                 Label(context.state.projectName, systemImage: context.state.phase.symbolName)
                     .font(.headline)
-                Text(context.isStale ? "等待新的状态" : context.state.phase.title)
-                Text("工作中 \(context.state.workingCount) · 待处理 \(context.state.waitingCount)")
+                Text(context.isStale ? "状态待确认" : context.state.phase.title)
+                Text(context.isStale ? "会话状态待确认" : "工作中 \(context.state.workingCount) · 待处理 \(context.state.waitingCount)")
                     .font(.caption).foregroundStyle(.secondary)
             }
             .padding()
@@ -27,15 +27,15 @@ struct TideIslandActivityWidget: Widget {
                         .lineLimit(1)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("\(context.state.workingCount) 工作中").monospacedDigit()
+                    Text(context.isStale ? "状态待确认" : "\(context.state.workingCount) 工作中").monospacedDigit()
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text(context.isStale ? "等待新的状态" : context.state.phase.title)
+                    Text(context.isStale ? "状态待确认" : context.state.phase.title)
                 }
             } compactLeading: {
                 Image(systemName: context.isStale ? "clock" : context.state.phase.symbolName)
             } compactTrailing: {
-                Text("\(context.state.workingCount + context.state.waitingCount)").monospacedDigit()
+                Text(context.isStale ? "?" : "\(context.state.workingCount + context.state.waitingCount)").monospacedDigit()
             } minimal: {
                 Image(systemName: context.isStale ? "clock" : context.state.phase.symbolName)
             }

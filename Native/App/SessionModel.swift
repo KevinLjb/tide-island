@@ -7,17 +7,26 @@ import TideIslandCore
 
 @MainActor
 final class SessionModel: ObservableObject {
-    @Published private(set) var sessions: [AgentSession] = []
+    @Published private(set) var sessions: [SessionStatus] = []
     @Published private(set) var statusMessage: String?
 
-    private var registry = SessionRegistry()
+    private var store = SessionStore()
     private let activities = NativeActivityController()
     private var inbox: EventInbox?
     private var monitor: InboxMonitor?
     private var updateTask: Task<Void, Never>?
-    private var pendingSessions: [AgentSession]?
+    private var pendingSnapshot: SessionSnapshot?
+    private var currentSnapshot: SessionSnapshot?
+    private var refreshTask: Task<Void, Never>?
+    private var subscriptions: Set<AnyCancellable> = []
 
     init() {
+        NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)
+            .merge(with: NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification))
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in self?.reloadInbox() }
+            }
+            .store(in: &subscriptions)
         do {
             let inbox = try EventInbox.applicationDefault()
             try inbox.prepare()
@@ -32,16 +41,14 @@ final class SessionModel: ObservableObject {
     }
 
     func reloadInbox() {
+        // Time still advances when the inbox is temporarily unavailable.
+        defer { publish() }
         do {
             guard let inbox else { return }
             let batch = try inbox.readRecent()
-            var changed = false
-            // Startup must not revive old "working" events as a live task.
-            let cutoff = Date().addingTimeInterval(-15 * 60)
-            for event in batch.events where event.occurredAt >= cutoff {
-                if try registry.apply(event) { changed = true }
-            }
-            if changed { publish() }
+            // Restore the bounded batch even when its events are old. The
+            // shared policy marks unresolved old work as unknown, not live.
+            try store.receive(batch.events)
             if batch.rejectedFiles > 0 {
                 statusMessage = "已忽略 \(batch.rejectedFiles) 个无法识别的事件文件。"
             }
@@ -52,9 +59,9 @@ final class SessionModel: ObservableObject {
 
     func loadDemo() {
         do {
-            try registry.apply(AgentEvent(
+            try store.receive([AgentEvent(
                 sessionID: "tide-island-demo", projectName: "演示 · TideIsland", phase: .working
-            ))
+            )])
             publish()
         } catch {
             statusMessage = "无法加载演示会话。"
@@ -67,7 +74,7 @@ final class SessionModel: ObservableObject {
         openWave(for: session)
     }
 
-    func openWave(for session: AgentSession) {
+    func openWave(for session: SessionStatus) {
         // Block metadata is retained for the next adapter. App activation is
         // deliberately not reported as a successful exact block jump.
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "dev.commandline.waveterm") else {
@@ -82,18 +89,23 @@ final class SessionModel: ObservableObject {
     }
 
     private func publish() {
-        sessions = registry.sessions
-        pendingSessions = sessions
+        let now = Date()
+        let snapshot = store.snapshot(at: now)
+        scheduleRefresh(at: snapshot.nextTransitionAt, now: now)
+        guard snapshot != currentSnapshot else { return }
+        currentSnapshot = snapshot
+        sessions = snapshot.sessions
+        pendingSnapshot = snapshot
         guard updateTask == nil else { return }
         updateTask = Task { [weak self] in
             guard let self else { return }
             // Activity IPC can suspend. Use one consumer so an older completion
             // never ends an activity while a newer working update is in flight.
             // Bursts coalesce into the latest pending session snapshot.
-            while let current = pendingSessions {
-                pendingSessions = nil
+            while let current = pendingSnapshot {
+                pendingSnapshot = nil
                 do {
-                    try await activities.update(sessions: current)
+                    try await activities.update(snapshot: current)
                 } catch {
                     statusMessage = "原生实时活动暂不可用，请检查系统的实时活动设置。"
                 }
@@ -101,6 +113,20 @@ final class SessionModel: ObservableObject {
             updateTask = nil
         }
     }
+
+    private func scheduleRefresh(at deadline: Date?, now: Date) {
+        refreshTask?.cancel()
+        refreshTask = nil
+        guard let deadline else { return }
+        let delay = max(0.1, deadline.timeIntervalSince(now))
+        refreshTask = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(delay)) }
+            catch { return }
+            self?.publish()
+        }
+    }
+
+    deinit { refreshTask?.cancel() }
 }
 
 /// File events wake the app only when the inbox changes, without a polling loop.

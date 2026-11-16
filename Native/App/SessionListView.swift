@@ -21,12 +21,15 @@ struct SessionListView: View {
             } else {
                 List(model.sessions) { session in
                     HStack(spacing: 12) {
-                        Image(systemName: session.phase.symbolName)
+                        Image(systemName: session.symbolName)
                             .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(session.projectName).font(.headline)
-                            Text(session.phase.title).foregroundStyle(.secondary)
-                            Text(session.updatedAt, style: .relative)
+                            Text(session.session.projectName).font(.headline)
+                            Text(session.title).foregroundStyle(.secondary)
+                            if let detail = session.detail {
+                                Text(detail).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Text(session.session.updatedAt, style: .relative)
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()

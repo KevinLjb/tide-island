@@ -7,6 +7,9 @@ public struct AgentSession: Identifiable, Equatable, Sendable {
     public let updatedAt: Date
     public let waveBlockID: String?
     public let lastEventID: UUID
+    public let context: EventContext?
+
+    public var turnID: String? { context?.turnID }
 
     init(event: AgentEvent) {
         id = event.sessionID
@@ -15,6 +18,7 @@ public struct AgentSession: Identifiable, Equatable, Sendable {
         updatedAt = event.occurredAt
         waveBlockID = event.waveBlockID
         lastEventID = event.id
+        context = event.context
     }
 }
 

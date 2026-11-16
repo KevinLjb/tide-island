@@ -1,0 +1,115 @@
+{
+  "contract_cli_version": "0.169.0",
+  "upstream_revision": "d32063f96c2dff1dc96af839b3952abb6acfeda4",
+  "fixtures": [
+    {
+      "name": "turn-start",
+      "schema": "user-prompt-submit.command.input.schema.json",
+      "kind": "turnStarted",
+      "phase": "working",
+      "payload": {
+        "session_id": "fixture-session", "turn_id": "fixture-turn",
+        "transcript_path": "/fixture-private/transcript.jsonl", "cwd": "/fixture/projects/tide-island",
+        "hook_event_name": "UserPromptSubmit", "model": "fixture-model", "permission_mode": "default",
+        "prompt": "fixture-private-prompt"
+      }
+    },
+    {
+      "name": "tool-start",
+      "schema": "pre-tool-use.command.input.schema.json",
+      "kind": "toolStarted",
+      "phase": "working",
+      "payload": {
+        "session_id": "fixture-session", "turn_id": "fixture-turn",
+        "transcript_path": "/fixture-private/transcript.jsonl", "cwd": "/fixture/projects/tide-island",
+        "hook_event_name": "PreToolUse", "model": "fixture-model", "permission_mode": "default",
+        "tool_name": "Bash", "tool_use_id": "fixture-tool",
+        "tool_input": {"command": "echo fixture-private-command"}
+      }
+    },
+    {
+      "name": "permission-request",
+      "schema": "permission-request.command.input.schema.json",
+      "kind": "permissionRequested",
+      "phase": "needsInput",
+      "payload": {
+        "session_id": "fixture-session", "turn_id": "fixture-turn",
+        "transcript_path": "/fixture-private/transcript.jsonl", "cwd": "/fixture/projects/tide-island",
+        "hook_event_name": "PermissionRequest", "model": "fixture-model", "permission_mode": "default",
+        "tool_name": "Bash", "tool_input": {"command": "echo fixture-private-command"}
+      }
+    },
+    {
+      "name": "tool-failure-keeps-turn-working",
+      "schema": "post-tool-use.command.input.schema.json",
+      "kind": "toolFinished",
+      "phase": "working",
+      "payload": {
+        "session_id": "fixture-session", "turn_id": "fixture-turn",
+        "transcript_path": "/fixture-private/transcript.jsonl", "cwd": "/fixture/projects/tide-island",
+        "hook_event_name": "PostToolUse", "model": "fixture-model", "permission_mode": "default",
+        "tool_name": "Bash", "tool_use_id": "fixture-tool",
+        "tool_input": {"command": "echo fixture-private-command"},
+        "tool_response": {"exit_code": 7, "stderr": "fixture-private-output"}
+      }
+    },
+    {
+      "name": "turn-interrupt",
+      "schema": "interrupt.command.input.schema.json",
+      "kind": "turnInterrupted",
+      "phase": "interrupted",
+      "payload": {
+        "session_id": "fixture-session", "turn_id": "fixture-turn",
+        "transcript_path": "/fixture-private/transcript.jsonl", "cwd": "/fixture/projects/tide-island",
+        "hook_event_name": "Interrupt", "model": "fixture-model", "permission_mode": "default"
+      }
+    },
+    {
+      "name": "session-end",
+      "schema": "session-end.command.input.schema.json",
+      "kind": "sessionEnded",
+      "phase": "ended",
+      "payload": {
+        "session_id": "fixture-session", "transcript_path": "/fixture-private/transcript.jsonl",
+        "cwd": "/fixture/projects/tide-island", "hook_event_name": "SessionEnd", "reason": "other"
+      }
+    },
+    {
+      "name": "compaction-is-not-a-new-idle-session",
+      "schema": "session-start.command.input.schema.json",
+      "kind": null,
+      "phase": null,
+      "payload": {
+        "session_id": "fixture-session", "transcript_path": "/fixture-private/transcript.jsonl",
+        "cwd": "/fixture/projects/tide-island", "hook_event_name": "SessionStart",
+        "model": "fixture-model", "permission_mode": "default", "source": "compact"
+      }
+    },
+    {
+      "name": "stop-can-be-continued-by-another-hook",
+      "schema": "stop.command.input.schema.json",
+      "kind": null,
+      "phase": null,
+      "payload": {
+        "session_id": "fixture-session", "turn_id": "fixture-turn",
+        "transcript_path": "/fixture-private/transcript.jsonl", "cwd": "/fixture/projects/tide-island",
+        "hook_event_name": "Stop", "model": "fixture-model", "permission_mode": "default",
+        "stop_hook_active": false, "last_assistant_message": "fixture-private-reply"
+      }
+    },
+    {
+      "name": "child-tool-must-not-overwrite-main-session",
+      "schema": "pre-tool-use.command.input.schema.json",
+      "kind": null,
+      "phase": null,
+      "payload": {
+        "session_id": "fixture-session", "turn_id": "fixture-child-turn",
+        "agent_id": "fixture-child", "agent_type": "fixture-agent",
+        "transcript_path": "/fixture-private/transcript.jsonl", "cwd": "/fixture/projects/tide-island",
+        "hook_event_name": "PreToolUse", "model": "fixture-model", "permission_mode": "default",
+        "tool_name": "Bash", "tool_use_id": "fixture-tool",
+        "tool_input": {"command": "echo fixture-private-command"}
+      }
+    }
+  ]
+}

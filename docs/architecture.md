@@ -1,10 +1,10 @@
-# TideIsland 初始化架构
+# TideIsland 架构
 
 ## 目标与范围
 
 TideIsland 是连接开发会话与 Mac 系统原生实时活动的本地伴随应用。首版围绕 Wave + Codex，先推进生命周期事件、会话管理、终端适配及原生界面源码，原生编译、签名和真机验收统一安排在 macOS 27.3 正式环境可用后进行；额度与宠物作为后续增强。
 
-初始化提供可演进的工程基础，不代表自动 Codex 接入或原生真机验收已经完成。
+已有 Codex 生命周期桥接 CLI；真实配置安装和原生真机验收尚未完成。
 
 开发顺序、任务状态与验收清单统一维护在 [开发计划与进度](development-progress.md)。现有共享层检查和 CI 继续随开发执行，不替代后续原生统一验收。
 
@@ -12,7 +12,7 @@ TideIsland 是连接开发会话与 Mac 系统原生实时活动的本地伴随�
 
 ```mermaid
 flowchart LR
-    A[Codex notify / 手动事件] --> B[tide-island-bridge]
+    A[Codex hook / notify / 手动事件] --> B[tide-island-bridge]
     B --> C[本地元数据 inbox]
     C --> D[会话状态管理]
     D --> E[系统原生实时活动]
@@ -27,19 +27,22 @@ flowchart LR
 - `SessionRegistry` 按线程隔离，忽略已处理事件与较早时间戳；需要处理、异常、本轮结束、工作中的排序只决定展示注意力。
 - 初始化的读取窗口是数量上限，不是磁盘保留策略；历史文件暂不自动删除，后续补充有界保留和会话存活检测。
 
-## 事件协议 v1
+## 事件协议 v1 / v2
 
 | 字段 | 含义 |
 | --- | --- |
-| `version` | 当前固定为 1，未知版本拒绝处理 |
+| `version` | 读取 v1 / v2，新 CLI 输出 v2，未知版本拒绝处理 |
 | `id` | UUID，事件身份及落盘文件名 |
 | `sessionID` | 会话身份，不作为文件路径 |
 | `projectName` | 显示名称，不保存完整 cwd |
-| `phase` | working / needsInput / completed / failed |
-| `occurredAt` | ISO 8601 时间，拒绝较早事件覆盖较新状态 |
+| `phase` | v1 的 working / needsInput / completed / failed；v2 增加 interrupted / ended |
+| `occurredAt` | ISO 8601 时间；本 Codex 适配器无上游时间字段，使用接收时间，完整跨轮顺序仍待 T006 |
 | `waveBlockID` | 可选的 Wave 分屏元数据，不包含认证凭据 |
+| `context` | v2 必需：source / kind / receivedAt，可选源时间、turn 和工具身份；v1 保持缺失 |
 
-每个事件最多 16 KiB。不落盘 prompt、assistant reply、令牌或整个环境变量集合。Codex `agent-turn-complete` 被映射为本轮结束，不当作任务完成、测试通过或成功发布。
+每个标准化事件最多 16 KiB，hook 输入最多 1 MiB。不落盘 prompt、assistant reply、完整 cwd、工具输入输出、令牌或整个环境变量集合。Codex `agent-turn-complete` 被映射为本轮结束，不当作任务完成、测试通过或成功发布。
+
+`hook` 入口只观察，stdout 为空，可捕获错误返回 0，许可决定继续留给 Codex。`Stop` 可能续跑、`SessionStart` 可能只是压缩恢复，因此当前忽略；带子代理标记的输入也不覆盖主会话。固定版本语义与待接入范围见 [Codex 事件契约](codex-events.md)。
 
 ## 原生显示
 

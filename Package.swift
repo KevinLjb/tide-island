@@ -11,6 +11,10 @@ let package = Package(
     targets: [
         .target(name: "TideIslandCore"),
         .executableTarget(name: "TideIslandBridge", dependencies: ["TideIslandCore"]),
-        .testTarget(name: "TideIslandCoreTests", dependencies: ["TideIslandCore"]),
+        .testTarget(
+            name: "TideIslandCoreTests",
+            dependencies: ["TideIslandCore"],
+            resources: [.copy("Fixtures")]
+        ),
     ]
 )

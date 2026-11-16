@@ -5,6 +5,8 @@ public enum AgentPhase: String, Codable, CaseIterable, Hashable, Sendable {
     case needsInput
     case completed
     case failed
+    case interrupted
+    case ended
 
     public var title: String {
         switch self {
@@ -12,6 +14,8 @@ public enum AgentPhase: String, Codable, CaseIterable, Hashable, Sendable {
         case .needsInput: "等待你处理"
         case .completed: "本轮已结束"
         case .failed: "本轮发生异常"
+        case .interrupted: "本轮已中断"
+        case .ended: "会话已结束"
         }
     }
 
@@ -21,6 +25,8 @@ public enum AgentPhase: String, Codable, CaseIterable, Hashable, Sendable {
         case .needsInput: "hand.raised"
         case .completed: "checkmark.circle"
         case .failed: "exclamationmark.triangle"
+        case .interrupted: "pause.circle"
+        case .ended: "stop.circle"
         }
     }
 
@@ -28,13 +34,17 @@ public enum AgentPhase: String, Codable, CaseIterable, Hashable, Sendable {
         switch self {
         case .needsInput: 0
         case .failed: 1
-        case .completed: 2
-        case .working: 3
+        case .interrupted: 2
+        case .completed: 3
+        case .working: 4
+        case .ended: 5
         }
     }
 }
 
 public struct AgentEvent: Codable, Equatable, Sendable {
+    public static let currentVersion = 2
+
     public let version: Int
     public let id: UUID
     public let sessionID: String
@@ -42,6 +52,7 @@ public struct AgentEvent: Codable, Equatable, Sendable {
     public let phase: AgentPhase
     public let occurredAt: Date
     public let waveBlockID: String?
+    public let context: EventContext?
 
     public init(
         version: Int = 1,
@@ -50,7 +61,8 @@ public struct AgentEvent: Codable, Equatable, Sendable {
         projectName: String,
         phase: AgentPhase,
         occurredAt: Date = Date(),
-        waveBlockID: String? = nil
+        waveBlockID: String? = nil,
+        context: EventContext? = nil
     ) {
         self.version = version
         self.id = id
@@ -59,10 +71,24 @@ public struct AgentEvent: Codable, Equatable, Sendable {
         self.phase = phase
         self.occurredAt = occurredAt
         self.waveBlockID = waveBlockID
+        self.context = context
     }
 
     public func validate() throws {
-        guard version == 1 else { throw EventError.unsupportedVersion(version) }
+        guard version == 1 || version == Self.currentVersion else {
+            throw EventError.unsupportedVersion(version)
+        }
+        if version == 1 {
+            guard context == nil, phase != .interrupted, phase != .ended else {
+                throw EventError.invalidField("v1.context/phase")
+            }
+        } else {
+            guard let context else { throw EventError.invalidField("context") }
+            try context.validate(phase: phase)
+        }
+        guard occurredAt.timeIntervalSince1970.isFinite else {
+            throw EventError.invalidField("occurredAt")
+        }
         for (field, value, limit) in [
             ("sessionID", sessionID, 256),
             ("projectName", projectName, 160),
@@ -85,6 +111,7 @@ public enum EventError: Error, LocalizedError {
     case invalidField(String)
     case unsupportedNotification
     case oversizedEvent
+    case oversizedHookInput
 
     public var errorDescription: String? {
         switch self {
@@ -92,6 +119,7 @@ public enum EventError: Error, LocalizedError {
         case .invalidField(let field): "Invalid event field: \(field)."
         case .unsupportedNotification: "Only Codex agent-turn-complete notifications are supported."
         case .oversizedEvent: "Event exceeds the 16 KiB limit."
+        case .oversizedHookInput: "Hook input exceeds the 1 MiB limit."
         }
     }
 }

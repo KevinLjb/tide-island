@@ -11,8 +11,31 @@ import Testing
 }
 
 @Test func unsupportedProtocolVersionIsRejected() {
-    let event = AgentEvent(version: 2, sessionID: "session", projectName: "project", phase: .working)
+    let event = AgentEvent(version: 3, sessionID: "session", projectName: "project", phase: .working)
     #expect(throws: EventError.self) { try EventCodec.encode(event) }
+}
+
+@Test func legacyV1EventsRemainReadable() throws {
+    let data = Data(#"{"version":1,"id":"00000000-0000-0000-0000-000000000001","sessionID":"legacy","projectName":"project","phase":"working","occurredAt":"2026-11-16T00:00:00Z"}"#.utf8)
+    let event = try EventCodec.decode(data)
+    #expect(event.version == 1)
+    #expect(event.phase == .working)
+    #expect(event.context == nil)
+    #expect(try EventCodec.decode(EventCodec.encode(event)) == event)
+}
+
+@Test func v2RequiresConsistentContextAndV1CannotContainNewPhases() throws {
+    let missing = AgentEvent(version: 2, sessionID: "session", projectName: "project", phase: .working)
+    #expect(throws: EventError.self) { try missing.validate() }
+    for phase in [AgentPhase.interrupted, .ended] {
+        let legacy = AgentEvent(sessionID: "session", projectName: "project", phase: phase)
+        #expect(throws: EventError.self) { try legacy.validate() }
+    }
+    let inconsistent = AgentEvent(
+        version: 2, sessionID: "session", projectName: "project", phase: .working,
+        context: EventContext(source: .codexHook, kind: .permissionRequested, receivedAt: Date(), turnID: "turn", toolName: "Bash")
+    )
+    #expect(throws: EventError.self) { try inconsistent.validate() }
 }
 
 @Test func invalidSessionNamesAreRejected() {

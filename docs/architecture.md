@@ -56,6 +56,8 @@ flowchart LR
 
 T024 的应用构建阶段按配置 / 架构生成 bridge，先处理 helper 签名，再将固定可执行文件及摘要清单嵌入 Contents/Helpers，外层应用由 Xcode 签署。BundledBridge 只读检查包元数据、路径和有界文件完整性；`hooks install --app` 将 helper 摘要 / 应用版本加入预览指纹，应用前重验，移动后只修复受管 handler。它不执行 helper 或替代系统签名验证；构建阶段未在原生 SDK 执行，详见 [bridge 交付](bridge-delivery.md)。
 
+T025 正在准备独立的 notify 共存：共享 NotifyDispatchConfiguration 保留既有 argv 的明确边界和缺失 / 空数组恢复标记；TOMLNotifyDocument 只编辑顶层 notify 值，其他字节保留，CodexNotifyConfiguration 绑定内容与 bundle 证据生成可撤销计划。当前还没有文件写入或 callback / 统一安装命令，详见 [完成 notify 共存](notify-integration.md)。
+
 ## 确定性回放
 
 `EventReplay` 用 fixture 提供的 UUID 与接收时钟调用真实适配器，经 `EventCodec` 编解码后送入独立 `SessionRegistry`，按声明的到达顺序比较每一步完整会话快照。CLI 的 `replay` 入口仅有界读取文件并输出稳定 JSON，不写 inbox 或 Codex 配置，不启动原生组件。

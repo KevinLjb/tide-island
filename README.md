@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T024 的 [应用内 bridge 交付](docs/bridge-delivery.md)提供构建阶段、只读完整性检查及 `hooks install --app` 移动 / 升级修复。[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43972840349)实际执行 376 / 声明 376 项测试，七项检查通过，包括隔离交付 CLI。下一步 T025 完成通知共存及完整安装 / 卸载；原生编译、签名和交互仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T024 的 376 项共享测试和七项检查已通过。T025 正在实现 [完成 notify 共存](docs/notify-integration.md)：共享 argv 信封和可撤销 TOML 计划源码就绪，文件 / callback / 统一安装命令待接入；新增 18 项测试，全量声明 394 项等待严格 CI。原生编译、签名和交互仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -58,6 +58,7 @@ docs/session-metadata-history.md  当前引用的只读观察、记忆 / 清除�
 docs/session-browser.md       项目筛选、匿名标签、只读详情与空状态恢复
 docs/system-status.md         独立系统权限、上次错误与菜单栏恢复入口
 docs/bridge-delivery.md       应用包内 bridge、完整性与移动 / 升级路径修复
+docs/notify-integration.md    完成 notify 共存、argv 边界与可撤销局部编辑
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。

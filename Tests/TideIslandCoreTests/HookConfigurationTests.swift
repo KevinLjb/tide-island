@@ -11,7 +11,8 @@ private let existingHookData = Data(#"{"description":"fixture-private-descriptio
     let data = try #require(installed.proposedData)
     #expect(installed.managedHooksBefore == 0)
     #expect(installed.managedHooksAfter == 6)
-    let root = try #require(ConfigurationJSON.decode(data).object)
+    let decoded = try ConfigurationJSON.decode(data)
+    let root = try #require(decoded.object)
     #expect(root["description"] == original.object?["description"])
     #expect(root["hooks"]?.object?["PreToolUse"]?.array?.first == original.object?["hooks"]?.object?["PreToolUse"]?.array?.first)
     #expect(root["hooks"]?.object?["Stop"] == original.object?["hooks"]?.object?["Stop"])
@@ -32,7 +33,9 @@ private let existingHookData = Data(#"{"description":"fixture-private-descriptio
 
 @Test func hookUpgradeAndUninstallKeepLaterForeignGroupIndexes() throws {
     let install = try CodexHookConfiguration.plan(action: .install, existing: nil, bridgePath: "/stable/old")
-    var root = try #require(ConfigurationJSON.decode(#require(install.proposedData)).object)
+    let data = try #require(install.proposedData)
+    let decoded = try ConfigurationJSON.decode(data)
+    var root = try #require(decoded.object)
     var events = try #require(root["hooks"]?.object)
     let foreign: ConfigurationJSON = .object(["hooks": .array([.object(["type": .string("command"), "command": .string("echo later")])])])
     var groups = try #require(events["PreToolUse"]?.array)
@@ -67,7 +70,9 @@ private let existingHookData = Data(#"{"description":"fixture-private-descriptio
 
 @Test func removingAnOwnedHandlerKeepsItsForeignNeighbors() throws {
     let install = try CodexHookConfiguration.plan(action: .install, existing: nil, bridgePath: "/stable/bridge")
-    var root = try #require(ConfigurationJSON.decode(#require(install.proposedData)).object)
+    let data = try #require(install.proposedData)
+    let decoded = try ConfigurationJSON.decode(data)
+    var root = try #require(decoded.object)
     var events = try #require(root["hooks"]?.object)
     let own = try #require(events["PreToolUse"]?.array?.first?.object?["hooks"]?.array?.first)
     let foreign: ConfigurationJSON = .object(["type": .string("command"), "command": .string("echo neighbor")])
@@ -153,7 +158,8 @@ private let existingHookData = Data(#"{"description":"fixture-private-descriptio
     try FileManager.default.setAttributes([.posixPermissions: 0o640], ofItemAtPath: config.path)
     let file = try HookConfigurationFile(url: config)
     let plan = try file.preview(action: .install, bridgePath: "/bin/true")
-    let backup = try #require(file.apply(plan, expectedFingerprint: plan.fingerprint, backupDirectory: root.appendingPathComponent("backups")))
+    let appliedBackup = try file.apply(plan, expectedFingerprint: plan.fingerprint, backupDirectory: root.appendingPathComponent("backups"))
+    let backup = try #require(appliedBackup)
     #expect(try Data(contentsOf: backup.appendingPathComponent("hooks.json.before")) == existingHookData)
     #expect(try permissions(config) == 0o640)
     #expect(try permissions(backup) == 0o700)

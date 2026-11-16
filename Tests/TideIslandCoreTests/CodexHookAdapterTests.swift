@@ -36,7 +36,8 @@ import Testing
 @Test func failedToolResultRestoresWorkingWithoutClaimingTurnFailure() throws {
     let payload = try codexFixturePayload(named: "tool-failure-keeps-turn-working")
     let data = try JSONSerialization.data(withJSONObject: payload)
-    let event = try #require(CodexHookAdapter.event(from: data))
+    let converted = try CodexHookAdapter.event(from: data)
+    let event = try #require(converted)
     #expect(event.phase == .working)
     #expect(event.context?.kind == .toolFinished)
     #expect(event.context?.toolName == "Bash")
@@ -74,9 +75,9 @@ import Testing
     var payload = try codexFixturePayload(named: "turn-start")
     payload["timestamp"] = "1999-01-01T00:00:00Z"
     let now = Date(timeIntervalSince1970: 1_800_000_000)
-    let event = try #require(CodexHookAdapter.event(
-        from: JSONSerialization.data(withJSONObject: payload), receivedAt: now
-    ))
+    let data = try JSONSerialization.data(withJSONObject: payload)
+    let converted = try CodexHookAdapter.event(from: data, receivedAt: now)
+    let event = try #require(converted)
     #expect(event.occurredAt == now)
     #expect(event.context?.sourceOccurredAt == nil)
 }
@@ -89,7 +90,8 @@ import Testing
 @Test func registryRetainsSourceAndTurnMetadata() throws {
     let payload = try codexFixturePayload(named: "turn-start")
     let data = try JSONSerialization.data(withJSONObject: payload)
-    let event = try #require(CodexHookAdapter.event(from: data))
+    let converted = try CodexHookAdapter.event(from: data)
+    let event = try #require(converted)
     var registry = SessionRegistry()
     try registry.apply(event)
     #expect(registry.sessions.first?.turnID == "fixture-turn")
@@ -101,7 +103,8 @@ import Testing
         var payload = try codexFixturePayload(named: "tool-start")
         payload["tool_name"] = name
         let data = try JSONSerialization.data(withJSONObject: payload)
-        let event = try #require(CodexHookAdapter.event(from: data))
+        let converted = try CodexHookAdapter.event(from: data)
+        let event = try #require(converted)
         #expect(event.phase == .working)
         #expect(event.context?.kind == .toolStarted)
     }

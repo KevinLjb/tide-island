@@ -74,6 +74,7 @@ import Testing
         "tide-island://session?id=", "tide-island://session?id=a&id=b",
         "tide-island://session/path?id=a",
     ] {
-        #expect(SessionLink.sessionID(from: try #require(URL(string: value))) == nil)
+        let parsedURL = try #require(URL(string: value))
+        #expect(SessionLink.sessionID(from: parsedURL) == nil)
     }
 }

@@ -38,9 +38,13 @@ jobs:
               print(f"::notice title=Shared logic tests::Tests executed: {max(counts)}; declared functions: {declared}.")
           else:
               excerpts = []
+              seen = set()
               for index, line in enumerate(lines):
                   if "error:" in line or "Expectation failed" in line or "✘ Test" in line:
-                      excerpts.extend(lines[index:index + 3])
+                      excerpt = "\n".join(lines[index:index + 3])
+                      if excerpt not in seen:
+                          excerpts.append(excerpt)
+                          seen.add(excerpt)
               text = "\n".join(excerpts or lines[-60:])[:24000]
               for index in range(0, len(text), 3000):
                   escaped = text[index:index + 3000].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")

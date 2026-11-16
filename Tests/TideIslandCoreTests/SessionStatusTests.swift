@@ -29,7 +29,8 @@ private let statusEpoch = Date(timeIntervalSince1970: 1_800_000_000)
         var store = SessionStore()
         let event = statusEvent(phase, at: statusEpoch)
         try store.receive([event])
-        for elapsed in [15.0 * 60, 2 * 60 * 60, 90 * 24 * 60 * 60] {
+        let elapsedIntervals: [TimeInterval] = [15 * 60, 2 * 60 * 60, 90 * 24 * 60 * 60]
+        for elapsed in elapsedIntervals {
             let snapshot = store.snapshot(at: statusEpoch.addingTimeInterval(elapsed))
             let status = try #require(snapshot.sessions.first)
             #expect(status.activity == .unknown)

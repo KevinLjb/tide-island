@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T025 的 [notify 共存](docs/notify-integration.md)已通过 400 项回归及独立 TOML / 回调 CLI；[统一安装、升级与卸载](docs/installation.md)源码已接入，包含总指纹、部分成功恢复和数据选择。新增 5 项共享测试，全量声明 405 项及统一流程 CLI 等待严格 CI。原生编译、签名和交互仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T025 的 [notify 共存](docs/notify-integration.md)与 [统一安装、升级及卸载](docs/installation.md)已通过 [严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43979840102)：实际 405 / 声明 405 项测试，七项检查成功，包括部分恢复与数据选择。下一步 T026 版本、构建产物和打包准备；原生编译、签名及真实接入仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 

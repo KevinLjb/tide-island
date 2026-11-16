@@ -101,6 +101,7 @@ public actor InboxReceiver {
         health.state = .recovering
         health.problem = .changing
         health.willRetry = false
+        health.retryAttempt = 0
         cleanupPlan = nil
         emit()
         return reload()

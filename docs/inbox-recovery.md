@@ -49,6 +49,6 @@ swift run tide-island-bridge inbox recover --inbox /absolute/path/to/TideIsland/
 
 ## 验证边界
 
-共享层测试使用独立 Events 子目录及父目录锁，覆盖真实 OS 监听重建、旧回调、单接收者、资源 / 协作锁故障、确认门槛、一次性到期、中断发布和清理日志。CLI 检查只操作隔离测试目录。本轮共享层编译 / 执行状态见 [开发进度](development-progress.md)。
+共享层测试使用独立 Events 子目录及父目录锁，覆盖真实 OS 监听重建、旧回调、单接收者及锁文件替换、资源 / 协作锁故障、确认门槛、一次性到期的实际帧发布、中断事件 / 日志发布和清理日志。CLI 检查只操作隔离测试目录。本轮共享层编译 / 执行状态见 [开发进度](development-progress.md)。
 
 原生源码的帧订阅、唤醒、Activity 更新 / 结束、退出生命周期和 UI 尚待 macOS 27.3 正式环境统一验证。会话、偏好和游标仍仅在内存，跨重启持久化属于 T011。

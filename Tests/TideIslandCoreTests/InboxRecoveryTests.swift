@@ -162,8 +162,7 @@ private let recoveryEpoch = Date(timeIntervalSince1970: 1_800_000_000)
         let valid = recoveryEvent(.working)
         try fixture.inbox.write(valid)
         _ = await receiver.start()
-        var unknown = try JSONSerialization.jsonObject(with: EventCodec.encode(valid)) as! [String: Any]
-        unknown["version"] = 999
+        let unknown: [String: Any] = ["version": 999, "future-shape": "not-a-v2-event"]
         let bodies = [Data("private-malformed".utf8), try JSONSerialization.data(withJSONObject: unknown),
                       Data(repeating: 0x20, count: EventCodec.maximumBytes + 1), try EventCodec.encode(valid)]
         let paths = try bodies.map { data -> URL in
@@ -226,7 +225,9 @@ private let recoveryEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     try fixture.inbox.write(event)
     let first = await receiver.start()
     #expect(first.snapshot.workingCount == 1)
-    let expired = try await waitForRecovery(receiver) { $0.snapshot.unknownCount == 1 }
+    // Consume emitted frames: polling current() would recompute time and hide
+    // a missing timer, while the native app relies on a real stream update.
+    let expired = try await waitForRecoveryStream(receiver.frames) { $0.snapshot.unknownCount == 1 }
     #expect(expired.health.state == .healthy && expired.snapshot.workingCount == 0)
     #expect(expired.snapshot.sessions[0].session.updatedAt == at)
     _ = await receiver.stop()
@@ -366,6 +367,43 @@ private let recoveryEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     #expect(try Data(contentsOf: journal) == bytes)
 }
 
+@Test func cleanupCrashAfterJournalPublicationRecoversItsRedundantDraftLink() throws {
+    let fixture = try RecoveryFixture()
+    defer { fixture.remove() }
+    try fixture.inbox.write(recoveryEvent(.completed, time: -10 * 86400))
+    _ = try fixture.authorizeCleanup()
+    let journal = fixture.inbox.directory.appendingPathComponent(InboxDirectory.cleanupIntentName)
+    let draft = fixture.inbox.directory.appendingPathComponent(".tide-island-cleanup-" + UUID().uuidString + ".tmp")
+    try FileManager.default.linkItem(at: journal, to: draft)
+    let preview = try fixture.inbox.inspectRecovery()
+    #expect(preview.pendingCleanupFiles == 1 && preview.issues.isEmpty)
+    let result = try fixture.inbox.recoverInterruptedOperations()
+    #expect(result.resumedCleanupFiles == 1 && result.issues.isEmpty)
+    #expect(!FileManager.default.fileExists(atPath: journal.path) && !FileManager.default.fileExists(atPath: draft.path))
+    var cursor = InboxCursor()
+    let empty = try fixture.inbox.readIncrementally(using: &cursor)
+    #expect(empty.events.isEmpty)
+}
+
+@Test func replacedConsumerLockCannotLeaveTheOldReceiverUsingAnUnlinkedLease() async throws {
+    try await withRecoveryReceiver { fixture, receiver in
+        try fixture.inbox.write(recoveryEvent(.working))
+        _ = await receiver.start()
+        let files = try FileManager.default.contentsOfDirectory(at: fixture.root, includingPropertiesForKeys: nil)
+        let lock = try #require(files.first { $0.pathExtension == "lock" })
+        try FileManager.default.removeItem(at: lock)
+        var competitor: InboxConsumerLease? = try InboxConsumerLease(inbox: fixture.inbox.directory)
+        let changed = await receiver.reconnect()
+        #expect(changed.health.state != .healthy && changed.snapshot.workingCount == 0)
+        let denied = try await waitForRecovery(receiver) { $0.health.problem == .receiverInUse }
+        #expect(denied.snapshot.workingCount == 0 && !denied.health.willRetry)
+        try competitor?.verifyPath()
+        competitor = nil
+        let repaired = await receiver.reconnect()
+        #expect(repaired.health.state == .healthy && repaired.snapshot.workingCount == 1)
+    }
+}
+
 private struct RecoveryFixture: Sendable {
     let root: URL
     let inbox: EventInbox
@@ -427,4 +465,23 @@ private func waitForRecovery(_ receiver: InboxReceiver, attempts: Int = 250,
     let last = await receiver.current()
     Issue.record("Receiver did not reach expected state: \(last.health.state), \(String(describing: last.health.problem))")
     throw InboxError.fileOperation
+}
+
+private func waitForRecoveryStream(_ stream: AsyncStream<InboxFrame>,
+                                   _ condition: @escaping @Sendable (InboxFrame) -> Bool) async throws -> InboxFrame {
+    try await withThrowingTaskGroup(of: InboxFrame.self) { group in
+        group.addTask {
+            for await frame in stream {
+                if condition(frame) { return frame }
+            }
+            throw CancellationError()
+        }
+        group.addTask {
+            try await Task.sleep(for: .seconds(5))
+            throw InboxError.fileOperation
+        }
+        defer { group.cancelAll() }
+        guard let frame = try await group.next() else { throw InboxError.fileOperation }
+        return frame
+    }
 }

@@ -74,6 +74,8 @@ struct InboxIndexedFile: Sendable {
     var rejection: InboxRejectionReason? = nil
 }
 
+private struct InboxVersionHeader: Decodable { let version: Int }
+
 /// All child access uses a held directory descriptor. Managed writers and
 /// cleanup cooperate through the stable marker lock; previews never create it.
 final class InboxDirectory {
@@ -180,7 +182,12 @@ final class InboxDirectory {
         catch EventError.unsupportedVersion(_) {
             return InboxIndexedFile(name: name, stamp: stamp, digest: Self.hash(data), event: nil, rejection: .unsupportedVersion)
         } catch {
-            return InboxIndexedFile(name: name, stamp: stamp, digest: Self.hash(data), event: nil, rejection: .malformed)
+            // A future protocol can have a different shape as well as version.
+            // Only inspect its bounded header; never echo rejected contents.
+            let version = try? JSONDecoder().decode(InboxVersionHeader.self, from: data).version
+            let unsupported = version.map { $0 != 1 && $0 != AgentEvent.currentVersion } ?? false
+            return InboxIndexedFile(name: name, stamp: stamp, digest: Self.hash(data), event: nil,
+                                    rejection: unsupported ? .unsupportedVersion : .malformed)
         }
         let matched = event.id == UUID(uuidString: String(name.dropLast(5)))
         return InboxIndexedFile(name: name, stamp: stamp, digest: Self.hash(data), event: matched ? event : nil,

@@ -102,7 +102,7 @@ swift run tide-island-bridge replay \
   --scenario permission-wait-resume
 ```
 
-回放使用固定身份和时间，经实际适配器、事件编解码与 registry 检查状态；只输出元数据报告。22 个基线场景共 107 步，包含原来的跨轮迟到通知反例，预期不匹配时返回非零。格式见 [事件回放](docs/event-replay.md)，窗口与时间冲突规则见 [会话状态](docs/session-state.md)。
+回放使用固定身份和时间，经实际适配器、事件编解码与 registry 检查状态；只输出元数据报告。24 个基线场景共 116 步，包含原来的跨轮迟到通知反例及下一轮观察先于开始到达的回归，预期不匹配时返回非零。格式见 [事件回放](docs/event-replay.md)，窗口与时间冲突规则见 [会话状态](docs/session-state.md)。
 
 ## Codex 接入边界
 

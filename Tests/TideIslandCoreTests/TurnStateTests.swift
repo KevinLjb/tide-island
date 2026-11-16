@@ -25,6 +25,33 @@ import Testing
     #expect(registry.sessions.first?.turnID == "new")
 }
 
+@Test func futureTurnEvidenceWaitsForItsStartAndThenReplaysWithoutLosingCompletion() throws {
+    var registry = SessionRegistry()
+    try registry.apply(turnEvent(.turnStarted, turn: "old", time: 1))
+    let previous = registry.sessions
+    let completed = turnEvent(.turnCompleted, turn: "new", time: 5)
+    #expect(try registry.applyResult(completed) == .unknownTurn)
+    #expect(try registry.applyResult(turnEvent(.toolStarted, turn: "new", time: 3)) == .unknownTurn)
+    #expect(registry.sessions == previous)
+    #expect(try registry.apply(turnEvent(.turnStarted, turn: "new", time: 2)))
+    #expect(registry.sessions.first?.turnID == "new")
+    #expect(registry.sessions.first?.phase == .completed)
+    #expect(registry.sessions.first?.lastEventID == completed.id)
+    #expect(try registry.applyResult(completed) == .duplicateEvent)
+}
+
+@Test func unboundToolEvidenceIsBoundedAndUsesItsOriginalArrivalOrder() throws {
+    var registry = SessionRegistry()
+    try registry.apply(turnEvent(.turnStarted, turn: "old", time: 1))
+    for index in 0...SessionRegistry.pendingEventLimit {
+        #expect(try registry.applyResult(turnEvent(.toolStarted, turn: "new", time: Double(index + 10), toolID: "pending-\(index)")) == .unknownTurn)
+    }
+    try registry.apply(turnEvent(.turnStarted, turn: "new", time: 2))
+    #expect(registry.sessions.first?.context?.toolUseID == "pending-\(SessionRegistry.pendingEventLimit)")
+    #expect(try registry.applyResult(turnEvent(.toolStarted, turn: "new", time: 1000, toolID: "pending-1")) == .outdatedTool)
+    #expect(try registry.apply(turnEvent(.toolStarted, turn: "new", time: 1001, toolID: "pending-0")))
+}
+
 @Test func scopedCompletionDominatesLateToolsAndLateStartDoesNotReopenIt() throws {
     var registry = SessionRegistry()
     try registry.apply(turnEvent(.toolStarted, turn: "one", time: 5))

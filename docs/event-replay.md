@@ -21,7 +21,7 @@ swift run tide-island-bridge replay \
 
 ## 基线场景
 
-合成数据统一位于 [Replay fixtures](../Tests/TideIslandCoreTests/Fixtures/Replay/lifecycle.json)，现有 22 个场景、107 步。原始 Codex payload 基于 T001 的固定 0.169.0 契约；预期状态独立编写，不从程序输出生成。
+合成数据统一位于 [Replay fixtures](../Tests/TideIslandCoreTests/Fixtures/Replay/lifecycle.json)，现有 24 个场景、116 步。原始 Codex payload 基于 T001 的固定 0.169.0 契约；预期状态独立编写，不从程序输出生成。
 
 | 场景 | 检查内容 |
 | --- | --- |
@@ -36,7 +36,7 @@ swift run tide-island-bridge replay \
 | `multi-session-attention` | 会话隔离、注意力排序和同项目的多个线程 |
 | `ignored-and-question-tools` | Stop、压缩恢复、子代理、未知 hook 过滤；问答工具名不自动表示正在等待 |
 
-T006 新增：迟到上一轮通知、旧轮工具 / 开始、未知轮次与无身份通知、新开始被旧活动时间阻挡、终态防回退、同时间戳、并行工具下的权限等待、非相邻 UUID 重复、手动新轮、退出恢复及忽略事件不推进当前时钟。轮次规则及窗口边界见 [会话状态](session-state.md)。
+T006 新增：迟到上一轮通知、旧轮工具 / 开始、未知轮次与无身份通知、新开始被旧活动时间阻挡、终态防回退、同时间戳、并行工具下的权限等待、非相邻 UUID 重复、手动新轮、退出恢复及忽略事件不推进当前时钟。`completion-before-delayed-next-turn-start` 与 `tools-before-delayed-next-turn-start` 检查下一轮观察先到、开始后到时的暂存绑定回放。轮次规则及窗口边界见 [会话状态](session-state.md)。
 
 ## fixture 格式 v1
 

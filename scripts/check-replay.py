@@ -43,7 +43,7 @@ def main():
         assert first.returncode == second.returncode == 0, first.stderr + second.stderr
         assert not first.stderr and not second.stderr and first.stdout == second.stdout
         report = json.loads(first.stdout)
-        assert report["passed"] and report["scenarioCount"] == 22 and report["stepCount"] == 107
+        assert report["passed"] and report["scenarioCount"] == 24 and report["stepCount"] == 116
         assert report["mismatchCount"] == 0 and report["scope"] == "in-memory-adapters-codec-registry"
         assert not any(text in first.stdout for text in ["/fixture/projects", "transcript_path", "tool_response", "fixture-model"])
         assert {p.name: p.read_bytes() for p in root.iterdir() if p.is_file()} == sentinels

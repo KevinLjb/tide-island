@@ -44,6 +44,7 @@ public struct SessionRegistry: Sendable {
     public static let eventHistoryLimit = 512
     public static let retiredTurnLimit = 64
     public static let toolHistoryLimit = 256
+    public static let pendingEventLimit = 64
 
     private var storage: [String: SessionState] = [:]
 
@@ -89,6 +90,7 @@ private struct SessionState: Sendable {
     var turnAnchor: Date?
     var sawStart: Bool
     private var waitingToolIDs: Set<String>? = nil
+    private var pending: [AgentEvent] = []
 
     init(_ event: AgentEvent) {
         session = AgentSession(event: event)
@@ -118,7 +120,11 @@ private struct SessionState: Sendable {
             guard let turn else { return .missingTurn }
             if turn != currentTurn {
                 guard !retired.contains(turn) else { return .retiredTurn }
-                guard starts else { return .unknownTurn }
+                guard starts else {
+                    if pending.count == SessionRegistry.pendingEventLimit { pending.removeFirst() }
+                    pending.append(event)
+                    return .unknownTurn
+                }
                 // A delayed old-turn tool result must not make a newer start
                 // look old: compare starts with the turn boundary, not activity.
                 guard event.occurredAt >= (turnAnchor ?? session.updatedAt) else { return .olderEvent }
@@ -181,6 +187,12 @@ private struct SessionState: Sendable {
         _ = recordTool(event)
         session = AgentSession(event: event)
         updateWaiting(event)
+        // Completion/tool observations can precede their start's publication.
+        // Bind only this turn after an explicit boundary; do not lose evidence
+        // merely because its UUID was recorded while it was still unbound.
+        let deferred = pending.filter { $0.context?.turnID == event.context?.turnID }
+        pending.removeAll { $0.context?.turnID == event.context?.turnID }
+        for observation in deferred { _ = receive(observation) }
         return .applied
     }
 

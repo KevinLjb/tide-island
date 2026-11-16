@@ -79,6 +79,14 @@ def main():
         assert not supported["wave_application_return"]["reports_exact_focus"]
         assert not supported["wave_application_return"]["launches_app_from_cli"]
         assert not supported["wave_application_return"]["native_runtime_verified"]
+        reminders = supported["session_reminders"]
+        assert reminders["scope"] == "shared-policy-and-native-source" and not reminders["default_enabled"]
+        assert reminders["types"] == ["needsInput", "turnEnded"] and reminders["ordered_source_sequences"]
+        assert reminders["primary_receiver_required"] and reminders["quiet_hours_local_calendar"]
+        assert reminders["maximum_tracked_sessions"] > 0 and not reminders["startup_history_replayed"]
+        assert not reminders["same_episode_reposted_after_uncertain_failure"]
+        assert not reminders["verified_viewing_driver_installed"]
+        assert not reminders["native_runtime_verified"] and not reminders["posts_notifications_from_cli"]
         assert supported["island_activity"]["scope"] == "shared-presentation-and-client"
         assert supported["island_activity"]["content_fields"] == 6
         assert supported["island_activity"]["shared_json_development_budget_bytes"] > 0

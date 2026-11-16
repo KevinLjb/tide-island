@@ -5,6 +5,16 @@
     };
     "objectVersion" = "56";
     "objects" = {
+        "46C3E37B99F98D891C0F97E9" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Native/App/NativeReminderController.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "04A8DA0B3DF7B6777AA30F04" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "46C3E37B99F98D891C0F97E9";
+        };
         "C3BF8CCD3D25F1D7DEC197B8" = {
             "isa" = "PBXFileReference";
             "lastKnownFileType" = "sourcecode.swift";
@@ -103,6 +113,7 @@
                 "2DCDEEF55B5F175B8C322C3C",
                 "B00C8E7B6A79869F89CD5690",
                 "90E37B46699C451211E516C1",
+                "46C3E37B99F98D891C0F97E9",
                 "FC916CBE8F261521E786BA29",
             );
         };
@@ -350,6 +361,7 @@
             "isa" = "PBXSourcesBuildPhase";
             "buildActionMask" = 2147483647;
             "files" = (
+                "04A8DA0B3DF7B6777AA30F04",
                 "35BD5CC380D57BFED184CF5E",
                 "AE6CB36B1A74E9AC5C180079",
                 "4E2867761D21E72CA338905B",

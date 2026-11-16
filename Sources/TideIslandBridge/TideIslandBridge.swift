@@ -185,6 +185,16 @@ struct TideIslandBridge {
                 "resolves_current_session_links": true, "reports_exact_focus": false,
                 "launches_app_from_cli": false, "native_runtime_verified": false,
             ],
+            "session_reminders": [
+                "scope": "shared-policy-and-native-source", "default_enabled": false,
+                "types": ["needsInput", "turnEnded"], "ordered_source_sequences": true,
+                "primary_receiver_required": true, "startup_history_replayed": false,
+                "same_episode_reposted_after_uncertain_failure": false,
+                "verified_viewing_driver_installed": false,
+                "maximum_tracked_sessions": SessionReminderCoordinator.maximumSessions,
+                "quiet_hours_local_calendar": true,
+                "native_runtime_verified": false, "posts_notifications_from_cli": false,
+            ],
             "island_activity": [
                 "scope": "shared-presentation-and-client", "content_fields": 6,
                 "shared_json_development_budget_bytes": IslandActivityPresentationPolicy.standard.maximumContentBytes,

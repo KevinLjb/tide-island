@@ -14,10 +14,13 @@ final class SessionModel: ObservableObject {
     var ignoredSessions: [SessionStatus] { snapshot?.ignoredSessions ?? [] }
 
     private let activities = NativeActivityController()
+    private let reminders = NativeReminderController()
+    private var reminderSettings = SessionReminderSettings()
     private var receiver: InboxReceiver?
     private var frameTask: Task<Void, Never>?
     private var activityTask: Task<Void, Never>?
     private var systemActivityTask: Task<Void, Never>?
+    private var reminderTask: Task<Void, Never>?
     private var activitySequence: UInt64 = 0
     private var activityScope: IslandActivityScope = .ownedOnly
     private var requiresActivityReconciliation = false
@@ -29,8 +32,18 @@ final class SessionModel: ObservableObject {
     private var returnMessage: String?
     private var channelMessage: String?
     private var activityMessage: String?
+    private var reminderMessage: String?
 
     init() {
+        reminders.onOpenSession = { [weak self] url in self?.openSession(url: url) }
+        let reminderDeliveries = reminders.frames
+        reminderTask = Task { [weak self] in
+            for await delivery in reminderDeliveries {
+                guard !Task.isCancelled, let self else { break }
+                reminderMessage = delivery.problem == nil ? nil : "会话提醒暂不可用，请检查提醒设置与系统通知权限。"
+                refreshStatusMessage()
+            }
+        }
         let deliveries = activities.frames
         activityTask = Task { [weak self] in
             for await delivery in deliveries {
@@ -185,7 +198,11 @@ final class SessionModel: ObservableObject {
         activitySequence &+= 1
         let sequence = activitySequence
         let activities = self.activities, scope = activityScope
-        Task { await activities.submit(snapshot: snapshot, sequence: sequence, scope: scope, force: force) }
+        let reminders = self.reminders, settings = reminderSettings
+        Task {
+            await activities.submit(snapshot: snapshot, sequence: sequence, scope: scope, force: force)
+            await reminders.submit(snapshot: snapshot, sequence: sequence, isPrimary: scope == .application, settings: settings)
+        }
     }
 
     func shutdown() async {
@@ -193,10 +210,13 @@ final class SessionModel: ObservableObject {
         stopping = true
         subscriptions.removeAll()
         frameTask?.cancel(); systemActivityTask?.cancel(); activityTask?.cancel()
+        reminderTask?.cancel()
         returnRevision &+= 1; returnTask?.cancel()
         // Keep the receiver lease until activity operations have settled. A
         // secondary process must not adopt while this instance is cleaning up.
-        _ = await activities.shutdown()
+        async let activityCleanup = activities.shutdown()
+        async let reminderCleanup: Void = reminders.shutdown()
+        _ = await (activityCleanup, reminderCleanup)
         await receiver?.stop()
     }
 
@@ -207,16 +227,22 @@ final class SessionModel: ObservableObject {
     }
 
     private func refreshStatusMessage() {
-        statusMessage = channelMessage ?? activityMessage ?? returnMessage
+        statusMessage = channelMessage ?? activityMessage ?? reminderMessage ?? returnMessage
     }
 
     deinit {
         frameTask?.cancel()
         activityTask?.cancel()
         systemActivityTask?.cancel()
+        reminderTask?.cancel()
         returnTask?.cancel()
-        let activities = self.activities, receiver = self.receiver
-        Task { _ = await activities.shutdown(); await receiver?.stop() }
+        let activities = self.activities, reminders = self.reminders, receiver = self.receiver
+        Task {
+            async let activityCleanup = activities.shutdown()
+            async let reminderCleanup: Void = reminders.shutdown()
+            _ = await (activityCleanup, reminderCleanup)
+            await receiver?.stop()
+        }
     }
 }
 

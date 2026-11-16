@@ -1,0 +1,27 @@
+name: Core and project checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: swift --version
+      - name: Test shared logic
+        env:
+          TIDE_ISLAND_TEST_TMPDIR: ${{ runner.temp }}/tide-island-tests
+        run: swift test
+      - name: Build event bridge
+        run: swift build --product tide-island-bridge
+      - name: Exercise event bridge
+        run: python3 scripts/check-bridge.py --temporary-root "${{ runner.temp }}"
+      - name: Check native project structure
+        run: python3 scripts/check-project.py

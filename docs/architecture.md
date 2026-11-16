@@ -1,0 +1,60 @@
+# TideIsland 初始化架构
+
+## 目标与范围
+
+TideIsland 是连接开发会话与 Mac 系统原生实时活动的本地伴随应用。首个阶段围绕 Wave + Codex，先验证原生显示、状态更新、点击返回开发现场，再扩展完整 hooks、额度和宠物。
+
+初始化提供可演进的工程基础，不代表自动 Codex 接入或原生真机验收已经完成。
+
+## 数据链路
+
+```mermaid
+flowchart LR
+    A[Codex notify / 手动事件] --> B[tide-island-bridge]
+    B --> C[本地元数据 inbox]
+    C --> D[会话状态管理]
+    D --> E[系统原生实时活动]
+    D --> F[菜单栏会话列表]
+    E --> G[会话链接]
+    G --> H[唤起 Wave]
+```
+
+- `TideIslandCore` 仅依赖 Foundation，不调用 AppKit、ActivityKit 或终端内部接口。
+- `TideIslandBridge` 验证事件并按 UUID 独立原子落盘，避免多个 CLI 写入者互相截断。
+- 应用监听目录变更后读取最近 256 个合法事件文件，不定时扫描整个系统或读取聊天历史。
+- `SessionRegistry` 按线程隔离，忽略已处理事件与较早时间戳；需要处理、异常、本轮结束、工作中的排序只决定展示注意力。
+- 初始化的读取窗口是数量上限，不是磁盘保留策略；历史文件暂不自动删除，后续补充有界保留和会话存活检测。
+
+## 事件协议 v1
+
+| 字段 | 含义 |
+| --- | --- |
+| `version` | 当前固定为 1，未知版本拒绝处理 |
+| `id` | UUID，事件身份及落盘文件名 |
+| `sessionID` | 会话身份，不作为文件路径 |
+| `projectName` | 显示名称，不保存完整 cwd |
+| `phase` | working / needsInput / completed / failed |
+| `occurredAt` | ISO 8601 时间，拒绝较早事件覆盖较新状态 |
+| `waveBlockID` | 可选的 Wave 分屏元数据，不包含认证凭据 |
+
+每个事件最多 16 KiB。不落盘 prompt、assistant reply、令牌或整个环境变量集合。Codex `agent-turn-complete` 被映射为本轮结束，不当作任务完成、测试通过或成功发布。
+
+## 原生显示
+
+原生目标最低 macOS 27.3，使用 ActivityKit + WidgetKit；系统负责灵动岛 / 菜单栏的展示和交互边界。应用和扩展共享同一 ActivityAttributes 声明，内容状态只传选中会话及聚合计数。
+
+源码未采用自行绘制的 NSPanel 作为系统原生岛的替代。27.3 SDK 是原生编译的前提，27.3 系统是运行前提；27.2 环境只能验证共享层。源码与结构检查不能证明原生目标已编译或运行。
+
+当前实时活动由会话更新触发，5 分钟后变为 stale 展示；没有工作中或待处理会话时结束 Activity，保留结束状态 30 秒。启动时不载入超过 15 分钟的事件。完整任务存活、历史会话清理、应用重启后活动恢复及时间相同事件的排序仍需后续完善。
+
+## Wave 接入
+
+初始化只通过应用 bundle identifier 唤起 Wave。本机 Wave 0.14.5 提供 `wsh focusblock`，其帮助文本限定当前标签；真实调用还需要验证 Wave 上下文、认证、跨标签和窗口选择。保存 block ID 不等于已经实现精确跳转。
+
+URL scheme 只识别 `tide-island://session?id=...`，只查找已有会话，不把链接参数拼接成 shell 命令。
+
+## 验证边界
+
+共享层测试覆盖协议、非法输入、隐私边界、重复 / 乱序事件、多会话隔离、URL 路由及损坏的 inbox 文件。工程结构检查核对文件成员、扩展嵌入和版本要求。
+
+原生目标必须另行完成：支持 SDK 的无签名编译、签名安装、启动 / 更新 / 结束 Activity、点击唤起 Wave、触摸、多屏、睡眠恢复和其他系统活动共存。这些项目在初始化阶段未通过实机验收。

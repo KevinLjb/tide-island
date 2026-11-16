@@ -1,0 +1,475 @@
+// !$*UTF8*$!
+{
+    "archiveVersion" = "1";
+    "classes" = {
+    };
+    "objectVersion" = "56";
+    "objects" = {
+        "C3BF8CCD3D25F1D7DEC197B8" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Native/App/TideIslandApp.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "2DCDEEF55B5F175B8C322C3C" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Native/App/SessionModel.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "B00C8E7B6A79869F89CD5690" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Native/App/SessionListView.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "90E37B46699C451211E516C1" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Native/App/NativeActivityController.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "BEB612B781BA658CA3B57094" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Native/ActivityExtension/TideIslandActivityWidget.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "25798108BA7B06F9C96FEDB8" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Native/Shared/TideIslandAttributes.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "FC916CBE8F261521E786BA29" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "text.plist.xml";
+            "path" = "Native/App/Info.plist";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "C1E8227CC3C77FDFB9CD10F5" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "text.plist.xml";
+            "path" = "Native/ActivityExtension/Info.plist";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "52284B221142A68387C7C924" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "text.plist.entitlements";
+            "path" = "Native/ActivityExtension/TideIslandActivity.entitlements";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "BCFA14070C8F570C520EF850" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Package.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "AA4ACA445B3FBAF47CDE31AC" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "net.daringfireball.markdown";
+            "path" = "README.md";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "B6CDB6E5D160E013280D3C68" = {
+            "isa" = "PBXFileReference";
+            "explicitFileType" = "wrapper.application";
+            "includeInIndex" = 0;
+            "path" = "TideIsland.app";
+            "sourceTree" = "BUILT_PRODUCTS_DIR";
+        };
+        "4C47665D1BA4105DF9684DC4" = {
+            "isa" = "PBXFileReference";
+            "explicitFileType" = "wrapper.app-extension";
+            "includeInIndex" = 0;
+            "path" = "TideIslandActivity.appex";
+            "sourceTree" = "BUILT_PRODUCTS_DIR";
+        };
+        "00C45FD35CB0F9C5F764F070" = {
+            "isa" = "PBXGroup";
+            "name" = "Products";
+            "sourceTree" = "<group>";
+            "children" = (
+                "B6CDB6E5D160E013280D3C68",
+                "4C47665D1BA4105DF9684DC4",
+            );
+        };
+        "CF8D0BD4B75E8C2C174692A5" = {
+            "isa" = "PBXGroup";
+            "name" = "App";
+            "sourceTree" = "<group>";
+            "children" = (
+                "C3BF8CCD3D25F1D7DEC197B8",
+                "2DCDEEF55B5F175B8C322C3C",
+                "B00C8E7B6A79869F89CD5690",
+                "90E37B46699C451211E516C1",
+                "FC916CBE8F261521E786BA29",
+            );
+        };
+        "D45CB4A487390B4D06F7B760" = {
+            "isa" = "PBXGroup";
+            "name" = "ActivityExtension";
+            "sourceTree" = "<group>";
+            "children" = (
+                "BEB612B781BA658CA3B57094",
+                "C1E8227CC3C77FDFB9CD10F5",
+                "52284B221142A68387C7C924",
+            );
+        };
+        "7A6860A1A04070265E6C4DE6" = {
+            "isa" = "PBXGroup";
+            "name" = "Shared";
+            "sourceTree" = "<group>";
+            "children" = (
+                "25798108BA7B06F9C96FEDB8",
+            );
+        };
+        "ADCF10F76EBF2A74473E9DC4" = {
+            "isa" = "PBXGroup";
+            "sourceTree" = "<group>";
+            "children" = (
+                "CF8D0BD4B75E8C2C174692A5",
+                "D45CB4A487390B4D06F7B760",
+                "7A6860A1A04070265E6C4DE6",
+                "BCFA14070C8F570C520EF850",
+                "AA4ACA445B3FBAF47CDE31AC",
+                "00C45FD35CB0F9C5F764F070",
+            );
+        };
+        "49EEF2B4054B73CA25391C68" = {
+            "isa" = "XCLocalSwiftPackageReference";
+            "relativePath" = ".";
+        };
+        "FB10E7D667DBD2A58B5C3707" = {
+            "isa" = "XCSwiftPackageProductDependency";
+            "package" = "49EEF2B4054B73CA25391C68";
+            "productName" = "TideIslandCore";
+        };
+        "EFDAD44D0FC98870482F4267" = {
+            "isa" = "PBXBuildFile";
+            "productRef" = "FB10E7D667DBD2A58B5C3707";
+        };
+        "C19A4328C9961E8F8A7CF4CD" = {
+            "isa" = "PBXFrameworksBuildPhase";
+            "buildActionMask" = 2147483647;
+            "files" = (
+                "EFDAD44D0FC98870482F4267",
+            );
+            "runOnlyForDeploymentPostprocessing" = 0;
+        };
+        "B4E38C56F79BAEB52483E432" = {
+            "isa" = "XCSwiftPackageProductDependency";
+            "package" = "49EEF2B4054B73CA25391C68";
+            "productName" = "TideIslandCore";
+        };
+        "D713F58A9E2084F8666B455F" = {
+            "isa" = "PBXBuildFile";
+            "productRef" = "B4E38C56F79BAEB52483E432";
+        };
+        "40D79F40A8593FA508DC545F" = {
+            "isa" = "PBXFrameworksBuildPhase";
+            "buildActionMask" = 2147483647;
+            "files" = (
+                "D713F58A9E2084F8666B455F",
+            );
+            "runOnlyForDeploymentPostprocessing" = 0;
+        };
+        "F4B7E5BA8E58CF01A465BB80" = {
+            "isa" = "XCBuildConfiguration";
+            "name" = "Debug";
+            "buildSettings" = {
+                "APPLICATION_EXTENSION_API_ONLY" = "YES";
+                "CODE_SIGN_ENTITLEMENTS" = "Native/ActivityExtension/TideIslandActivity.entitlements";
+                "ENABLE_APP_SANDBOX" = "YES";
+                "GENERATE_INFOPLIST_FILE" = "NO";
+                "INFOPLIST_FILE" = "Native/ActivityExtension/Info.plist";
+                "LD_RUNPATH_SEARCH_PATHS" = (
+                    "$(inherited)",
+                    "@executable_path/../Frameworks",
+                    "@executable_path/../../../../Frameworks",
+                );
+                "PRODUCT_BUNDLE_IDENTIFIER" = "dev.kevinljb.tide-island.activity";
+                "PRODUCT_NAME" = "$(TARGET_NAME)";
+                "SKIP_INSTALL" = "YES";
+            };
+        };
+        "4EB605AD2E4EE7316ACCD6DD" = {
+            "isa" = "XCBuildConfiguration";
+            "name" = "Release";
+            "buildSettings" = {
+                "APPLICATION_EXTENSION_API_ONLY" = "YES";
+                "CODE_SIGN_ENTITLEMENTS" = "Native/ActivityExtension/TideIslandActivity.entitlements";
+                "ENABLE_APP_SANDBOX" = "YES";
+                "GENERATE_INFOPLIST_FILE" = "NO";
+                "INFOPLIST_FILE" = "Native/ActivityExtension/Info.plist";
+                "LD_RUNPATH_SEARCH_PATHS" = (
+                    "$(inherited)",
+                    "@executable_path/../Frameworks",
+                    "@executable_path/../../../../Frameworks",
+                );
+                "PRODUCT_BUNDLE_IDENTIFIER" = "dev.kevinljb.tide-island.activity";
+                "PRODUCT_NAME" = "$(TARGET_NAME)";
+                "SKIP_INSTALL" = "YES";
+            };
+        };
+        "5E733EA2C91A646BD263FFDF" = {
+            "isa" = "XCConfigurationList";
+            "buildConfigurations" = (
+                "F4B7E5BA8E58CF01A465BB80",
+                "4EB605AD2E4EE7316ACCD6DD",
+            );
+            "defaultConfigurationIsVisible" = 0;
+            "defaultConfigurationName" = "Release";
+        };
+        "878F0293DDA0440E76AFC15C" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "BEB612B781BA658CA3B57094";
+        };
+        "C19BF386699CF942BABCA9EB" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "25798108BA7B06F9C96FEDB8";
+        };
+        "340B44853D0D58738451C8F7" = {
+            "isa" = "PBXSourcesBuildPhase";
+            "buildActionMask" = 2147483647;
+            "files" = (
+                "878F0293DDA0440E76AFC15C",
+                "C19BF386699CF942BABCA9EB",
+            );
+            "runOnlyForDeploymentPostprocessing" = 0;
+        };
+        "A5A0AA9F4FB5BC8D9254438A" = {
+            "isa" = "PBXNativeTarget";
+            "name" = "TideIslandActivity";
+            "buildConfigurationList" = "5E733EA2C91A646BD263FFDF";
+            "buildPhases" = (
+                "340B44853D0D58738451C8F7",
+                "40D79F40A8593FA508DC545F",
+            );
+            "buildRules" = (
+            );
+            "dependencies" = (
+            );
+            "packageProductDependencies" = (
+                "B4E38C56F79BAEB52483E432",
+            );
+            "productName" = "TideIslandActivity";
+            "productReference" = "4C47665D1BA4105DF9684DC4";
+            "productType" = "com.apple.product-type.app-extension";
+        };
+        "0DD22CB6C2E8E29B0AF6C12D" = {
+            "isa" = "PBXContainerItemProxy";
+            "containerPortal" = "98F54143AB4E86B28C3AFEE0";
+            "proxyType" = 1;
+            "remoteGlobalIDString" = "A5A0AA9F4FB5BC8D9254438A";
+            "remoteInfo" = "TideIslandActivity";
+        };
+        "0EA255040F843516C1F6E5A2" = {
+            "isa" = "PBXTargetDependency";
+            "target" = "A5A0AA9F4FB5BC8D9254438A";
+            "targetProxy" = "0DD22CB6C2E8E29B0AF6C12D";
+        };
+        "874C008267AE8F79F8EB039D" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "4C47665D1BA4105DF9684DC4";
+            "settings" = {
+                "ATTRIBUTES" = (
+                    "RemoveHeadersOnCopy",
+                );
+            };
+        };
+        "30CBAE1CDB46885E47D4AA82" = {
+            "isa" = "PBXCopyFilesBuildPhase";
+            "buildActionMask" = 2147483647;
+            "dstPath" = "";
+            "dstSubfolderSpec" = 13;
+            "files" = (
+                "874C008267AE8F79F8EB039D",
+            );
+            "name" = "Embed App Extensions";
+            "runOnlyForDeploymentPostprocessing" = 0;
+        };
+        "3CF6A4F2E05B3AAE7E2CBFEE" = {
+            "isa" = "XCBuildConfiguration";
+            "name" = "Debug";
+            "buildSettings" = {
+                "GENERATE_INFOPLIST_FILE" = "NO";
+                "INFOPLIST_FILE" = "Native/App/Info.plist";
+                "LD_RUNPATH_SEARCH_PATHS" = (
+                    "$(inherited)",
+                    "@executable_path/../Frameworks",
+                );
+                "PRODUCT_BUNDLE_IDENTIFIER" = "dev.kevinljb.tide-island";
+                "PRODUCT_NAME" = "$(TARGET_NAME)";
+            };
+        };
+        "23FB2CAEB38545C3793097DD" = {
+            "isa" = "XCBuildConfiguration";
+            "name" = "Release";
+            "buildSettings" = {
+                "GENERATE_INFOPLIST_FILE" = "NO";
+                "INFOPLIST_FILE" = "Native/App/Info.plist";
+                "LD_RUNPATH_SEARCH_PATHS" = (
+                    "$(inherited)",
+                    "@executable_path/../Frameworks",
+                );
+                "PRODUCT_BUNDLE_IDENTIFIER" = "dev.kevinljb.tide-island";
+                "PRODUCT_NAME" = "$(TARGET_NAME)";
+            };
+        };
+        "9EA62D25DFD1EFBA21F6DE7B" = {
+            "isa" = "XCConfigurationList";
+            "buildConfigurations" = (
+                "3CF6A4F2E05B3AAE7E2CBFEE",
+                "23FB2CAEB38545C3793097DD",
+            );
+            "defaultConfigurationIsVisible" = 0;
+            "defaultConfigurationName" = "Release";
+        };
+        "35BD5CC380D57BFED184CF5E" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "C3BF8CCD3D25F1D7DEC197B8";
+        };
+        "AE6CB36B1A74E9AC5C180079" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "2DCDEEF55B5F175B8C322C3C";
+        };
+        "4E2867761D21E72CA338905B" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "B00C8E7B6A79869F89CD5690";
+        };
+        "E31E2B28AD4632B9FAF396D7" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "90E37B46699C451211E516C1";
+        };
+        "7EB68809C8DA5652D257273E" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "25798108BA7B06F9C96FEDB8";
+        };
+        "D10ECEDA0FB53BA093BEC557" = {
+            "isa" = "PBXSourcesBuildPhase";
+            "buildActionMask" = 2147483647;
+            "files" = (
+                "35BD5CC380D57BFED184CF5E",
+                "AE6CB36B1A74E9AC5C180079",
+                "4E2867761D21E72CA338905B",
+                "E31E2B28AD4632B9FAF396D7",
+                "7EB68809C8DA5652D257273E",
+            );
+            "runOnlyForDeploymentPostprocessing" = 0;
+        };
+        "29C7B681C8D62CBAC94D51C0" = {
+            "isa" = "PBXNativeTarget";
+            "name" = "TideIsland";
+            "buildConfigurationList" = "9EA62D25DFD1EFBA21F6DE7B";
+            "buildPhases" = (
+                "D10ECEDA0FB53BA093BEC557",
+                "C19A4328C9961E8F8A7CF4CD",
+                "30CBAE1CDB46885E47D4AA82",
+            );
+            "buildRules" = (
+            );
+            "dependencies" = (
+                "0EA255040F843516C1F6E5A2",
+            );
+            "packageProductDependencies" = (
+                "FB10E7D667DBD2A58B5C3707",
+            );
+            "productName" = "TideIsland";
+            "productReference" = "B6CDB6E5D160E013280D3C68";
+            "productType" = "com.apple.product-type.application";
+        };
+        "877A6BA951A2EA0025A2ABE8" = {
+            "isa" = "XCBuildConfiguration";
+            "name" = "Debug";
+            "buildSettings" = {
+                "CLANG_ENABLE_MODULES" = "YES";
+                "CLANG_ENABLE_OBJC_ARC" = "YES";
+                "CODE_SIGN_STYLE" = "Automatic";
+                "COPY_PHASE_STRIP" = "NO";
+                "CURRENT_PROJECT_VERSION" = "1";
+                "ENABLE_HARDENED_RUNTIME" = "YES";
+                "ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
+                "MACOSX_DEPLOYMENT_TARGET" = "27.3";
+                "MARKETING_VERSION" = "0.1.0";
+                "SDKROOT" = "macosx";
+                "SUPPORTED_PLATFORMS" = "macosx";
+                "SWIFT_STRICT_CONCURRENCY" = "complete";
+                "SWIFT_VERSION" = "6.0";
+                "DEBUG_INFORMATION_FORMAT" = "dwarf";
+                "ENABLE_TESTABILITY" = "YES";
+                "SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "$(inherited) DEBUG";
+                "SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+                "ONLY_ACTIVE_ARCH" = "YES";
+            };
+        };
+        "959134B361DD7E21ADEA3164" = {
+            "isa" = "XCBuildConfiguration";
+            "name" = "Release";
+            "buildSettings" = {
+                "CLANG_ENABLE_MODULES" = "YES";
+                "CLANG_ENABLE_OBJC_ARC" = "YES";
+                "CODE_SIGN_STYLE" = "Automatic";
+                "COPY_PHASE_STRIP" = "NO";
+                "CURRENT_PROJECT_VERSION" = "1";
+                "ENABLE_HARDENED_RUNTIME" = "YES";
+                "ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
+                "MACOSX_DEPLOYMENT_TARGET" = "27.3";
+                "MARKETING_VERSION" = "0.1.0";
+                "SDKROOT" = "macosx";
+                "SUPPORTED_PLATFORMS" = "macosx";
+                "SWIFT_STRICT_CONCURRENCY" = "complete";
+                "SWIFT_VERSION" = "6.0";
+                "DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+                "SWIFT_COMPILATION_MODE" = "wholemodule";
+                "SWIFT_OPTIMIZATION_LEVEL" = "-O";
+            };
+        };
+        "247BF104A9AD002C539DA531" = {
+            "isa" = "XCConfigurationList";
+            "buildConfigurations" = (
+                "877A6BA951A2EA0025A2ABE8",
+                "959134B361DD7E21ADEA3164",
+            );
+            "defaultConfigurationIsVisible" = 0;
+            "defaultConfigurationName" = "Release";
+        };
+        "98F54143AB4E86B28C3AFEE0" = {
+            "isa" = "PBXProject";
+            "attributes" = {
+                "BuildIndependentTargetsInParallel" = "YES";
+                "LastSwiftUpdateCheck" = "2730";
+                "LastUpgradeCheck" = "2730";
+                "TargetAttributes" = {
+                    "29C7B681C8D62CBAC94D51C0" = {
+                        "CreatedOnToolsVersion" = "27.3";
+                    };
+                    "A5A0AA9F4FB5BC8D9254438A" = {
+                        "CreatedOnToolsVersion" = "27.3";
+                    };
+                };
+            };
+            "buildConfigurationList" = "247BF104A9AD002C539DA531";
+            "compatibilityVersion" = "Xcode 14.0";
+            "developmentRegion" = "en";
+            "hasScannedForEncodings" = 0;
+            "knownRegions" = (
+                "en",
+                "Base",
+                "zh-Hans",
+            );
+            "mainGroup" = "ADCF10F76EBF2A74473E9DC4";
+            "packageReferences" = (
+                "49EEF2B4054B73CA25391C68",
+            );
+            "productRefGroup" = "00C45FD35CB0F9C5F764F070";
+            "projectDirPath" = "";
+            "projectRoot" = "";
+            "targets" = (
+                "29C7B681C8D62CBAC94D51C0",
+                "A5A0AA9F4FB5BC8D9254438A",
+            );
+        };
+    };
+    "rootObject" = "98F54143AB4E86B28C3AFEE0";
+}

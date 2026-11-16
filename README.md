@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。生命周期转换、hooks 配置管理与确定性回放已通过共享层和 CLI 检查，下一步推进跨轮状态机；macOS 27.3 正式版发布前持续开发，原生编译、签名和真机验收集中到正式环境可用后执行。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。生命周期转换、hooks 配置管理、确定性回放与跨轮状态机已通过共享层和 CLI 检查，下一步推进会话存活与状态新鲜度；macOS 27.3 正式版发布前持续开发，原生编译、签名和真机验收集中到正式环境可用后执行。
 
 ## 环境要求
 

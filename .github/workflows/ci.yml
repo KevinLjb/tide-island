@@ -19,6 +19,7 @@ jobs:
         env:
           TIDE_ISLAND_TEST_TMPDIR: ${{ runner.temp }}/tide-island-tests
         run: |
+          set -o pipefail
           if swift test 2>&1 | tee "$RUNNER_TEMP/tide-island-swift-test.log"; then
             exit 0
           fi

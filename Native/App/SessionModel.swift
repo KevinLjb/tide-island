@@ -91,10 +91,11 @@ final class SessionModel: ObservableObject {
         cleanupPlan = nil
         do {
             let result = try inbox.applyCleanup(plan, expectedFingerprint: plan.fingerprint)
+            reloadInbox()
             statusMessage = result.failedFiles.isEmpty
                 ? "已清理 \(result.removedFiles) 个过期事件文件。"
                 : "部分事件未能清理，请重新预览。"
-            reloadInbox()
+            if !result.targetsMet { statusMessage = (statusMessage ?? "") + "受保护或无法识别的历史仍超出容量目标。" }
         } catch {
             statusMessage = "事件历史已变化或暂不可清理，请重新预览。"
         }

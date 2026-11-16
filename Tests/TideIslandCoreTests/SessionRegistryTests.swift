@@ -8,12 +8,15 @@ import Testing
         sessionID: "one", projectName: "one", phase: .completed,
         occurredAt: Date(timeIntervalSince1970: 200)
     )
-    #expect(try registry.apply(completed))
-    #expect(try !registry.apply(completed))
-    #expect(try !registry.apply(AgentEvent(
+    let applied = try registry.apply(completed)
+    #expect(applied)
+    let duplicate = try registry.apply(completed)
+    #expect(!duplicate)
+    let older = try registry.apply(AgentEvent(
         sessionID: "one", projectName: "one", phase: .working,
         occurredAt: Date(timeIntervalSince1970: 100)
-    )))
+    ))
+    #expect(!older)
     #expect(registry.sessions.count == 1)
     #expect(registry.sessions.first?.phase == .completed)
 }

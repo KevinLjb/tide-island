@@ -23,6 +23,7 @@ final class SessionModel: ObservableObject {
     private var pendingSnapshot: SessionSnapshot?
     private var refreshTask: Task<Void, Never>?
     private var inboxRetryTask: Task<Void, Never>?
+    private var inboxBusyRetries = 0
     private var subscriptions: Set<AnyCancellable> = []
 
     init() {
@@ -56,6 +57,7 @@ final class SessionModel: ObservableObject {
             cursor = nextCursor
             inboxRetryTask?.cancel()
             inboxRetryTask = nil
+            inboxBusyRetries = 0
             if batch.changedFiles > 0 || batch.removedFiles > 0 || batch.directoryChanged { cleanupPlan = nil }
             if batch.rejectedFiles > 0 {
                 statusMessage = "已忽略 \(batch.rejectedFiles) 个无法识别的事件文件。"
@@ -64,8 +66,15 @@ final class SessionModel: ObservableObject {
             }
         } catch InboxError.busy {
             inboxRetryTask?.cancel()
+            guard inboxBusyRetries < 5 else {
+                inboxRetryTask = nil
+                statusMessage = "事件维护仍繁忙，将在目录变化或应用激活后重试。"
+                return
+            }
+            inboxBusyRetries += 1
+            let delay = 0.1 * pow(2, Double(inboxBusyRetries - 1))
             inboxRetryTask = Task { [weak self] in
-                do { try await Task.sleep(for: .milliseconds(100)) }
+                do { try await Task.sleep(for: .seconds(delay)) }
                 catch { return }
                 self?.reloadInbox()
             }

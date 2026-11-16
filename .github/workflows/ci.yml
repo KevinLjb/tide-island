@@ -20,19 +20,33 @@ jobs:
           TIDE_ISLAND_TEST_TMPDIR: ${{ runner.temp }}/tide-island-tests
         run: |
           set -o pipefail
-          if swift test 2>&1 | tee "$RUNNER_TEMP/tide-island-swift-test.log"; then
-            exit 0
-          fi
-          python3 - <<'PY'
+          tide_test_status=0
+          swift test 2>&1 | tee "$RUNNER_TEMP/tide-island-swift-test.log" || tide_test_status=$?
+          python3 - "$tide_test_status" <<'PY'
           import os
+          import re
+          import sys
           from pathlib import Path
 
           tide_log = Path(os.environ["RUNNER_TEMP"]) / "tide-island-swift-test.log"
-          excerpt = "\n".join(tide_log.read_text().splitlines()[-100:])
-          escaped = excerpt.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
-          print("::error title=Shared logic test diagnostics::" + escaped)
+          lines = tide_log.read_text().splitlines()
+          if sys.argv[1] == "0":
+              counts = [int(value) for value in re.findall(r"Test run with (\d+) tests? passed", "\n".join(lines))]
+              declared = sum(len(re.findall(r"(?m)^\s*@Test\b", path.read_text()))
+                             for path in Path("Tests/TideIslandCoreTests").rglob("*.swift"))
+              assert counts and declared > 0 and max(counts) >= declared, "Missing or incomplete Swift Testing summary"
+              print(f"::notice title=Shared logic tests::Tests executed: {max(counts)}; declared functions: {declared}.")
+          else:
+              excerpts = []
+              for index, line in enumerate(lines):
+                  if "error:" in line or "Expectation failed" in line or "✘ Test" in line:
+                      excerpts.extend(lines[index:index + 3])
+              text = "\n".join(excerpts or lines[-60:])[:24000]
+              for index in range(0, len(text), 3000):
+                  escaped = text[index:index + 3000].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+                  print("::error title=Shared logic test diagnostics::" + escaped)
           PY
-          exit 1
+          exit "$tide_test_status"
       - name: Build event bridge
         run: swift build --product tide-island-bridge
       - name: Exercise event bridge

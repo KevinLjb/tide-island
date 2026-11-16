@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T019 已加入 [共享视图投影与无障碍源码](docs/activity-views.md)：统一各尺寸的状态 / 计数 / 链接，stale 降级、窄布局与完整读屏文案。新增 8 项共享测试，全量声明 275 项，等待严格 CI。原生编译、签名、显示和输入验收继续待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T019 已加入 [共享视图投影与无障碍源码](docs/activity-views.md)：统一各尺寸的状态 / 计数 / 链接，stale 降级、窄布局与完整读屏文案。新增 8 项共享测试，[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43947084640) 实际执行 275 / 声明 275 项全部通过，七项检查成功。原生编译、签名、显示和输入验收继续待 macOS 27.3 正式环境。
 
 ## 环境要求
 

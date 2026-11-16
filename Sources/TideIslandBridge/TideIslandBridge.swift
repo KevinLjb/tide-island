@@ -7,14 +7,15 @@ struct TideIslandBridge {
     static func main() {
         let arguments = Array(CommandLine.arguments.dropFirst())
         let isHook = arguments.first == "hook"
+        let isNotifyDispatcher = arguments.first == "notify-dispatch"
         do {
             try run(arguments)
         } catch {
             // A hook observes only: never emit decisions/context on stdout or
             // use exit code 2, which Codex interprets as a blocking decision.
-            let message = isHook ? "Hook observation skipped." : error.localizedDescription
+            let message = isHook ? "Hook observation skipped." : isNotifyDispatcher ? "Notify callback incomplete." : error.localizedDescription
             FileHandle.standardError.write(Data("tide-island-bridge: \(message)\n".utf8))
-            if !isHook { exit(1) }
+            if !isHook && !isNotifyDispatcher { exit(1) }
         }
     }
 
@@ -24,6 +25,8 @@ struct TideIslandBridge {
             return
         }
         let rest = Array(arguments.dropFirst())
+        if command == "notify-config" { try NotifyConfigurationCommand.run(rest); return }
+        if command == "notify-dispatch" { try NotifyDispatchCommand.run(rest); return }
         if command == "state" {
             try StateCommand.run(rest)
             return
@@ -155,6 +158,12 @@ struct TideIslandBridge {
                 "application_bundle_option": "--app", "embedded_bridge_integrity": "sha256-manifest-v1",
                 "bundle_signing_verified_by_inspector": false,
             ],
+            "notify_configuration": [
+                "format": "top-level-config-toml-notify", "default_mode": "preview",
+                "preserves_foreign_argv": true, "original_argv_storage": "same-notify-setting",
+                "callback_stdout": "empty", "callback_failure_exit_code": 0,
+                "callback_uses_shell": false, "manages_codex_trust": false,
+            ],
             "inbox_maintenance": [
                 "default_mode": "preview", "requires_managed_marker": true,
                 "protects_unresolved_session_history": true, "capacity_targets_are_soft": true,
@@ -234,6 +243,10 @@ struct TideIslandBridge {
                   [--inbox /DIRECTORY] [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
     hooks uninstall --config /PATH/hooks.json
                     [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
+    notify-config install --config /PATH/config.toml --app /PATH/TideIsland.app
+                          [--inbox /DIRECTORY] [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
+    notify-config uninstall --config /PATH/config.toml
+                            [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
     capabilities
 
     emit/notify write an event and print JSON. hook reads stdin and keeps stdout
@@ -245,6 +258,10 @@ struct TideIslandBridge {
     a backup directory. It never edits config.toml or Codex hook trust records.
     --app checks the embedded helper without executing it. Move/upgrade the app,
     then preview again to repair only managed hook paths; old previews expire.
+    notify-config edits only the top-level notify setting with a private backup.
+    It preserves existing command arguments, restores them on uninstall, and
+    never edits hook trust. Its internal callback observes metadata and forwards
+    the original payload as one argument without a shell or stdout output.
     inbox cleanup previews expired whole-session history. Apply requires the
     exact fingerprint; active/uncertain histories and unknown files stay intact.
     inbox recover previews interrupted operations. Apply completes only valid

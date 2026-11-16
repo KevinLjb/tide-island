@@ -56,7 +56,7 @@ flowchart LR
 
 T024 的应用构建阶段按配置 / 架构生成 bridge，先处理 helper 签名，再将固定可执行文件及摘要清单嵌入 Contents/Helpers，外层应用由 Xcode 签署。BundledBridge 只读检查包元数据、路径和有界文件完整性；`hooks install --app` 将 helper 摘要 / 应用版本加入预览指纹，应用前重验，移动后只修复受管 handler。它不执行 helper 或替代系统签名验证；构建阶段未在原生 SDK 执行，详见 [bridge 交付](bridge-delivery.md)。
 
-T025 正在准备独立的 notify 共存：共享 NotifyDispatchConfiguration 保留既有 argv 的明确边界和缺失 / 空数组恢复标记；TOMLNotifyDocument 只编辑顶层 notify 值，其他字节保留，CodexNotifyConfiguration 绑定内容与 bundle 证据生成可撤销计划。当前还没有文件写入或 callback / 统一安装命令，详见 [完成 notify 共存](notify-integration.md)。
+T025 的独立 notify 共存以共享 NotifyDispatchConfiguration 保留既有 argv 的明确边界和缺失 / 空数组恢复标记；TOMLNotifyDocument 只编辑顶层 notify 值，CodexNotifyConfiguration 绑定内容与 bundle 证据。NotifyConfigurationFile 实现私有原始备份、锁、指纹及发布前复核；notify-config 暴露显式预览 / 应用。内部 callback 先写必要元数据，再用 Process 转发原 argv / JSON，不使用 shell、正文存储或基于 payload cwd 的目录切换，两个结果互不阻断。统一安装 / 卸载待接续，详见 [完成 notify 共存](notify-integration.md)。
 
 ## 确定性回放
 

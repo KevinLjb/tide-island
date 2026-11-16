@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T024 的 376 项共享测试和七项检查已通过。T025 正在实现 [完成 notify 共存](docs/notify-integration.md)：共享 argv 信封和可撤销 TOML 计划源码就绪，文件 / callback / 统一安装命令待接入；新增 18 项测试，全量声明 394 项等待严格 CI。原生编译、签名和交互仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T025 的 [notify 共享计划](docs/notify-integration.md)已通过 394 项回归；文件预览 / 备份 / 恢复与 callback 源码已接入，统一安装 / 卸载待接续。新增 6 项共享测试，全量声明 400 项及独立 TOML / 回调 CLI 等待严格 CI。原生编译、签名和交互仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -71,6 +71,7 @@ swift build --product tide-island-bridge
 python3 scripts/check-bridge.py
 python3 scripts/check-hooks.py
 python3 scripts/check-delivery.py
+python3 scripts/check-notify.py
 python3 scripts/check-replay.py
 python3 scripts/check-inbox.py
 python3 scripts/check-state.py
@@ -78,6 +79,8 @@ python3 scripts/check-project.py
 ```
 
 `check-project.py` 核对 plist、target、扩展嵌入、共享源码和版本约束，仅代表工程结构检查，不替代原生编译。GitHub Actions 使用标准 `macos-15-intel` runner 运行共享层及结构验证；Intel 共享检查不替代本机架构或 macOS 27.3 原生验证。
+
+隔离 CLI 验证使用 Python 3.11+；CI 固定 Python 3.13，以标准 tomllib 独立核对 notify 配置。应用与 bridge 本身不依赖 Python。
 
 需要指定测试临时目录时，设置 `TIDE_ISLAND_TEST_TMPDIR`；SwiftPM 构建目录可通过 `--scratch-path` 指定。
 
@@ -175,11 +178,12 @@ CLI 提供两个独立入口：
 
 原生构建产物可用 `hooks install --app /Applications/TideIsland.app` 检查固定包内 bridge；移动 / 升级后重新预览修复受管路径。该参数与 `--bridge` 互斥，校验清单不替代签名 / 公证验证；安装包当前仍未发布。
 
-配置工具保持 `config.toml`、既有 notify 和内联 hooks 原样。完成通知仍需将稳定路径的桥接程序配置为 notify 命令，并让 Codex 追加 JSON 参数；与既有 notify 共存的完整接入流程由 T025 继续实现：
+hooks 工具保持 `config.toml`、既有 notify 和内联 hooks 原样。新增的独立 `notify-config` 工具只编辑明确指定 config.toml 的顶层 notify，保留并转发原命令参数，默认预览，显式应用后才安装 callback；卸载恢复旧 notify。详见 [完成通知共存](docs/notify-integration.md)，统一安装 / 卸载由 T025 接续：
 
-```toml
-# 仅为接入示意。使用实际的稳定绝对路径，并合并已有配置。
-notify = ["/absolute/path/to/tide-island-bridge", "notify", "--payload"]
+```bash
+# 未来有实际应用包时，先检查预览。尚未修改当前用户配置。
+"/Applications/TideIsland.app/Contents/Helpers/tide-island-bridge" notify-config install \
+  --config /absolute/path/to/codex/config.toml --app /Applications/TideIsland.app
 ```
 
 单独配置 notify 只覆盖本轮结束；其他已支持事件需要相应 hooks。`Stop`、压缩触发的 `SessionStart` 和子代理输入不会直接改变主会话状态。普通问答的准确等待与整轮最终失败尚无本适配器确认的自动来源；真实配置安装、完整会话恢复和后续来源适配仍待开发。

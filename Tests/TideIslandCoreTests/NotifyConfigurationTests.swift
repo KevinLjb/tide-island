@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import Testing
 @testable import TideIslandCore
@@ -201,6 +202,87 @@ import Testing
     #expect(throws: NotifyConfigurationError.modifiedOwnedCommand) { try NotifyDispatchConfiguration(restoresMissing: false, originalArguments: command) }
     let foreign = try NotifyDispatchConfiguration.managedCommand(["/tool", "--arg", "plain"])
     #expect(foreign == nil)
+}
+
+@Test func notifyFilePreviewAndUnmanagedUninstallCreateNoConfigurationDirectories() throws {
+    let fixture = try notifyFixture(); defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let parent = fixture.root.appendingPathComponent("missing"), file = try NotifyConfigurationFile(url: parent.appendingPathComponent("config.toml"))
+    let install = try file.preview(action: .install, applicationURL: fixture.bridge.applicationURL)
+    #expect(install.changesFile && !FileManager.default.fileExists(atPath: parent.path))
+    let uninstall = try file.preview(action: .uninstall), backup = fixture.root.appendingPathComponent("backups")
+    let result = try file.apply(uninstall, expectedFingerprint: uninstall.fingerprint, backupDirectory: backup)
+    #expect(result == nil && !FileManager.default.fileExists(atPath: parent.path) && !FileManager.default.fileExists(atPath: backup.path))
+}
+
+@Test func notifyFileBacksUpExactSourceAndPermissionsAndNoOpDoesNotRewrite() throws {
+    let fixture = try notifyFixture(); defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let url = URL(fileURLWithPath: fixture.config), original = Data("# private config\nnotify = [ 'foreign' ]\nmodel='fixture'\n".utf8)
+    try original.write(to: url); try FileManager.default.setAttributes([.posixPermissions: 0o640], ofItemAtPath: url.path)
+    let file = try NotifyConfigurationFile(url: url), plan = try file.preview(action: .install, applicationURL: fixture.bridge.applicationURL)
+    let applied = try file.apply(plan, expectedFingerprint: plan.fingerprint, backupDirectory: fixture.root.appendingPathComponent("backups"))
+    let backup = try #require(applied), bytes = try Data(contentsOf: backup.appendingPathComponent("config.toml.before"))
+    let backupMode = try FileManager.default.attributesOfItem(atPath: backup.path)[.posixPermissions] as? NSNumber
+    let configMode = try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? NSNumber
+    #expect(bytes == original && backupMode?.intValue == 0o700 && configMode?.intValue == 0o640)
+    let unchanged = try file.preview(action: .install, applicationURL: fixture.bridge.applicationURL)
+    let result = try file.apply(unchanged, expectedFingerprint: unchanged.fingerprint, backupDirectory: fixture.root.appendingPathComponent("unexpected"))
+    #expect(result == nil && !FileManager.default.fileExists(atPath: fixture.root.appendingPathComponent("unexpected").path))
+}
+
+@Test func notifyFileRejectsEditedSourceAndAnotherTargetBeforeCreatingBackups() throws {
+    let fixture = try notifyFixture(); defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let file = try NotifyConfigurationFile(url: URL(fileURLWithPath: fixture.config))
+    let plan = try file.preview(action: .install, applicationURL: fixture.bridge.applicationURL)
+    let other = try NotifyConfigurationFile(url: fixture.root.appendingPathComponent("other/config.toml"))
+    let backup = fixture.root.appendingPathComponent("backups")
+    #expect(throws: NotifyConfigurationError.stalePlan) { try other.apply(plan, expectedFingerprint: plan.fingerprint, backupDirectory: backup) }
+    let edited = Data("notify=['later-tool']\n".utf8)
+    try edited.write(to: file.url)
+    #expect(throws: NotifyConfigurationError.stalePlan) { try file.apply(plan, expectedFingerprint: plan.fingerprint, backupDirectory: backup) }
+    let current = try Data(contentsOf: file.url)
+    #expect(current == edited && !FileManager.default.fileExists(atPath: backup.path))
+}
+
+@Test func notifyFileRejectsBusyLockAndFailedBackupWithoutWritingSource() throws {
+    let fixture = try notifyFixture(); defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let file = try NotifyConfigurationFile(url: URL(fileURLWithPath: fixture.config)), original = Data("notify=['foreign']\n".utf8)
+    try original.write(to: file.url)
+    let plan = try file.preview(action: .install, applicationURL: fixture.bridge.applicationURL)
+    let descriptor = open(fixture.root.appendingPathComponent(".tide-island-notify.lock").path, O_RDWR | O_CREAT, 0o600)
+    #expect(descriptor >= 0); defer { close(descriptor) }
+    #expect(flock(descriptor, LOCK_EX | LOCK_NB) == 0)
+    #expect(throws: NotifyConfigurationError.busy) { try file.apply(plan, expectedFingerprint: plan.fingerprint, backupDirectory: fixture.root.appendingPathComponent("backups")) }
+    _ = flock(descriptor, LOCK_UN)
+    let blocked = fixture.root.appendingPathComponent("blocked"); try Data("keep".utf8).write(to: blocked)
+    #expect(throws: (any Error).self) { try file.apply(plan, expectedFingerprint: plan.fingerprint, backupDirectory: blocked) }
+    let current = try Data(contentsOf: file.url)
+    #expect(current == original)
+}
+
+@Test func notifyFileRejectsLinkedAndSpecialTargetsWithoutBlocking() throws {
+    let fixture = try notifyFixture(); defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let original = fixture.root.appendingPathComponent("original.toml"); try Data("notify=[]\n".utf8).write(to: original)
+    let url = URL(fileURLWithPath: fixture.config)
+    try FileManager.default.createSymbolicLink(at: url, withDestinationURL: original)
+    let file = try NotifyConfigurationFile(url: url)
+    #expect(throws: NotifyConfigurationError.unsafeFile) { try file.preview(action: .uninstall) }
+    try FileManager.default.removeItem(at: url)
+    #expect(mkfifo(url.path, 0o600) == 0)
+    #expect(throws: NotifyConfigurationError.unsafeFile) { try file.preview(action: .uninstall) }
+}
+
+@Test func notifyFileRevalidatesBundleEvenWhenNotifyCommandIsUnchanged() throws {
+    let fixture = try notifyFixture(); defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let file = try NotifyConfigurationFile(url: URL(fileURLWithPath: fixture.config))
+    let first = try file.preview(action: .install, applicationURL: fixture.bridge.applicationURL)
+    _ = try file.apply(first, expectedFingerprint: first.fingerprint, backupDirectory: fixture.root.appendingPathComponent("backups"))
+    let unchanged = try file.preview(action: .install, applicationURL: fixture.bridge.applicationURL)
+    #expect(!unchanged.changesFile)
+    try Data("changed helper".utf8).write(to: fixture.bridge.executableURL)
+    #expect(throws: BundledBridgeError.integrityMismatch) {
+        try file.apply(unchanged, expectedFingerprint: unchanged.fingerprint, backupDirectory: fixture.root.appendingPathComponent("unexpected"))
+    }
+    #expect(!FileManager.default.fileExists(atPath: fixture.root.appendingPathComponent("unexpected").path))
 }
 
 private func notifyPlan(_ data: Data?, bridge: BundledBridge) throws -> NotifyConfigurationPlan {

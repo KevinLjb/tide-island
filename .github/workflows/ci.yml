@@ -38,5 +38,7 @@ jobs:
         run: python3 scripts/check-bridge.py --temporary-root "${{ runner.temp }}"
       - name: Exercise hook configuration management
         run: python3 scripts/check-hooks.py --temporary-root "${{ runner.temp }}"
+      - name: Exercise deterministic event replay
+        run: python3 scripts/check-replay.py --temporary-root "${{ runner.temp }}"
       - name: Check native project structure
         run: python3 scripts/check-project.py

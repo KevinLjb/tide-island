@@ -4,7 +4,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 让 AI 的工作状态，在岛上一目了然。面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。
 
-> 当前阶段：Codex 接入与配置管理开发。已提供 v1 / v2 事件协议、会话共享层、观察型 hook / notify CLI、hooks 配置预览与安装卸载、菜单栏及原生扩展源码。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
+> 当前阶段：Codex 接入与事件回放开发。已提供 v1 / v2 事件协议、会话共享层、观察型 hook / notify CLI、hooks 配置管理、确定性回放、菜单栏及原生扩展源码。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
 
 ## 开发进度
 
@@ -37,6 +37,7 @@ docs/architecture.md          架构、能力边界与后续步骤
 docs/development-progress.md  开发计划、任务进度与 27.3 统一验收清单
 docs/codex-events.md          固定版本的 Codex 事件契约、转换矩阵与兼容范围
 docs/codex-hooks.md           hooks 配置预览、合并、备份、卸载与信任审查
+docs/event-replay.md          确定性回放、逐步状态断言与跨轮待修复反例
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -48,6 +49,7 @@ swift test
 swift build --product tide-island-bridge
 python3 scripts/check-bridge.py
 python3 scripts/check-hooks.py
+python3 scripts/check-replay.py
 python3 scripts/check-project.py
 ```
 
@@ -91,6 +93,16 @@ CLI 将事件原子写入 `~/Library/Application Support/TideIsland/Events/`，�
 
 `--inbox <目录>` 可隔离调试数据；`--wave-block <ID>` 可显式携带分屏标识。在 Wave 中运行时，默认读取 `WAVETERM_BLOCKID`。应用当前只唤起 Wave，**尚未实现或验证精确分屏定位**。
 
+## 回放生命周期事件
+
+```bash
+swift run tide-island-bridge replay \
+  --file Tests/TideIslandCoreTests/Fixtures/Replay/lifecycle.json \
+  --scenario permission-wait-resume
+```
+
+回放使用固定身份和时间，经真实适配器、事件编解码与 registry 检查状态；只输出元数据报告。10 个基线场景共 44 步，预期不匹配时返回非零。跨轮迟到通知的待修复反例及 fixture 格式见 [事件回放](docs/event-replay.md)。
+
 ## Codex 接入边界
 
 CLI 提供两个独立入口：
@@ -113,7 +125,7 @@ notify = ["/absolute/path/to/tide-island-bridge", "notify", "--payload"]
 
 ## 当前能力与后续计划
 
-- 已实现：v1 / v2 元数据事件、本地 inbox、基础事件去重 / 时间过滤、多会话注意力排序、Codex hook / notify 转换、hooks 配置预览 / 合并 / 备份 / 卸载、隔离 CLI 检查、菜单栏与原生扩展源码。
+- 已实现：v1 / v2 元数据事件、本地 inbox、基础事件去重 / 时间过滤、多会话注意力排序、Codex hook / notify 转换、hooks 配置管理、确定性事件回放与逐步断言、隔离 CLI 检查、菜单栏与原生扩展源码。
 - 待验证：macOS 27.3 原生编译、签名安装、灵动岛更新与点击、触摸交互及系统活动协调。
 - 待开发：完整接入与 notify 共存、普通问答 / 最终失败补充来源、跨轮状态与存活判断、Wave 精确定位、事件保留策略、额度信息与小宠物。
 

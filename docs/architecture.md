@@ -50,6 +50,12 @@ flowchart LR
 
 配置管理只编辑指定的 `hooks.json`，保留 `config.toml` 中 notify、内联 hooks 和信任状态。专用分组正常升级时原地更新，卸载保留空分组，减少其他条目索引变化。文件安装与 Codex 信任审查、真实运行分别记录；完成 notify 的完整接入与共存仍由 T025 处理。命令、备份、并发边界和回退说明见 [hooks 配置管理](codex-hooks.md)。
 
+## 确定性回放
+
+`EventReplay` 用 fixture 提供的 UUID 与接收时钟调用真实适配器，经 `EventCodec` 编解码后送入独立 `SessionRegistry`，按声明的到达顺序比较每一步完整会话快照。CLI 的 `replay` 入口仅有界读取文件并输出稳定 JSON，不写 inbox 或 Codex 配置，不启动原生组件。
+
+基线包含 10 个场景 / 44 步，覆盖生命周期、权限等待与恢复、中断、错误、相邻重复、旧版本和会话隔离。跨轮迟到 notify 的独立反例保留正确预期并报告当前差异；完整状态机仍由 T006 实现。格式、断言与限制见 [事件回放](event-replay.md)。
+
 ## 原生显示
 
 原生目标最低 macOS 27.3，使用 ActivityKit + WidgetKit；系统负责灵动岛 / 菜单栏的展示和交互边界。应用和扩展共享同一 ActivityAttributes 声明，内容状态只传选中会话及聚合计数。

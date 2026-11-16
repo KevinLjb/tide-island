@@ -1,0 +1,1607 @@
+{
+  "schemaVersion": 1,
+  "description": "Synthetic metadata-only scenarios based on the pinned Codex 0.169.0 contract. Expectations are authored independently of production output.",
+  "scenarios": [
+    {
+      "name": "normal-turn",
+      "steps": [
+        {
+          "id": "2FB4C0E0-E6E9-58EF-8B33-01F66B88D36F",
+          "at": "2026-11-16T00:00:01.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-normal",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "UserPromptSubmit",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "prompt": "fixture-private-prompt"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-normal",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "2FB4C0E0-E6E9-58EF-8B33-01F66B88D36F",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                },
+                "waveBlockID": "wave-normal"
+              }
+            ]
+          },
+          "waveBlockID": "wave-normal"
+        },
+        {
+          "id": "33F7D524-C600-5BE5-85FC-8475DAAEA5ED",
+          "at": "2026-11-16T00:00:02.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-normal",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PreToolUse",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "Bash",
+            "tool_use_id": "fixture-tool",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-normal",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:02.000Z",
+                "lastEventID": "33F7D524-C600-5BE5-85FC-8475DAAEA5ED",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "toolStarted",
+                  "receivedAt": "2026-11-16T00:00:02.000Z",
+                  "turnID": "turn-1",
+                  "toolName": "Bash",
+                  "toolUseID": "fixture-tool"
+                },
+                "waveBlockID": "wave-normal"
+              }
+            ]
+          },
+          "waveBlockID": "wave-normal"
+        },
+        {
+          "id": "B674AA81-AB59-52BA-8D18-998ADE725BDB",
+          "at": "2026-11-16T00:00:03.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-normal",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PostToolUse",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "Bash",
+            "tool_use_id": "fixture-tool",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            },
+            "tool_response": {
+              "exit_code": 0,
+              "stdout": "fixture-private-output"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-normal",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:03.000Z",
+                "lastEventID": "B674AA81-AB59-52BA-8D18-998ADE725BDB",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "toolFinished",
+                  "receivedAt": "2026-11-16T00:00:03.000Z",
+                  "turnID": "turn-1",
+                  "toolName": "Bash",
+                  "toolUseID": "fixture-tool"
+                },
+                "waveBlockID": "wave-normal"
+              }
+            ]
+          },
+          "waveBlockID": "wave-normal"
+        },
+        {
+          "id": "29B8DD83-D93C-5B04-AAE1-FCAFA9EBD790",
+          "at": "2026-11-16T00:00:04.000Z",
+          "source": "notify",
+          "payload": {
+            "type": "agent-turn-complete",
+            "thread-id": "session-normal",
+            "turn-id": "turn-1",
+            "cwd": "/fixture/projects/tide-island",
+            "input-messages": [
+              "fixture-private-prompt"
+            ],
+            "last-assistant-message": "fixture-private-reply"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-normal",
+                "projectName": "tide-island",
+                "phase": "completed",
+                "updatedAt": "2026-11-16T00:00:04.000Z",
+                "lastEventID": "29B8DD83-D93C-5B04-AAE1-FCAFA9EBD790",
+                "context": {
+                  "source": "codexNotify",
+                  "kind": "turnCompleted",
+                  "receivedAt": "2026-11-16T00:00:04.000Z",
+                  "turnID": "turn-1"
+                },
+                "waveBlockID": "wave-normal"
+              }
+            ]
+          },
+          "waveBlockID": "wave-normal"
+        }
+      ]
+    },
+    {
+      "name": "permission-wait-resume",
+      "steps": [
+        {
+          "id": "4C70C6BB-FB90-5683-9C65-B753B78168F6",
+          "at": "2026-11-16T00:00:01.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-permission",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "UserPromptSubmit",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "prompt": "fixture-private-prompt"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-permission",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "4C70C6BB-FB90-5683-9C65-B753B78168F6",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "B26476A0-A636-5993-A48C-1836F3FC044E",
+          "at": "2026-11-16T00:00:02.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-permission",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PreToolUse",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "Bash",
+            "tool_use_id": "fixture-tool",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-permission",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:02.000Z",
+                "lastEventID": "B26476A0-A636-5993-A48C-1836F3FC044E",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "toolStarted",
+                  "receivedAt": "2026-11-16T00:00:02.000Z",
+                  "turnID": "turn-1",
+                  "toolName": "Bash",
+                  "toolUseID": "fixture-tool"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "6383AEDA-B782-592B-9A01-6BC482F973AD",
+          "at": "2026-11-16T00:00:03.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-permission",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PermissionRequest",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "Bash",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-permission",
+                "projectName": "tide-island",
+                "phase": "needsInput",
+                "updatedAt": "2026-11-16T00:00:03.000Z",
+                "lastEventID": "6383AEDA-B782-592B-9A01-6BC482F973AD",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "permissionRequested",
+                  "receivedAt": "2026-11-16T00:00:03.000Z",
+                  "turnID": "turn-1",
+                  "toolName": "Bash"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "AD70DACE-0591-5829-A851-0B33377719D5",
+          "at": "2026-11-16T00:00:04.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-permission",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PostToolUse",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "Bash",
+            "tool_use_id": "fixture-tool",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            },
+            "tool_response": {
+              "exit_code": 7,
+              "stderr": "fixture-private-output"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-permission",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:04.000Z",
+                "lastEventID": "AD70DACE-0591-5829-A851-0B33377719D5",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "toolFinished",
+                  "receivedAt": "2026-11-16T00:00:04.000Z",
+                  "turnID": "turn-1",
+                  "toolName": "Bash",
+                  "toolUseID": "fixture-tool"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "0E03A793-EE8F-53BC-A335-00A4690BE3B8",
+          "at": "2026-11-16T00:00:05.000Z",
+          "source": "notify",
+          "payload": {
+            "type": "agent-turn-complete",
+            "thread-id": "session-permission",
+            "turn-id": "turn-1",
+            "cwd": "/fixture/projects/tide-island",
+            "input-messages": [
+              "fixture-private-prompt"
+            ],
+            "last-assistant-message": "fixture-private-reply"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-permission",
+                "projectName": "tide-island",
+                "phase": "completed",
+                "updatedAt": "2026-11-16T00:00:05.000Z",
+                "lastEventID": "0E03A793-EE8F-53BC-A335-00A4690BE3B8",
+                "context": {
+                  "source": "codexNotify",
+                  "kind": "turnCompleted",
+                  "receivedAt": "2026-11-16T00:00:05.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "interrupt-and-session-exit",
+      "steps": [
+        {
+          "id": "D5EBDAC3-D2AF-5E19-A9F2-3C220BDC6D26",
+          "at": "2026-11-16T00:00:01.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-interrupt",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "UserPromptSubmit",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "prompt": "fixture-private-prompt"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-interrupt",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "D5EBDAC3-D2AF-5E19-A9F2-3C220BDC6D26",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "74AC6178-BD3E-554B-BF63-7098D9C1F3AF",
+          "at": "2026-11-16T00:00:02.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-interrupt",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "Interrupt",
+            "model": "fixture-model",
+            "permission_mode": "default"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-interrupt",
+                "projectName": "tide-island",
+                "phase": "interrupted",
+                "updatedAt": "2026-11-16T00:00:02.000Z",
+                "lastEventID": "74AC6178-BD3E-554B-BF63-7098D9C1F3AF",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnInterrupted",
+                  "receivedAt": "2026-11-16T00:00:02.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "23D0C2BA-11A6-53E1-8F7E-E6B928F19BB9",
+          "at": "2026-11-16T00:00:03.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-interrupt",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "SessionEnd",
+            "reason": "other"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-interrupt",
+                "projectName": "tide-island",
+                "phase": "ended",
+                "updatedAt": "2026-11-16T00:00:03.000Z",
+                "lastEventID": "23D0C2BA-11A6-53E1-8F7E-E6B928F19BB9",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "sessionEnded",
+                  "receivedAt": "2026-11-16T00:00:03.000Z"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tool-error-is-not-turn-failure",
+      "steps": [
+        {
+          "id": "E08052E6-09D6-5484-8255-864EE52B23DE",
+          "at": "2026-11-16T00:00:01.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-tool-error",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "UserPromptSubmit",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "prompt": "fixture-private-prompt"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-tool-error",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "E08052E6-09D6-5484-8255-864EE52B23DE",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "42116F7A-BCDB-524A-B623-3C8D8B6053DB",
+          "at": "2026-11-16T00:00:02.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-tool-error",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PostToolUse",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "Bash",
+            "tool_use_id": "fixture-tool",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            },
+            "tool_response": {
+              "exit_code": 7,
+              "stderr": "fixture-private-output"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-tool-error",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:02.000Z",
+                "lastEventID": "42116F7A-BCDB-524A-B623-3C8D8B6053DB",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "toolFinished",
+                  "receivedAt": "2026-11-16T00:00:02.000Z",
+                  "turnID": "turn-1",
+                  "toolName": "Bash",
+                  "toolUseID": "fixture-tool"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "B39B0E98-5E7D-5E8A-85FC-DD6538634CCE",
+          "at": "2026-11-16T00:00:03.000Z",
+          "source": "notify",
+          "payload": {
+            "type": "agent-turn-complete",
+            "thread-id": "session-tool-error",
+            "turn-id": "turn-1",
+            "cwd": "/fixture/projects/tide-island",
+            "input-messages": [
+              "fixture-private-prompt"
+            ],
+            "last-assistant-message": "fixture-private-reply"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-tool-error",
+                "projectName": "tide-island",
+                "phase": "completed",
+                "updatedAt": "2026-11-16T00:00:03.000Z",
+                "lastEventID": "B39B0E98-5E7D-5E8A-85FC-DD6538634CCE",
+                "context": {
+                  "source": "codexNotify",
+                  "kind": "turnCompleted",
+                  "receivedAt": "2026-11-16T00:00:03.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "manual-failure",
+      "description": "Explicit manual status; this does not assert automatic Codex turn-failure detection.",
+      "steps": [
+        {
+          "id": "5685CABE-F5AF-5DCC-8D78-794A78757679",
+          "at": "2026-11-16T00:00:01.000Z",
+          "source": "event",
+          "payload": {
+            "version": 2,
+            "id": "5685CABE-F5AF-5DCC-8D78-794A78757679",
+            "sessionID": "session-manual",
+            "projectName": "tide-island",
+            "phase": "working",
+            "occurredAt": "2026-11-16T00:00:01.000Z",
+            "context": {
+              "source": "manual",
+              "kind": "status",
+              "receivedAt": "2026-11-16T00:00:01.000Z",
+              "turnID": "manual-turn"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-manual",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "5685CABE-F5AF-5DCC-8D78-794A78757679",
+                "context": {
+                  "source": "manual",
+                  "kind": "status",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "manual-turn"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "37BE295B-52A0-5A4B-9B5A-4191B89DF1EC",
+          "at": "2026-11-16T00:00:02.000Z",
+          "source": "event",
+          "payload": {
+            "version": 2,
+            "id": "37BE295B-52A0-5A4B-9B5A-4191B89DF1EC",
+            "sessionID": "session-manual",
+            "projectName": "tide-island",
+            "phase": "failed",
+            "occurredAt": "2026-11-16T00:00:02.000Z",
+            "context": {
+              "source": "manual",
+              "kind": "status",
+              "receivedAt": "2026-11-16T00:00:02.000Z",
+              "turnID": "manual-turn"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-manual",
+                "projectName": "tide-island",
+                "phase": "failed",
+                "updatedAt": "2026-11-16T00:00:02.000Z",
+                "lastEventID": "37BE295B-52A0-5A4B-9B5A-4191B89DF1EC",
+                "context": {
+                  "source": "manual",
+                  "kind": "status",
+                  "receivedAt": "2026-11-16T00:00:02.000Z",
+                  "turnID": "manual-turn"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "rejected-input-recovery",
+      "steps": [
+        {
+          "id": "DBEB08F7-7A5A-5BA2-98E2-6C5EF5317253",
+          "at": "2026-11-16T00:00:01.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-recovery",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "UserPromptSubmit",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "prompt": "fixture-private-prompt"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-recovery",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "DBEB08F7-7A5A-5BA2-98E2-6C5EF5317253",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "F690A238-9132-5FD0-B7DE-3358FD900AC3",
+          "at": "2026-11-16T00:00:02.000Z",
+          "source": "hook",
+          "payloadJSON": "{\"fixture-private\":",
+          "expect": {
+            "disposition": "rejected",
+            "sessions": [
+              {
+                "id": "session-recovery",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "DBEB08F7-7A5A-5BA2-98E2-6C5EF5317253",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ],
+            "errorCode": "invalid-hook-input"
+          }
+        },
+        {
+          "id": "29F41529-D0DC-524A-8A5B-3152D70089DD",
+          "at": "2026-11-16T00:00:03.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-recovery",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PreToolUse",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "Bash",
+            "tool_use_id": "fixture-tool",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            }
+          },
+          "expect": {
+            "disposition": "rejected",
+            "sessions": [
+              {
+                "id": "session-recovery",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "DBEB08F7-7A5A-5BA2-98E2-6C5EF5317253",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ],
+            "errorCode": "invalid-hook-input"
+          }
+        },
+        {
+          "id": "E1755F38-2013-5D35-9E0A-A01B92345450",
+          "at": "2026-11-16T00:00:04.000Z",
+          "source": "notify",
+          "payload": {
+            "type": "unknown",
+            "thread-id": "session-recovery",
+            "turn-id": "turn-1",
+            "cwd": "/fixture/projects/tide-island",
+            "input-messages": [
+              "fixture-private-prompt"
+            ],
+            "last-assistant-message": "fixture-private-reply"
+          },
+          "expect": {
+            "disposition": "rejected",
+            "sessions": [
+              {
+                "id": "session-recovery",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "DBEB08F7-7A5A-5BA2-98E2-6C5EF5317253",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ],
+            "errorCode": "invalid-notify-input"
+          }
+        },
+        {
+          "id": "93F7E880-051B-56C3-809E-815AA470B804",
+          "at": "2026-11-16T00:00:05.000Z",
+          "source": "event",
+          "payload": {
+            "version": 3,
+            "id": "93F7E880-051B-56C3-809E-815AA470B804",
+            "sessionID": "session-recovery",
+            "projectName": "tide-island",
+            "phase": "working",
+            "occurredAt": "2026-11-16T00:00:05.000Z"
+          },
+          "expect": {
+            "disposition": "rejected",
+            "sessions": [
+              {
+                "id": "session-recovery",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "DBEB08F7-7A5A-5BA2-98E2-6C5EF5317253",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ],
+            "errorCode": "invalid-agent-event"
+          }
+        },
+        {
+          "id": "86F51917-AC0E-5374-992E-4C40ACAFEA73",
+          "at": "2026-11-16T00:00:06.000Z",
+          "source": "event",
+          "payload": {
+            "version": 1,
+            "id": "A1363C34-BBC8-557D-B6B5-97BCFB5A5156",
+            "sessionID": "session-recovery",
+            "projectName": "tide-island",
+            "phase": "working",
+            "occurredAt": "2026-11-16T00:00:06.000Z"
+          },
+          "expect": {
+            "disposition": "rejected",
+            "sessions": [
+              {
+                "id": "session-recovery",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "DBEB08F7-7A5A-5BA2-98E2-6C5EF5317253",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ],
+            "errorCode": "event-id-mismatch"
+          }
+        },
+        {
+          "id": "D56F64EC-9726-50B1-A31B-35331BCD2C44",
+          "at": "2026-11-16T00:00:07.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-recovery",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PostToolUse",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "Bash",
+            "tool_use_id": "fixture-tool",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            },
+            "tool_response": {
+              "exit_code": 7,
+              "stderr": "fixture-private-output"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-recovery",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:07.000Z",
+                "lastEventID": "D56F64EC-9726-50B1-A31B-35331BCD2C44",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "toolFinished",
+                  "receivedAt": "2026-11-16T00:00:07.000Z",
+                  "turnID": "turn-1",
+                  "toolName": "Bash",
+                  "toolUseID": "fixture-tool"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "75C53E60-7C32-5E02-8BA9-9AADCBA04428",
+          "at": "2026-11-16T00:00:08.000Z",
+          "source": "notify",
+          "payload": {
+            "type": "agent-turn-complete",
+            "thread-id": "session-recovery",
+            "turn-id": "turn-1",
+            "cwd": "/fixture/projects/tide-island",
+            "input-messages": [
+              "fixture-private-prompt"
+            ],
+            "last-assistant-message": "fixture-private-reply"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-recovery",
+                "projectName": "tide-island",
+                "phase": "completed",
+                "updatedAt": "2026-11-16T00:00:08.000Z",
+                "lastEventID": "75C53E60-7C32-5E02-8BA9-9AADCBA04428",
+                "context": {
+                  "source": "codexNotify",
+                  "kind": "turnCompleted",
+                  "receivedAt": "2026-11-16T00:00:08.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "duplicate-and-late-v1",
+      "steps": [
+        {
+          "id": "F6DED2A8-BEAF-55A7-A877-AC4BE5B5EA4B",
+          "at": "2026-11-16T00:00:01.000Z",
+          "source": "event",
+          "payload": {
+            "version": 1,
+            "id": "F6DED2A8-BEAF-55A7-A877-AC4BE5B5EA4B",
+            "sessionID": "session-duplicate",
+            "projectName": "tide-island",
+            "phase": "working",
+            "occurredAt": "2026-11-16T00:00:01.000Z"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-duplicate",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "F6DED2A8-BEAF-55A7-A877-AC4BE5B5EA4B"
+              }
+            ]
+          }
+        },
+        {
+          "id": "F6DED2A8-BEAF-55A7-A877-AC4BE5B5EA4B",
+          "at": "2026-11-16T00:00:02.000Z",
+          "source": "event",
+          "payload": {
+            "version": 1,
+            "id": "F6DED2A8-BEAF-55A7-A877-AC4BE5B5EA4B",
+            "sessionID": "session-duplicate",
+            "projectName": "tide-island",
+            "phase": "working",
+            "occurredAt": "2026-11-16T00:00:01.000Z"
+          },
+          "expect": {
+            "disposition": "discarded",
+            "sessions": [
+              {
+                "id": "session-duplicate",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "F6DED2A8-BEAF-55A7-A877-AC4BE5B5EA4B"
+              }
+            ]
+          }
+        },
+        {
+          "id": "04ED1CCB-01D4-5386-910B-75DF3FD5AB46",
+          "at": "2026-11-16T00:00:03.000Z",
+          "source": "event",
+          "payload": {
+            "version": 1,
+            "id": "04ED1CCB-01D4-5386-910B-75DF3FD5AB46",
+            "sessionID": "session-duplicate",
+            "projectName": "tide-island",
+            "phase": "needsInput",
+            "occurredAt": "2026-11-16T00:00:00.000Z"
+          },
+          "expect": {
+            "disposition": "discarded",
+            "sessions": [
+              {
+                "id": "session-duplicate",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "F6DED2A8-BEAF-55A7-A877-AC4BE5B5EA4B"
+              }
+            ]
+          }
+        },
+        {
+          "id": "7E7711A9-1A1D-59E0-8DBF-B4BDFB266136",
+          "at": "2026-11-16T00:00:04.000Z",
+          "source": "event",
+          "payload": {
+            "version": 1,
+            "id": "7E7711A9-1A1D-59E0-8DBF-B4BDFB266136",
+            "sessionID": "session-duplicate",
+            "projectName": "tide-island",
+            "phase": "completed",
+            "occurredAt": "2026-11-16T00:00:04.000Z"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-duplicate",
+                "projectName": "tide-island",
+                "phase": "completed",
+                "updatedAt": "2026-11-16T00:00:04.000Z",
+                "lastEventID": "7E7711A9-1A1D-59E0-8DBF-B4BDFB266136"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "legacy-to-v2",
+      "steps": [
+        {
+          "id": "8C7765A6-072C-5CCE-B3A1-1E03F7D55C1B",
+          "at": "2026-11-16T00:00:01.000Z",
+          "source": "event",
+          "payload": {
+            "version": 1,
+            "id": "8C7765A6-072C-5CCE-B3A1-1E03F7D55C1B",
+            "sessionID": "session-legacy",
+            "projectName": "tide-island",
+            "phase": "needsInput",
+            "occurredAt": "2026-11-16T00:00:01.000Z"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-legacy",
+                "projectName": "tide-island",
+                "phase": "needsInput",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "8C7765A6-072C-5CCE-B3A1-1E03F7D55C1B"
+              }
+            ]
+          }
+        },
+        {
+          "id": "61591831-5404-5393-85CB-7D30374FC4C5",
+          "at": "2026-11-16T00:00:02.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-legacy",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PreToolUse",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "Bash",
+            "tool_use_id": "fixture-tool",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-legacy",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:02.000Z",
+                "lastEventID": "61591831-5404-5393-85CB-7D30374FC4C5",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "toolStarted",
+                  "receivedAt": "2026-11-16T00:00:02.000Z",
+                  "turnID": "turn-1",
+                  "toolName": "Bash",
+                  "toolUseID": "fixture-tool"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "D03999AD-1441-5366-98A8-6EECA977D765",
+          "at": "2026-11-16T00:00:03.000Z",
+          "source": "notify",
+          "payload": {
+            "type": "agent-turn-complete",
+            "thread-id": "session-legacy",
+            "turn-id": "turn-1",
+            "cwd": "/fixture/projects/tide-island",
+            "input-messages": [
+              "fixture-private-prompt"
+            ],
+            "last-assistant-message": "fixture-private-reply"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-legacy",
+                "projectName": "tide-island",
+                "phase": "completed",
+                "updatedAt": "2026-11-16T00:00:03.000Z",
+                "lastEventID": "D03999AD-1441-5366-98A8-6EECA977D765",
+                "context": {
+                  "source": "codexNotify",
+                  "kind": "turnCompleted",
+                  "receivedAt": "2026-11-16T00:00:03.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "multi-session-attention",
+      "steps": [
+        {
+          "id": "96E446D8-6B94-5823-9128-780CB2A5AB6D",
+          "at": "2026-11-16T00:00:01.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-a",
+            "turn_id": "turn-a",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "UserPromptSubmit",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "prompt": "fixture-private-prompt"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-a",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "96E446D8-6B94-5823-9128-780CB2A5AB6D",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-a"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "AC4FA138-3010-542D-848F-DDBB44CCBAF9",
+          "at": "2026-11-16T00:00:02.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-b",
+            "turn_id": "turn-b",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "UserPromptSubmit",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "prompt": "fixture-private-prompt"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-b",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:02.000Z",
+                "lastEventID": "AC4FA138-3010-542D-848F-DDBB44CCBAF9",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:02.000Z",
+                  "turnID": "turn-b"
+                }
+              },
+              {
+                "id": "session-a",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "96E446D8-6B94-5823-9128-780CB2A5AB6D",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-a"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "39269D53-1342-566C-A07C-19D3B629CCC6",
+          "at": "2026-11-16T00:00:03.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-a",
+            "turn_id": "turn-a",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PermissionRequest",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "Bash",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-a",
+                "projectName": "tide-island",
+                "phase": "needsInput",
+                "updatedAt": "2026-11-16T00:00:03.000Z",
+                "lastEventID": "39269D53-1342-566C-A07C-19D3B629CCC6",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "permissionRequested",
+                  "receivedAt": "2026-11-16T00:00:03.000Z",
+                  "turnID": "turn-a",
+                  "toolName": "Bash"
+                }
+              },
+              {
+                "id": "session-b",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:02.000Z",
+                "lastEventID": "AC4FA138-3010-542D-848F-DDBB44CCBAF9",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:02.000Z",
+                  "turnID": "turn-b"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "DB081F6A-E641-5663-83AF-AEE204DC2AC4",
+          "at": "2026-11-16T00:00:04.000Z",
+          "source": "notify",
+          "payload": {
+            "type": "agent-turn-complete",
+            "thread-id": "session-a",
+            "turn-id": "turn-a",
+            "cwd": "/fixture/projects/tide-island",
+            "input-messages": [
+              "fixture-private-prompt"
+            ],
+            "last-assistant-message": "fixture-private-reply"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-a",
+                "projectName": "tide-island",
+                "phase": "completed",
+                "updatedAt": "2026-11-16T00:00:04.000Z",
+                "lastEventID": "DB081F6A-E641-5663-83AF-AEE204DC2AC4",
+                "context": {
+                  "source": "codexNotify",
+                  "kind": "turnCompleted",
+                  "receivedAt": "2026-11-16T00:00:04.000Z",
+                  "turnID": "turn-a"
+                }
+              },
+              {
+                "id": "session-b",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:02.000Z",
+                "lastEventID": "AC4FA138-3010-542D-848F-DDBB44CCBAF9",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:02.000Z",
+                  "turnID": "turn-b"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "B85F421B-2C22-5C11-AB81-D0EAE49DC34B",
+          "at": "2026-11-16T00:00:05.000Z",
+          "source": "notify",
+          "payload": {
+            "type": "agent-turn-complete",
+            "thread-id": "session-b",
+            "turn-id": "turn-b",
+            "cwd": "/fixture/projects/tide-island",
+            "input-messages": [
+              "fixture-private-prompt"
+            ],
+            "last-assistant-message": "fixture-private-reply"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-b",
+                "projectName": "tide-island",
+                "phase": "completed",
+                "updatedAt": "2026-11-16T00:00:05.000Z",
+                "lastEventID": "B85F421B-2C22-5C11-AB81-D0EAE49DC34B",
+                "context": {
+                  "source": "codexNotify",
+                  "kind": "turnCompleted",
+                  "receivedAt": "2026-11-16T00:00:05.000Z",
+                  "turnID": "turn-b"
+                }
+              },
+              {
+                "id": "session-a",
+                "projectName": "tide-island",
+                "phase": "completed",
+                "updatedAt": "2026-11-16T00:00:04.000Z",
+                "lastEventID": "DB081F6A-E641-5663-83AF-AEE204DC2AC4",
+                "context": {
+                  "source": "codexNotify",
+                  "kind": "turnCompleted",
+                  "receivedAt": "2026-11-16T00:00:04.000Z",
+                  "turnID": "turn-a"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "ignored-and-question-tools",
+      "steps": [
+        {
+          "id": "926FC109-521A-5437-A8F2-39AD299B31E5",
+          "at": "2026-11-16T00:00:01.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-filtered",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "UserPromptSubmit",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "prompt": "fixture-private-prompt"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-filtered",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "926FC109-521A-5437-A8F2-39AD299B31E5",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "8E7F67DE-B95E-58E8-A545-412E907B2DAC",
+          "at": "2026-11-16T00:00:02.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-filtered",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "Stop",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "stop_hook_active": false,
+            "last_assistant_message": "fixture-private-reply"
+          },
+          "expect": {
+            "disposition": "filtered",
+            "sessions": [
+              {
+                "id": "session-filtered",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "926FC109-521A-5437-A8F2-39AD299B31E5",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "FA18F86C-EDF5-5C79-B7BF-56D267AB51BA",
+          "at": "2026-11-16T00:00:03.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-filtered",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "SessionStart",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "source": "compact"
+          },
+          "expect": {
+            "disposition": "filtered",
+            "sessions": [
+              {
+                "id": "session-filtered",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "926FC109-521A-5437-A8F2-39AD299B31E5",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "5A064DBC-1578-5423-8D36-8D5827DFCAC2",
+          "at": "2026-11-16T00:00:04.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-filtered",
+            "turn_id": "turn-1",
+            "agent_id": "fixture-child",
+            "agent_type": "fixture-agent",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PreToolUse",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "Bash",
+            "tool_use_id": "fixture-tool",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            }
+          },
+          "expect": {
+            "disposition": "filtered",
+            "sessions": [
+              {
+                "id": "session-filtered",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "926FC109-521A-5437-A8F2-39AD299B31E5",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "36B17FF6-6D57-5E37-9BE0-172110B2EA6B",
+          "at": "2026-11-16T00:00:05.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-filtered",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PreToolUse",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "request_user_input",
+            "tool_use_id": "question-5",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-filtered",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:05.000Z",
+                "lastEventID": "36B17FF6-6D57-5E37-9BE0-172110B2EA6B",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "toolStarted",
+                  "receivedAt": "2026-11-16T00:00:05.000Z",
+                  "turnID": "turn-1",
+                  "toolName": "request_user_input",
+                  "toolUseID": "question-5"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "04F32AB0-3278-5718-A442-02477AF09287",
+          "at": "2026-11-16T00:00:06.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-filtered",
+            "turn_id": "turn-1",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "PreToolUse",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "tool_name": "request_user_input_async",
+            "tool_use_id": "question-6",
+            "tool_input": {
+              "command": "echo fixture-private-command"
+            }
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-filtered",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:06.000Z",
+                "lastEventID": "04F32AB0-3278-5718-A442-02477AF09287",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "toolStarted",
+                  "receivedAt": "2026-11-16T00:00:06.000Z",
+                  "turnID": "turn-1",
+                  "toolName": "request_user_input_async",
+                  "toolUseID": "question-6"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "13494CB6-16CC-59E4-98D3-302FD65EBB06",
+          "at": "2026-11-16T00:00:07.000Z",
+          "source": "hook",
+          "payload": {
+            "hook_event_name": "FutureEvent",
+            "private": "fixture-private"
+          },
+          "expect": {
+            "disposition": "filtered",
+            "sessions": [
+              {
+                "id": "session-filtered",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:06.000Z",
+                "lastEventID": "04F32AB0-3278-5718-A442-02477AF09287",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "toolStarted",
+                  "receivedAt": "2026-11-16T00:00:06.000Z",
+                  "turnID": "turn-1",
+                  "toolName": "request_user_input_async",
+                  "toolUseID": "question-6"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

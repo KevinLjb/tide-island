@@ -23,6 +23,10 @@ struct TideIslandBridge {
             return
         }
         let rest = Array(arguments.dropFirst())
+        if command == "replay" {
+            try ReplayCommand.run(rest)
+            return
+        }
         if command == "hooks" {
             try HookConfigurationCommand.run(rest)
             return
@@ -117,6 +121,12 @@ struct TideIslandBridge {
             "automatic_turn_failure_detection": false,
             "subagent_hooks": "ignored_when_agent_context_is_present",
             "maximum_hook_input_bytes": CodexHookAdapter.maximumInputBytes,
+            "replay": [
+                "schema_version": 1, "scope": "in-memory-adapters-codec-registry",
+                "writes_inbox": false, "explicit_ids_and_clocks": true,
+                "maximum_input_bytes": EventReplay.maximumInputBytes,
+                "maximum_steps": EventReplay.maximumSteps,
+            ],
             "hook_configuration": [
                 "format": "hooks.json", "default_mode": "preview",
                 "preserves_config_toml": true, "manages_codex_trust": false,
@@ -132,6 +142,7 @@ struct TideIslandBridge {
          [--turn ID] [--wave-block ID] [--inbox DIRECTORY]
     notify --payload CODEX_NOTIFICATION_JSON [--wave-block ID] [--inbox DIRECTORY]
     hook [--wave-block ID] [--inbox DIRECTORY] < CODEX_HOOK_JSON
+    replay --file SCENARIOS_JSON [--scenario NAME]
     hooks install --config /PATH/hooks.json --bridge /STABLE/PATH/tide-island-bridge
                   [--inbox /DIRECTORY] [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
     hooks uninstall --config /PATH/hooks.json
@@ -141,6 +152,8 @@ struct TideIslandBridge {
     emit/notify write an event and print JSON. hook reads stdin and keeps stdout
     empty; observation failures return 0 and never decide Codex permissions.
     capabilities describes the pinned contract, not the installed Codex version.
+    replay checks explicit fixture expectations in memory and prints a stable
+    metadata report. Mismatches return 1; no inbox or Codex config is written.
     hooks defaults to preview; apply requires its exact preview fingerprint and
     a backup directory. It never edits config.toml or Codex hook trust records.
     Default inbox: ~/Library/Application Support/TideIsland/Events

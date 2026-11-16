@@ -129,6 +129,12 @@ public enum EventCodec {
 
     public static func encode(_ event: AgentEvent) throws -> Data {
         try event.validate()
+        let data = try jsonEncoder().encode(event)
+        guard data.count <= maximumBytes else { throw EventError.oversizedEvent }
+        return data
+    }
+
+    static func jsonEncoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .custom { date, encoder in
             let formatter = ISO8601DateFormatter()
@@ -137,13 +143,17 @@ public enum EventCodec {
             try container.encode(formatter.string(from: date))
         }
         encoder.outputFormatting = [.sortedKeys]
-        let data = try encoder.encode(event)
-        guard data.count <= maximumBytes else { throw EventError.oversizedEvent }
-        return data
+        return encoder
     }
 
     public static func decode(_ data: Data) throws -> AgentEvent {
         guard data.count <= maximumBytes else { throw EventError.oversizedEvent }
+        let event = try jsonDecoder().decode(AgentEvent.self, from: data)
+        try event.validate()
+        return event
+    }
+
+    static func jsonDecoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
@@ -155,8 +165,6 @@ public enum EventCodec {
             if let date = formatter.date(from: value) { return date }
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid event timestamp.")
         }
-        let event = try decoder.decode(AgentEvent.self, from: data)
-        try event.validate()
-        return event
+        return decoder
     }
 }

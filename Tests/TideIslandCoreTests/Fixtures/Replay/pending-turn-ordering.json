@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "description": "Intentionally fails until T006 implements cross-turn ordering. This is a diagnostic reproduction, not a passing product acceptance case.",
+  "scenarios": [
+    {
+      "name": "late-previous-turn-notify",
+      "description": "Desired T006 behavior: a late completion from the previous turn must not replace the current working turn.",
+      "steps": [
+        {
+          "id": "94686A90-EDDF-5FB7-86C6-F3A9F50FD3B7",
+          "at": "2026-11-16T00:00:01.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-pending-order",
+            "turn_id": "turn-old",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "UserPromptSubmit",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "prompt": "fixture-private-prompt"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-pending-order",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:01.000Z",
+                "lastEventID": "94686A90-EDDF-5FB7-86C6-F3A9F50FD3B7",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:01.000Z",
+                  "turnID": "turn-old"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "3D1C8ED3-5875-53A8-BDAA-CD748597B3AD",
+          "at": "2026-11-16T00:00:02.000Z",
+          "source": "hook",
+          "payload": {
+            "session_id": "session-pending-order",
+            "turn_id": "turn-new",
+            "transcript_path": "/fixture-private/transcript.jsonl",
+            "cwd": "/fixture/projects/tide-island",
+            "hook_event_name": "UserPromptSubmit",
+            "model": "fixture-model",
+            "permission_mode": "default",
+            "prompt": "fixture-private-prompt"
+          },
+          "expect": {
+            "disposition": "applied",
+            "sessions": [
+              {
+                "id": "session-pending-order",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:02.000Z",
+                "lastEventID": "3D1C8ED3-5875-53A8-BDAA-CD748597B3AD",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:02.000Z",
+                  "turnID": "turn-new"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "0A506F3F-0C45-5989-B02E-A32E86963C68",
+          "at": "2026-11-16T00:00:03.000Z",
+          "source": "notify",
+          "payload": {
+            "type": "agent-turn-complete",
+            "thread-id": "session-pending-order",
+            "turn-id": "turn-old",
+            "cwd": "/fixture/projects/tide-island",
+            "input-messages": [
+              "fixture-private-prompt"
+            ],
+            "last-assistant-message": "fixture-private-reply"
+          },
+          "expect": {
+            "disposition": "discarded",
+            "sessions": [
+              {
+                "id": "session-pending-order",
+                "projectName": "tide-island",
+                "phase": "working",
+                "updatedAt": "2026-11-16T00:00:02.000Z",
+                "lastEventID": "3D1C8ED3-5875-53A8-BDAA-CD748597B3AD",
+                "context": {
+                  "source": "codexHook",
+                  "kind": "turnStarted",
+                  "receivedAt": "2026-11-16T00:00:02.000Z",
+                  "turnID": "turn-new"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

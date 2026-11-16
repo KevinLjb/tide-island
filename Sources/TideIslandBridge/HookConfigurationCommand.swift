@@ -10,12 +10,18 @@ enum HookConfigurationCommand {
         guard tail.filter({ $0 == "--apply" }).count <= 1 else { throw CLIError.invalidArguments }
         let apply = tail.contains("--apply")
         var allowed: Set<String> = ["--config", "--expect", "--backup-dir"]
-        if action == .install { allowed.formUnion(["--bridge", "--inbox"]) }
+        if action == .install { allowed.formUnion(["--bridge", "--app", "--inbox"]) }
         let options = try TideIslandBridge.parseOptions(tail.filter { $0 != "--apply" }, allowed: allowed)
         guard let path = options["--config"] else { throw CLIError.invalidArguments }
         if !apply, options["--expect"] != nil { throw CLIError.invalidArguments }
         let file = try HookConfigurationFile(url: absoluteURL(path))
-        let plan = try file.preview(action: action, bridgePath: options["--bridge"], inboxPath: options["--inbox"])
+        let plan: HookConfigurationPlan
+        if let app = options["--app"] {
+            guard options["--bridge"] == nil else { throw CLIError.invalidArguments }
+            plan = try file.previewBundledInstall(applicationURL: absoluteURL(app), inboxPath: options["--inbox"])
+        } else {
+            plan = try file.preview(action: action, bridgePath: options["--bridge"], inboxPath: options["--inbox"])
+        }
         var backup: URL?
         if apply {
             guard let expected = options["--expect"], let backupPath = options["--backup-dir"] else {
@@ -35,6 +41,10 @@ enum HookConfigurationCommand {
             result["events"] = CodexHookEvent.allCases.map(\.rawValue)
         }
         if let backup { result["backup_path"] = backup.path }
+        if let bridge = plan.bundledBridge {
+            result["bridge_delivery"] = ["application_path": bridge.applicationURL.path, "executable_path": bridge.executableURL.path,
+                                         "sha256": bridge.sha256, "version": bridge.version, "build": bridge.build]
+        }
         FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys, .prettyPrinted]) + Data([0x0A]))
     }
 

@@ -54,6 +54,8 @@ flowchart LR
 
 配置管理只编辑指定的 `hooks.json`，保留 `config.toml` 中 notify、内联 hooks 和信任状态。专用分组正常升级时原地更新，卸载保留空分组，减少其他条目索引变化。文件安装与 Codex 信任审查、真实运行分别记录；完成 notify 的完整接入与共存仍由 T025 处理。命令、备份、并发边界和回退说明见 [hooks 配置管理](codex-hooks.md)。
 
+T024 的应用构建阶段按配置 / 架构生成 bridge，先处理 helper 签名，再将固定可执行文件及摘要清单嵌入 Contents/Helpers，外层应用由 Xcode 签署。BundledBridge 只读检查包元数据、路径和有界文件完整性；`hooks install --app` 将 helper 摘要 / 应用版本加入预览指纹，应用前重验，移动后只修复受管 handler。它不执行 helper 或替代系统签名验证；构建阶段未在原生 SDK 执行，详见 [bridge 交付](bridge-delivery.md)。
+
 ## 确定性回放
 
 `EventReplay` 用 fixture 提供的 UUID 与接收时钟调用真实适配器，经 `EventCodec` 编解码后送入独立 `SessionRegistry`，按声明的到达顺序比较每一步完整会话快照。CLI 的 `replay` 入口仅有界读取文件并输出稳定 JSON，不写 inbox 或 Codex 配置，不启动原生组件。

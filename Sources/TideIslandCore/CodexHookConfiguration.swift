@@ -12,6 +12,7 @@ public struct HookConfigurationPlan: Sendable {
     public let managedHooksBefore: Int
     public let managedHooksAfter: Int
     public let command: String?
+    public let bundledBridge: BundledBridge?
     public var changesFile: Bool { originalData != proposedData }
 
     let originalData: Data?
@@ -33,7 +34,8 @@ public enum CodexHookConfiguration {
         existing: Data?,
         bridgePath: String? = nil,
         inboxPath: String? = nil,
-        configurationPath: String? = nil
+        configurationPath: String? = nil,
+        bundledBridge: BundledBridge? = nil
     ) throws -> HookConfigurationPlan {
         let original: ConfigurationJSON
         if let existing { original = try ConfigurationJSON.decode(existing) }
@@ -48,6 +50,7 @@ public enum CodexHookConfiguration {
         let desired: ConfigurationJSON?
         if action == .install {
             guard let bridgePath else { throw HookConfigurationError.invalidPath }
+            guard bundledBridge == nil || bundledBridge?.executableURL.path == bridgePath else { throw HookConfigurationError.invalidPath }
             try validatePath(bridgePath)
             guard !bridgePath.split(separator: "/").contains(".build"),
                   !bridgePath.split(separator: "/").contains("DerivedData") else {
@@ -61,7 +64,7 @@ public enum CodexHookConfiguration {
                 "timeout": .number("3"), "statusMessage": .string(ownerStatus),
             ])
         } else {
-            guard bridgePath == nil, inboxPath == nil else { throw HookConfigurationError.invalidPath }
+            guard bridgePath == nil, inboxPath == nil, bundledBridge == nil else { throw HookConfigurationError.invalidPath }
             command = nil
             desired = nil
         }
@@ -117,11 +120,12 @@ public enum CodexHookConfiguration {
             let result = ConfigurationJSON.object(root)
             proposed = result == original ? existing : try result.encode()
         }
-        let token = try JSONEncoder().encode([action.rawValue, configurationPath ?? "", revision(existing), revision(proposed)])
+        let evidence = bundledBridge.map { [$0.sha256, $0.version, $0.build] } ?? []
+        let token = try JSONEncoder().encode([action.rawValue, configurationPath ?? "", revision(existing), revision(proposed)] + evidence)
         return HookConfigurationPlan(
             action: action, fingerprint: digest(token), managedHooksBefore: before,
             managedHooksAfter: action == .install ? CodexHookEvent.allCases.count : 0,
-            command: command, originalData: existing,
+            command: command, bundledBridge: bundledBridge, originalData: existing,
             proposedData: proposed, bridgePath: bridgePath, configurationPath: configurationPath
         )
     }

@@ -59,6 +59,18 @@ def check():
     embedded = [objects[objects[key]["fileRef"]]["path"] for key in copies[0]["files"]]
     require(embedded == ["TideIslandActivity.appex"], "Incorrect embedded extension")
 
+    bridge_phases = [objects[key] for key in app["buildPhases"] if objects[key]["isa"] == "PBXShellScriptBuildPhase"]
+    require(len(bridge_phases) == 1 and bridge_phases[0]["name"] == "Embed event bridge", "Missing embedded bridge build phase")
+    bridge_phase = bridge_phases[0]
+    require(bridge_phase["shellPath"] == "/bin/bash" and bridge_phase["shellScript"] == '/bin/bash "$SRCROOT/scripts/build-embedded-bridge.sh"\n', "Incorrect bridge build command")
+    require(int(bridge_phase["alwaysOutOfDate"]) == 1, "Bridge must rebuild when package sources change")
+    require(set(bridge_phase["outputPaths"]) == {
+        "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/tide-island-bridge",
+        "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/bridge-manifest.json",
+    }, "Missing bridge outputs")
+    for key in objects[app["buildConfigurationList"]]["buildConfigurations"]:
+        require(objects[key]["buildSettings"]["ENABLE_USER_SCRIPT_SANDBOXING"] == "NO", "SwiftPM build phase requires its own DerivedFileDir scratch")
+
     configurations = objects[root["buildConfigurationList"]]["buildConfigurations"]
     for key in configurations:
         settings = objects[key]["buildSettings"]

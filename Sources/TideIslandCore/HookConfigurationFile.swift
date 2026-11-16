@@ -24,6 +24,13 @@ public struct HookConfigurationFile: Sendable {
         )
     }
 
+    public func previewBundledInstall(applicationURL: URL, inboxPath: String? = nil) throws -> HookConfigurationPlan {
+        let bridge = try BundledBridge.inspect(applicationURL: applicationURL)
+        return try CodexHookConfiguration.plan(action: .install, existing: read()?.data,
+                                               bridgePath: bridge.executableURL.path, inboxPath: inboxPath,
+                                               configurationPath: url.path, bundledBridge: bridge)
+    }
+
     /// A fingerprint binds both the reviewed source bytes and proposed options.
     /// Our writers share a lock. Uncoordinated editors must not write during
     /// apply: POSIX rename cannot compare-and-swap an existing file's content.
@@ -37,6 +44,9 @@ public struct HookConfigurationFile: Sendable {
               try read()?.data == plan.originalData else {
             throw HookConfigurationError.stalePlan
         }
+        // Revalidate even a no-op: an unchanged command must not turn a stale
+        // preview into an assertion that a replaced helper is still intact.
+        try plan.bundledBridge?.verifyCurrent()
         guard plan.changesFile else { return nil }
         if let bridge = plan.bridgePath {
             let resolved = URL(fileURLWithPath: bridge).resolvingSymlinksInPath()
@@ -91,6 +101,7 @@ public struct HookConfigurationFile: Sendable {
         defer { try? FileManager.default.removeItem(at: staging) }
         try writeNew(proposed, to: staging, mode: snapshot?.mode ?? 0o600)
         let latest = try read()
+        try plan.bundledBridge?.verifyCurrent()
         guard latest?.data == snapshot?.data, latest?.mode == snapshot?.mode,
               latest?.identity == snapshot?.identity else { throw HookConfigurationError.stalePlan }
         if snapshot == nil {

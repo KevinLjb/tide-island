@@ -1,5 +1,7 @@
 # Codex hooks 配置管理
 
+应用交付源码已提供 `hooks install --app /absolute/path/TideIsland.app`，从包内固定 Helpers 目录检查 bridge，并在移动 / 升级后重新预览修复受管路径；与 `--bridge` 互斥。完整性、指纹和原生构建边界见 [应用内 bridge 交付](bridge-delivery.md)。
+
 T004 提供 `hooks.json` 的预览、幂等安装、路径升级、备份和卸载。命令默认只预览，必须同时提供 `--apply`、本次预览的 `--expect` 指纹和 `--backup-dir` 才写入。
 
 本轮仅用隔离目录测试，尚未安装到本机正在使用的 Codex。原生界面与真实会话链路仍按 [开发进度](development-progress.md) 单独验收。

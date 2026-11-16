@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T023 的 [系统能力、授权和错误展示](docs/system-status.md)保留菜单栏与会话入口，区分系统允许、来源确认和上次操作失败。[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43969484020)实际执行 366 / 声明 366 项测试，七项检查通过。下一步 T024 稳定 bridge 交付路径；原生编译、签名和交互仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T024 已加入 [应用内 bridge 交付](docs/bridge-delivery.md)构建阶段、只读完整性检查及 `hooks install --app` 移动 / 升级修复。新增 10 项共享测试，全量声明 376 项及隔离交付 CLI 等待严格 CI；此前 T023 的 366 项已通过。原生编译、签名和交互仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -57,6 +57,7 @@ docs/preferences.md           有界偏好、主动授权、名称 / 历史显�
 docs/session-metadata-history.md  当前引用的只读观察、记忆 / 清除边界和数量限制
 docs/session-browser.md       项目筛选、匿名标签、只读详情与空状态恢复
 docs/system-status.md         独立系统权限、上次错误与菜单栏恢复入口
+docs/bridge-delivery.md       应用包内 bridge、完整性与移动 / 升级路径修复
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -68,6 +69,7 @@ swift test
 swift build --product tide-island-bridge
 python3 scripts/check-bridge.py
 python3 scripts/check-hooks.py
+python3 scripts/check-delivery.py
 python3 scripts/check-replay.py
 python3 scripts/check-inbox.py
 python3 scripts/check-state.py
@@ -95,7 +97,7 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-原生构建使用 `MACOSX_DEPLOYMENT_TARGET=27.3`，不会回退为模拟刘海浮层。
+原生构建使用 `MACOSX_DEPLOYMENT_TARGET=27.3`，不会回退为模拟刘海浮层。应用构建阶段会在独立 scratch 中构建目标架构的 bridge 并嵌入 `Contents/Helpers`，再由 Xcode 处理应用签名；流程及尚未验证范围见 [bridge 交付](docs/bridge-delivery.md)。
 
 ## 发送一个事件
 
@@ -169,6 +171,8 @@ CLI 提供两个独立入口：
 事件契约按本机 Codex CLI 0.169.0 核对，详细字段、合成测试数据与能力边界见 [Codex 事件契约](docs/codex-events.md)。`swift run tide-island-bridge capabilities` 可查看本程序支持的契约。
 
 `hooks install` / `hooks uninstall` 默认只预览，显式应用时备份并合并 `hooks.json`，保留已有条目。用法、指纹、回退和 Codex `/hooks` 信任审查见 [hooks 配置管理](docs/codex-hooks.md)。本轮尚未应用到用户的真实配置。
+
+原生构建产物可用 `hooks install --app /Applications/TideIsland.app` 检查固定包内 bridge；移动 / 升级后重新预览修复受管路径。该参数与 `--bridge` 互斥，校验清单不替代签名 / 公证验证；安装包当前仍未发布。
 
 配置工具保持 `config.toml`、既有 notify 和内联 hooks 原样。完成通知仍需将稳定路径的桥接程序配置为 notify 命令，并让 Codex 追加 JSON 参数；与既有 notify 共存的完整接入流程由 T025 继续实现：
 

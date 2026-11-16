@@ -152,6 +152,8 @@ struct TideIslandBridge {
             "hook_configuration": [
                 "format": "hooks.json", "default_mode": "preview",
                 "preserves_config_toml": true, "manages_codex_trust": false,
+                "application_bundle_option": "--app", "embedded_bridge_integrity": "sha256-manifest-v1",
+                "bundle_signing_verified_by_inspector": false,
             ],
             "inbox_maintenance": [
                 "default_mode": "preview", "requires_managed_marker": true,
@@ -228,7 +230,7 @@ struct TideIslandBridge {
     state inspect [--inbox /DIRECTORY] [--state-directory /DIRECTORY]
     state clear [--inbox /DIRECTORY] [--state-directory /DIRECTORY]
                 [--scan-limit COUNT] [--read-budget-bytes BYTES] [--apply --expect FINGERPRINT]
-    hooks install --config /PATH/hooks.json --bridge /STABLE/PATH/tide-island-bridge
+    hooks install --config /PATH/hooks.json (--app /PATH/TideIsland.app | --bridge /STABLE/PATH/tide-island-bridge)
                   [--inbox /DIRECTORY] [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
     hooks uninstall --config /PATH/hooks.json
                     [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
@@ -241,6 +243,8 @@ struct TideIslandBridge {
     metadata report. Mismatches return 1; no inbox or Codex config is written.
     hooks defaults to preview; apply requires its exact preview fingerprint and
     a backup directory. It never edits config.toml or Codex hook trust records.
+    --app checks the embedded helper without executing it. Move/upgrade the app,
+    then preview again to repair only managed hook paths; old previews expire.
     inbox cleanup previews expired whole-session history. Apply requires the
     exact fingerprint; active/uncertain histories and unknown files stay intact.
     inbox recover previews interrupted operations. Apply completes only valid

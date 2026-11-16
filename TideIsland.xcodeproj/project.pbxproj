@@ -5,6 +5,25 @@
     };
     "objectVersion" = "56";
     "objects" = {
+        "DDF0A6BE14C93625EB21D507" = {
+            "isa" = "PBXShellScriptBuildPhase";
+            "buildActionMask" = 2147483647;
+            "alwaysOutOfDate" = 1;
+            "files" = ();
+            "inputPaths" = (
+                "$(SRCROOT)/scripts/build-embedded-bridge.sh",
+                "$(SRCROOT)/scripts/embed-bridge.py",
+                "$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)",
+            );
+            "outputPaths" = (
+                "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/tide-island-bridge",
+                "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/bridge-manifest.json",
+            );
+            "name" = "Embed event bridge";
+            "runOnlyForDeploymentPostprocessing" = 0;
+            "shellPath" = "/bin/bash";
+            "shellScript" = "/bin/bash \"$SRCROOT/scripts/build-embedded-bridge.sh\"\n";
+        };
         "D5E409F8B83C6106CA0A7DD1" = {
             "isa" = "PBXFileReference";
             "lastKnownFileType" = "sourcecode.swift";
@@ -328,6 +347,7 @@
             "buildSettings" = {
                 "GENERATE_INFOPLIST_FILE" = "NO";
                 "INFOPLIST_FILE" = "Native/App/Info.plist";
+                "ENABLE_USER_SCRIPT_SANDBOXING" = "NO";
                 "LD_RUNPATH_SEARCH_PATHS" = (
                     "$(inherited)",
                     "@executable_path/../Frameworks",
@@ -342,6 +362,7 @@
             "buildSettings" = {
                 "GENERATE_INFOPLIST_FILE" = "NO";
                 "INFOPLIST_FILE" = "Native/App/Info.plist";
+                "ENABLE_USER_SCRIPT_SANDBOXING" = "NO";
                 "LD_RUNPATH_SEARCH_PATHS" = (
                     "$(inherited)",
                     "@executable_path/../Frameworks",
@@ -402,6 +423,7 @@
                 "D10ECEDA0FB53BA093BEC557",
                 "C19A4328C9961E8F8A7CF4CD",
                 "30CBAE1CDB46885E47D4AA82",
+                "DDF0A6BE14C93625EB21D507",
             );
             "buildRules" = (
             );

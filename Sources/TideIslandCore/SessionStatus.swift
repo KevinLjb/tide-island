@@ -16,6 +16,11 @@ public enum SessionFreshness: String, Codable, Hashable, Sendable {
     case clockSkew
 }
 
+public enum SessionSourceIssue: String, Equatable, Sendable {
+    case channelUnavailable
+    case eventMissing
+}
+
 /// A time-dependent projection. The original event and turn state stay intact.
 public struct SessionStatus: Identifiable, Equatable, Sendable {
     public let session: AgentSession
@@ -24,6 +29,7 @@ public struct SessionStatus: Identifiable, Equatable, Sendable {
     public let freshUntil: Date
     public let expiresAt: Date?
     public let nextTransitionAt: Date?
+    public internal(set) var sourceIssue: SessionSourceIssue?
     public internal(set) var attention = SessionAttention()
 
     public var id: String { session.id }
@@ -37,6 +43,8 @@ public struct SessionStatus: Identifiable, Equatable, Sendable {
     }
 
     public var detail: String? {
+        if sourceIssue == .channelUnavailable { return "事件通道暂不可确认；保留原记录，暂停实时计数。" }
+        if sourceIssue == .eventMissing { return "当前目录中缺少这条记录；等待新的状态确认。" }
         if freshness == .clockSkew { return "事件时间晚于当前时钟，暂无法确认状态。" }
         if activity == .unknown { return "最近记录：\(session.phase.title)；等待新的状态确认。" }
         if freshness == .stale { return "历史状态记录；会话是否仍在运行尚未确认。" }
@@ -44,7 +52,16 @@ public struct SessionStatus: Identifiable, Equatable, Sendable {
     }
 
     public var isLiveActivity: Bool {
-        freshness == .fresh && (activity == .working || activity == .needsInput)
+        sourceIssue == nil && freshness == .fresh && (activity == .working || activity == .needsInput)
+    }
+
+    func confirming(_ issue: SessionSourceIssue?) -> SessionStatus {
+        let uncertain = issue != nil && (session.phase == .working || session.phase == .needsInput)
+        var result = SessionStatus(session: session, activity: uncertain ? .unknown : activity,
+                                   freshness: freshness, freshUntil: freshUntil,
+                                   expiresAt: expiresAt, nextTransitionAt: nextTransitionAt)
+        result.sourceIssue = issue
+        return result
     }
 }
 

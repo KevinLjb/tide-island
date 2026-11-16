@@ -60,6 +60,7 @@ extension EventInbox {
                                limits: InboxReadLimits = InboxReadLimits()) throws -> InboxCleanupPlan {
         let directory = try InboxDirectory(url: self.directory, create: false, requireMarker: true)
         return try directory.locked(exclusive: false) {
+            try directory.requireNoCleanupIntent()
             let inventory = try scan(directory, previous: InboxCursor(), limits: limits)
             return try cleanupPlan(directory, inventory: inventory, policy: policy, at: now)
         }
@@ -74,6 +75,7 @@ extension EventInbox {
               expectedFingerprint == plan.fingerprint else { throw InboxError.stalePlan }
         let directory = try InboxDirectory(url: self.directory, create: false, requireMarker: true)
         return try directory.locked(exclusive: true) {
+            try directory.requireNoCleanupIntent()
             let inventory = try scan(directory, previous: InboxCursor(), limits: limits)
             let current = try cleanupPlan(directory, inventory: inventory, policy: plan.policy, at: plan.evaluatedAt)
             guard current.fingerprint == plan.fingerprint else { throw InboxError.stalePlan }
@@ -84,15 +86,11 @@ extension EventInbox {
                       InboxFileStamp(info) == expected.stamp else { throw InboxError.stalePlan }
             }
             try directory.verifyPath()
-            var removed = 0
-            var bytes: Int64 = 0
-            var failed: [String] = []
-            for removal in current.removals {
-                if unlinkat(directory.descriptor, removal.fileName, 0) == 0 {
-                    removed += 1
-                    bytes += removal.bytes
-                } else { failed.append(removal.fileName) }
-            }
+            try directory.createCleanupIntent(current, files: inventory.cursor.files)
+            let recovery = try directory.recoverCleanup(apply: true, maximumBytes: Int(limits.maximumReadBytes))
+            let removed = recovery.resumedCleanupFiles
+            let bytes = recovery.resumedCleanupBytes
+            let failed = recovery.issues.map(\.fileName)
             let remainingFiles = current.totalFiles - removed
             let remainingBytes = current.totalBytes - bytes
             return InboxCleanupResult(removedFiles: removed, removedBytes: bytes, failedFiles: failed,

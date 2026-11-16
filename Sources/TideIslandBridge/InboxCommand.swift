@@ -3,6 +3,10 @@ import TideIslandCore
 
 enum InboxCommand {
     static func run(_ arguments: [String]) throws {
+        if arguments.first == "recover" {
+            try runRecovery(Array(arguments.dropFirst()))
+            return
+        }
         guard arguments.first == "cleanup" else { throw CLIError.invalidArguments }
         let tail = Array(arguments.dropFirst())
         guard tail.filter({ $0 == "--apply" }).count <= 1 else { throw CLIError.invalidArguments }
@@ -52,5 +56,38 @@ enum InboxCommand {
         let mode = result?.failedFiles.isEmpty == false ? "partial" : (apply ? "applied" : "preview")
         FileHandle.standardOutput.write(try encoder.encode(Output(mode: mode, plan: plan, result: result)) + Data([0x0A]))
         if result?.failedFiles.isEmpty == false { throw InboxError.cleanupIncomplete }
+    }
+
+    private static func runRecovery(_ arguments: [String]) throws {
+        guard arguments.filter({ $0 == "--apply" }).count <= 1 else { throw CLIError.invalidArguments }
+        let apply = arguments.contains("--apply")
+        let options = try TideIslandBridge.parseOptions(arguments.filter { $0 != "--apply" }, allowed: [
+            "--inbox", "--scan-limit", "--read-budget-bytes",
+        ])
+        let inbox: EventInbox
+        if let path = options["--inbox"] {
+            guard path.hasPrefix("/"), path.utf8.count <= 4096,
+                  !path.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains),
+                  !path.split(separator: "/").contains("..") else { throw CLIError.invalidArguments }
+            inbox = EventInbox(directory: URL(fileURLWithPath: path, isDirectory: true))
+        } else { inbox = try EventInbox.applicationDefault() }
+        let defaults = InboxReadLimits()
+        func integer(_ key: String, fallback: Int) throws -> Int {
+            guard let text = options[key] else { return fallback }
+            guard let value = Int(text), value > 0 else { throw CLIError.invalidArguments }
+            return value
+        }
+        let limits = try InboxReadLimits(maximumFiles: integer("--scan-limit", fallback: defaults.maximumFiles),
+                                         maximumReadBytes: Int64(integer("--read-budget-bytes", fallback: Int(defaults.maximumReadBytes))))
+        let report = try apply ? inbox.recoverInterruptedOperations(limits: limits) : inbox.inspectRecovery(limits: limits)
+        struct Output: Encodable {
+            let mode: String
+            let report: InboxRecoveryReport
+        }
+        let mode = apply ? (report.issues.isEmpty ? "recovered" : "partial") : "preview"
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
+        FileHandle.standardOutput.write(try encoder.encode(Output(mode: mode, report: report)) + Data([0x0A]))
+        if apply, !report.issues.isEmpty { throw InboxError.recoveryRequired }
     }
 }

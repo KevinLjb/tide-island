@@ -16,8 +16,16 @@ public struct SessionStore: Sendable {
         for event in events { try registry.apply(event) }
     }
 
-    public func snapshot(at now: Date) -> SessionSnapshot {
-        SessionAttentionPolicy.snapshot(statuses: registry.sessions.map { policy.status(for: $0, at: now) },
+    public func snapshot(at now: Date, sourceIssue: SessionSourceIssue? = nil,
+                         confirmedEvents: [UUID: AgentEvent]? = nil) -> SessionSnapshot {
+        SessionAttentionPolicy.snapshot(statuses: registry.sessions.map { session in
+            let missing = confirmedEvents.map { events in
+                guard let event = events[session.lastEventID] else { return true }
+                return AgentSession(event: event, turnID: session.turnID) != session
+            } ?? false
+            let issue = sourceIssue ?? (missing ? .eventMissing : nil)
+            return policy.status(for: session, at: now).confirming(issue)
+        },
                                         preferences: preferences, preferredSessionID: preferredSessionID)
     }
 

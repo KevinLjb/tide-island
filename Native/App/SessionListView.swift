@@ -65,6 +65,9 @@ struct SessionListView: View {
             }
 
             HStack {
+                if model.channelNeedsRecovery {
+                    Button("重新连接") { model.reloadInbox() }
+                }
                 Button("预览历史清理") { model.previewCleanup() }
                 if let plan = model.cleanupPlan {
                     Button("清理已预览历史") { model.applyCleanup() }

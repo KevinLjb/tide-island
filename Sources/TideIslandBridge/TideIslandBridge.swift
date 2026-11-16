@@ -138,6 +138,8 @@ struct TideIslandBridge {
             "inbox_maintenance": [
                 "default_mode": "preview", "requires_managed_marker": true,
                 "protects_unresolved_session_history": true, "capacity_targets_are_soft": true,
+                "recovery_default_mode": "preview", "resumes_approved_cleanup": true,
+                "recovers_complete_staged_events": true, "preserves_conflicting_files": true,
             ],
         ]
         FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .prettyPrinted]) + Data([0x0A]))
@@ -154,6 +156,7 @@ struct TideIslandBridge {
     inbox cleanup [--inbox /DIRECTORY] [--max-files COUNT] [--max-bytes BYTES]
                   [--max-age-days DAYS] [--scan-limit COUNT] [--read-budget-bytes BYTES]
                   [--apply --expect FINGERPRINT]
+    inbox recover [--inbox /DIRECTORY] [--scan-limit COUNT] [--read-budget-bytes BYTES] [--apply]
     hooks install --config /PATH/hooks.json --bridge /STABLE/PATH/tide-island-bridge
                   [--inbox /DIRECTORY] [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
     hooks uninstall --config /PATH/hooks.json
@@ -169,6 +172,8 @@ struct TideIslandBridge {
     a backup directory. It never edits config.toml or Codex hook trust records.
     inbox cleanup previews expired whole-session history. Apply requires the
     exact fingerprint; active/uncertain histories and unknown files stay intact.
+    inbox recover previews interrupted operations. Apply completes only valid
+    staged writes and previously approved cleanup, preserving conflicting files.
     Default inbox: ~/Library/Application Support/TideIsland/Events
     """
 }

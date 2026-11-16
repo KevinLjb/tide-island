@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check cleanup against isolated metadata files; never use the user's inbox."""
+"""Check cleanup and interrupted-write recovery in isolated metadata files."""
 import argparse
 import copy
 import json
@@ -111,7 +111,59 @@ def main():
         result = cleanup(target=missing)
         assert result.returncode == 1 and not result.stdout and not missing.exists()
         checks += 1
-    print(json.dumps({"status": "passed", "checks": checks, "scope": "isolated-inbox-cleanup-preview-and-apply"}))
+        recovery_inbox = root / "recovery"
+        initialized = subprocess.run([binary, "emit", "--session", "recovery", "--project", "project",
+                                      "--phase", "working", "--inbox", str(recovery_inbox)],
+                                     capture_output=True, text=True, timeout=15)
+        assert initialized.returncode == 0, initialized.stderr
+        staged_event = json.loads(initialized.stdout)
+        staged_event["id"] = str(uuid.uuid4()).upper()
+        staged_bytes = json.dumps(staged_event).encode()
+        stage = recovery_inbox / (".tide-island-" + str(uuid.uuid4()).upper() + ".tmp")
+        stage.write_bytes(staged_bytes)
+        destination = recovery_inbox / (staged_event["id"] + ".json")
+
+        def recover(*options, target=recovery_inbox):
+            result = subprocess.run([binary, "inbox", "recover", "--inbox", str(target), *options],
+                                    capture_output=True, text=True, timeout=20)
+            assert "private-" not in result.stdout + result.stderr
+            return result
+
+        preview = recover()
+        assert preview.returncode == 0 and not preview.stderr
+        preview_data = json.loads(preview.stdout)
+        assert preview_data["mode"] == "preview" and preview_data["report"]["interruptedStages"] == 1
+        assert stage.read_bytes() == staged_bytes and not destination.exists()
+        checks += 1
+        recovered = recover("--apply")
+        assert recovered.returncode == 0 and not recovered.stderr, recovered.stderr
+        assert json.loads(recovered.stdout)["report"]["recoveredEvents"] == 1
+        assert not stage.exists() and destination.read_bytes() == staged_bytes
+        checks += 1
+        # A process can die between publishing its link and unlinking its stage.
+        stage.hardlink_to(destination)
+        duplicate = recover("--apply")
+        assert duplicate.returncode == 0 and not stage.exists() and destination.stat().st_nlink == 1
+        assert json.loads(duplicate.stdout)["report"]["removedStages"] == 1
+        checks += 1
+        partial = recovery_inbox / (".tide-island-" + str(uuid.uuid4()).upper() + ".tmp")
+        partial.write_bytes(b"private-incomplete-write")
+        failed = recover("--apply")
+        assert failed.returncode == 1
+        failure = json.loads(failed.stdout)
+        assert failure["mode"] == "partial" and failure["report"]["issues"][0]["reason"] == "invalidStagingEvent"
+        assert partial.read_bytes() == b"private-incomplete-write" and destination.read_bytes() == staged_bytes
+        checks += 1
+        for options in [("--apply", "--apply"), ("--expect", "anything"), ("--scan-limit", "0"),
+                        ("--read-budget-bytes", "0"), ("--unknown", "1")]:
+            invalid = recover(*options)
+            assert invalid.returncode == 1 and not invalid.stdout and partial.exists()
+            checks += 1
+        missing_recovery = root / "missing-recovery"
+        result = recover(target=missing_recovery)
+        assert result.returncode == 1 and not result.stdout and not missing_recovery.exists()
+        checks += 1
+    print(json.dumps({"status": "passed", "checks": checks, "scope": "isolated-inbox-cleanup-and-recovery"}))
 
 
 if __name__ == "__main__":

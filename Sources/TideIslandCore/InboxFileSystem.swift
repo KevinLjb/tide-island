@@ -14,6 +14,8 @@ public enum InboxError: Error, Equatable, LocalizedError {
     case fileOperation
     case conflictingEventID
     case cleanupIncomplete
+    case recoveryRequired
+    case receiverAlreadyRunning
 
     public var errorDescription: String? {
         switch self {
@@ -28,11 +30,13 @@ public enum InboxError: Error, Equatable, LocalizedError {
         case .fileOperation: "Inbox file operation failed."
         case .conflictingEventID: "An existing event ID has different contents."
         case .cleanupIncomplete: "Some reviewed inbox files could not be removed; inspect the result."
+        case .recoveryRequired: "An interrupted inbox operation needs recovery; no partial history was accepted."
+        case .receiverAlreadyRunning: "Another receiver already owns this inbox."
         }
     }
 }
 
-struct InboxFileStamp: Equatable, Encodable, Sendable {
+struct InboxFileStamp: Equatable, Codable, Sendable {
     let device: Int64
     let inode: UInt64
     let size: Int64
@@ -67,6 +71,7 @@ struct InboxIndexedFile: Sendable {
     let stamp: InboxFileStamp
     let digest: String?
     let event: AgentEvent?
+    var rejection: InboxRejectionReason? = nil
 }
 
 /// All child access uses a held directory descriptor. Managed writers and
@@ -157,30 +162,47 @@ final class InboxDirectory {
             var metadata = stat()
             guard fstatat(descriptor, name, &metadata, AT_SYMLINK_NOFOLLOW) == 0 else { throw InboxError.changedDuringRead }
             let stamp = InboxFileStamp(metadata)
+            guard files.count + skipped < maximumFiles else { throw InboxError.limitExceeded }
             guard stamp.isOwnedRegularFile else { skipped += 1; continue }
             files.append((name, stamp))
-            guard files.count <= maximumFiles else { throw InboxError.limitExceeded }
         }
         try verifyPath()
         return (files, skipped)
     }
 
     func read(_ name: String, stamp: InboxFileStamp) throws -> InboxIndexedFile {
-        guard stamp.size <= Int64(EventCodec.maximumBytes) else { return InboxIndexedFile(name: name, stamp: stamp, digest: nil, event: nil) }
+        guard stamp.size <= Int64(EventCodec.maximumBytes) else {
+            return InboxIndexedFile(name: name, stamp: stamp, digest: nil, event: nil, rejection: .oversized)
+        }
+        let data = try readData(name, stamp: stamp, maximumBytes: EventCodec.maximumBytes)
+        let event: AgentEvent
+        do { event = try EventCodec.decode(data) }
+        catch EventError.unsupportedVersion(_) {
+            return InboxIndexedFile(name: name, stamp: stamp, digest: Self.hash(data), event: nil, rejection: .unsupportedVersion)
+        } catch {
+            return InboxIndexedFile(name: name, stamp: stamp, digest: Self.hash(data), event: nil, rejection: .malformed)
+        }
+        let matched = event.id == UUID(uuidString: String(name.dropLast(5)))
+        return InboxIndexedFile(name: name, stamp: stamp, digest: Self.hash(data), event: matched ? event : nil,
+                                rejection: matched ? nil : .filenameMismatch)
+    }
+
+    func readData(_ name: String, stamp: InboxFileStamp, maximumBytes: Int) throws -> Data {
+        guard stamp.size >= 0, stamp.size <= maximumBytes else { throw InboxError.limitExceeded }
         let fd = openat(descriptor, name, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
         guard fd >= 0 else { throw InboxError.unsafeFile }
         defer { close(fd) }
         var before = stat(), after = stat()
         guard fstat(fd, &before) == 0, InboxFileStamp(before) == stamp else { throw InboxError.changedDuringRead }
-        let data = try FileHandle(fileDescriptor: fd, closeOnDealloc: false).read(upToCount: EventCodec.maximumBytes + 1) ?? Data()
+        let data = try FileHandle(fileDescriptor: fd, closeOnDealloc: false).read(upToCount: maximumBytes + 1) ?? Data()
         guard fstat(fd, &after) == 0, InboxFileStamp(after) == stamp, Int64(data.count) == stamp.size else { throw InboxError.changedDuringRead }
-        let event = try? EventCodec.decode(data)
-        let matched = event?.id == UUID(uuidString: String(name.dropLast(5))) ? event : nil
-        return InboxIndexedFile(name: name, stamp: stamp, digest: Self.hash(data), event: matched)
+        return data
     }
 
     func write(_ data: Data, id: UUID) throws {
         try locked(exclusive: true, waitForWriter: true) {
+            let recovery = try recoverCleanup(apply: true)
+            guard recovery.issues.isEmpty else { throw InboxError.recoveryRequired }
             let destination = id.uuidString + ".json"
             let staging = ".tide-island-" + UUID().uuidString + ".tmp"
             let fd = openat(descriptor, staging, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)

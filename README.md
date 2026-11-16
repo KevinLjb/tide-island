@@ -4,11 +4,11 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 让 AI 的工作状态，在岛上一目了然。面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。
 
-> 当前阶段：会话与事件可靠性开发。已提供 v1 / v2 事件协议、轮次状态、新鲜度投影、会话注意力、增量 inbox 与可预览清理、观察型 hook / notify CLI、hooks 配置管理、确定性回放、菜单栏及原生扩展源码。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
+> 当前阶段：会话与事件可靠性开发。已提供 v1 / v2 事件协议、轮次状态、新鲜度投影、会话注意力、增量 inbox、可预览清理与通道恢复、观察型 hook / notify CLI、hooks 配置管理、确定性回放、菜单栏及原生扩展源码。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。增量 inbox、受保护历史清理及既有共享能力已通过严格 CI：98 项单测实际执行通过，另有 bridge 构建、四项 CLI 与工程结构检查；此前测试管道误绿已修复。下一步推进 T010 通道故障恢复。偏好和游标仅存内存；原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。增量 inbox、受保护历史清理及既有共享能力已通过严格 CI：98 项单测实际执行通过，另有 bridge 构建、四项 CLI 与工程结构检查；此前测试管道误绿已修复。T010 已加入共享接收器、故障诊断、目录重连与中断操作恢复，新增验证等待严格 CI。偏好和游标仅存内存；原生编译、签名和真机验收仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -25,11 +25,11 @@ Apple 的 [ActivityKit](https://developer.apple.com/documentation/activitykit) �
 ```text
 TideIsland.xcodeproj/          Mac 应用与实时活动扩展，共享 TideIsland scheme
 Native/
-  App/                        菜单栏入口、会话列表、事件目录监听、Activity 生命周期
+  App/                        菜单栏入口、会话列表、共享帧订阅、Activity 生命周期
   ActivityExtension/          系统原生实时活动 / Dynamic Island 视图
   Shared/                     两个 target 共用的 ActivityAttributes
 Sources/
-  TideIslandCore/              事件编解码、会话状态、Codex hook / notify 映射、本地 inbox
+  TideIslandCore/              事件编解码、会话状态、Codex 映射、inbox 接收 / 监听 / 恢复
   TideIslandBridge/            tide-island-bridge 命令行入口
 Tests/TideIslandCoreTests/     协议、乱序事件、会话隔离、路由和 inbox 测试
 scripts/                      工程结构检查与原生 SDK 检查
@@ -42,6 +42,7 @@ docs/session-state.md         轮次状态、重复窗口、时间冲突与事�
 docs/session-status.md        会话存活边界、新鲜度、展示过期与恢复
 docs/session-attention.md     已读、忽略、置顶、选择与注意力排序
 docs/inbox-maintenance.md     增量游标、受保护历史与预览 / 应用清理
+docs/inbox-recovery.md        通道健康、监听重连、单接收者与中断恢复
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -119,6 +120,16 @@ swift run tide-island-bridge inbox cleanup --inbox /absolute/path/to/TideIsland/
 
 只回收已过期且可确认的整会话历史，完整保留未结束 / 无法归属的事件链，不清理提供方聊天文件。默认年龄目标 7 天、容量目标 4,096 文件 / 32 MiB，受保护数据不会为满足容量目标而被删除。增量读取、管理标记、资源上限、软目标和部分失败边界见 [inbox 维护](docs/inbox-maintenance.md)。
 
+## 恢复事件通道
+
+```bash
+swift run tide-island-bridge inbox recover --inbox /absolute/path/to/TideIsland/Events
+# 完成此前已开始的写入 / 已批准的清理
+swift run tide-island-bridge inbox recover --inbox /absolute/path/to/TideIsland/Events --apply
+```
+
+应用接收器会自动完成安全的既有操作；损坏、冲突或超限时保留文件并暂停实时计数。目录重建后重新监听，旧记录必须在当前目录得到确认才能恢复为实时状态。诊断、重试、锁和恢复边界见 [通道故障恢复](docs/inbox-recovery.md)。
+
 ## Codex 接入边界
 
 CLI 提供两个独立入口：
@@ -141,9 +152,9 @@ notify = ["/absolute/path/to/tide-island-bridge", "notify", "--payload"]
 
 ## 当前能力与后续计划
 
-- 已实现：v1 / v2 元数据事件、增量 inbox 与可预览历史清理、轮次状态机、有界重复 / 退役轮次 / 工具窗口、会话新鲜度与展示过期、已读 / 忽略 / 置顶 / 选择与可解释排序、Codex hook / notify 转换、hooks 配置管理、确定性回放与逐步断言、隔离 CLI 检查、菜单栏与原生扩展源码。
+- 已实现：v1 / v2 元数据事件、增量 inbox、可预览历史清理、通道恢复与单接收者、轮次状态机、有界重复 / 退役轮次 / 工具窗口、会话新鲜度与展示过期、已读 / 忽略 / 置顶 / 选择与可解释排序、Codex hook / notify 转换、hooks 配置管理、确定性回放与逐步断言、隔离 CLI 检查、菜单栏与原生扩展源码。
 - 待验证：macOS 27.3 原生编译、签名安装、灵动岛更新与点击、触摸交互及系统活动协调。
-- 待开发：完整接入与 notify 共存、通道故障恢复与持久化、普通问答 / 最终失败补充来源、可靠进程存活证据、Wave 精确定位、额度信息与小宠物。
+- 待开发：完整接入与 notify 共存、会话 / 偏好持久化、普通问答 / 最终失败补充来源、可靠进程存活证据、Wave 精确定位、额度信息与小宠物。
 
 原生界面的尺寸、动画、更新频率由系统约束；小宠物和高频动画需通过实机验证后再确定。
 

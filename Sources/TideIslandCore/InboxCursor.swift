@@ -18,6 +18,20 @@ public struct InboxCursor: Sendable {
     var directoryIdentity: String?
     var files: [String: InboxIndexedFile] = [:]
     public init() {}
+
+    var confirmedEvents: [UUID: AgentEvent] {
+        Dictionary(grouping: files.values.compactMap(\.event), by: \.id).compactMapValues { events in
+            guard let first = events.first, events.allSatisfy({ $0 == first }) else { return nil }
+            return first
+        }
+    }
+}
+
+public enum InboxRejectionReason: String, Codable, Hashable, Sendable {
+    case malformed
+    case unsupportedVersion
+    case oversized
+    case filenameMismatch
 }
 
 public struct InboxUpdate: Sendable {
@@ -31,6 +45,7 @@ public struct InboxUpdate: Sendable {
     public let skippedFiles: Int
     public let totalBytes: Int64
     public let directoryChanged: Bool
+    public let rejectionCounts: [InboxRejectionReason: Int]
 }
 
 extension EventInbox {
@@ -39,6 +54,7 @@ extension EventInbox {
     public func readIncrementally(using cursor: inout InboxCursor, limits: InboxReadLimits = InboxReadLimits()) throws -> InboxUpdate {
         let directory = try InboxDirectory(url: self.directory, create: false, requireMarker: false)
         return try directory.locked(exclusive: false) {
+            try directory.requireNoCleanupIntent()
             let scanned = try scan(directory, previous: cursor, limits: limits)
             cursor = scanned.cursor
             return scanned.update
@@ -79,7 +95,10 @@ extension EventInbox {
             removedFiles: sameDirectory ? cached.keys.filter { next.files[$0] == nil }.count : previous.files.count,
             rejectedFiles: next.files.values.filter { $0.event == nil }.count,
             skippedFiles: inventory.skipped, totalBytes: totalBytes,
-            directoryChanged: previous.directoryIdentity != nil && !sameDirectory
+            directoryChanged: previous.directoryIdentity != nil && !sameDirectory,
+            rejectionCounts: next.files.values.reduce(into: [:]) { counts, file in
+                if let reason = file.rejection { counts[reason, default: 0] += 1 }
+            }
         ))
     }
 

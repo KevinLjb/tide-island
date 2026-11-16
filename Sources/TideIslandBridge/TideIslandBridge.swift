@@ -180,6 +180,11 @@ struct TideIslandBridge {
                 "default_route": "application-fallback-required", "reports_visible_focus": false,
                 "production_driver_installed": false, "runs_wsh": false,
             ],
+            "wave_application_return": [
+                "scope": "shared-coordinator-and-native-source", "bundle_identifier": WaveReturnCoordinator.bundleIdentifier,
+                "resolves_current_session_links": true, "reports_exact_focus": false,
+                "launches_app_from_cli": false, "native_runtime_verified": false,
+            ],
         ]
         FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .prettyPrinted]) + Data([0x0A]))
     }

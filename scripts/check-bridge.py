@@ -74,6 +74,11 @@ def main():
         assert supported["wave_navigation"]["default_route"] == "application-fallback-required"
         assert not supported["wave_navigation"]["reports_visible_focus"]
         assert not supported["wave_navigation"]["production_driver_installed"] and not supported["wave_navigation"]["runs_wsh"]
+        assert supported["wave_application_return"]["bundle_identifier"] == "dev.commandline.waveterm"
+        assert supported["wave_application_return"]["resolves_current_session_links"]
+        assert not supported["wave_application_return"]["reports_exact_focus"]
+        assert not supported["wave_application_return"]["launches_app_from_cli"]
+        assert not supported["wave_application_return"]["native_runtime_verified"]
         checks += 1
 
         fixture_path = Path(__file__).resolve().parent.parent / "Tests/TideIslandCoreTests/Fixtures/Codex/lifecycle.json"

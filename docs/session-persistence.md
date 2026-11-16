@@ -59,4 +59,4 @@ fingerprint 绑定 inbox / 标记身份、候选文件属性 / 摘要及状态 r
 
 共享测试覆盖两次接收者启动、偏好 / 时间 / 来源确认、窗口与并行权限恢复、清理前保存、损坏及未来版本保留、scope / schema / 预算校验、冲突 / 锁 / 链接、主动清除与实际保存通知。`check-state.py` 仅在隔离目录验证 inspect、预览、指纹应用、源字节保留和错误码，和 inbox 检查一起纳入现有七项 CI。
 
-本轮具体执行结果见 [开发进度](development-progress.md)。原生保存配置、确认框、错误提示与生命周期尚未编译 / 运行，继续待 macOS 27.3 正式环境统一验证；未改真实 Codex 配置、启用 hooks 或清除用户数据。
+新增 24 项及全部 143 项共享测试在标准 Intel runner 实际执行通过，七项检查成功，见 [严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43886424014)与[开发进度](development-progress.md)。原生保存配置、确认框、错误提示与生命周期尚未编译 / 运行，继续待 macOS 27.3 正式环境统一验证；未改真实 Codex 配置、启用 hooks 或清除用户数据。

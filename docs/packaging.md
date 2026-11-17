@@ -1,6 +1,6 @@
 # 版本、构建产物与打包
 
-T026 准备可追溯的原生归档与应用 / CLI ZIP。当前只完成源码、版本 / 工程检查和隔离元数据验证；没有生成原生安装包、执行签名 / 公证或发布 release，实际流程待 macOS / Xcode 27.3 正式环境。
+T026 提供可追溯的原生归档与应用 / CLI ZIP。已在用户授权的 macOS / Xcode 27.3 beta 环境执行首次 arm64 Release archive；后续 ad hoc 签名暴露 Helpers 中 JSON 的布局问题，已修正为 Resources 清单，签名安装继续验证。尚未执行 Developer ID、公证或发布 release；正式分发仍需正式环境复验。
 
 ## 单一版本来源
 
@@ -17,16 +17,16 @@ python3 scripts/sync-version.py
 
 ## 原生归档入口
 
-正式环境可用后先完成 V001 的接口 / 最低版本核对，再执行：
+先完成 V001 的接口 / 最低版本核对。正式分发使用正式环境；本机 beta 测试须明确记录其渠道，再执行：
 
 ```bash
 bash scripts/build-release.sh --output /absolute/path/to/NEW-output \
   --architectures universal --signing unsigned
 ```
 
-入口要求 clean 仓库、新的绝对输出目录及正确的生成版本，输出放在仓库外或忽略的构建目录；归档后再次复核提交和 clean 状态，变化即停止打包。运行现有 SDK 27.3+ 检查后才创建输出。它不下载 SDK、接受许可、安装应用或写 Codex 配置；SDK 数字检查本身不能区分 beta / 正式，仍按当前安排由正式环境验收。
+入口要求 clean 仓库、新的绝对输出目录及正确的生成版本，父目录需已存在，输出放在仓库外或忽略的构建目录；归档后再次复核提交和 clean 状态，变化即停止打包。运行现有 SDK 27.3+ 检查后才创建输出。它不下载 SDK、接受许可、安装应用或写 Codex 配置；SDK 数字检查本身不能区分 beta / 正式，操作者须另行记录发行渠道。
 
-Release archive 使用 Xcode app / extension 与 T024 的包内 bridge 构建阶段。默认 universal，另外可显式选择 arm64 / x86_64；scratch、DerivedData、xcarchive 和 native-build.log 都保留在指定输出中。当前没有执行这个原生阶段。
+Release archive 使用 Xcode app / extension 与 T024 的包内 bridge 构建阶段。默认 universal，另外可显式选择 arm64 / x86_64；scratch、DerivedData、xcarchive 和 native-build.log 都保留在指定输出中。本机首次 beta arm64 archive 已成功；不代表另两种架构或后续签名 / 运行通过。
 
 ## 签名方式
 
@@ -36,7 +36,7 @@ Release archive 使用 Xcode app / extension 与 T024 的包内 bridge 构建阶
 | `--signing adhoc` | 在本机构建产物上签署并验证代码完整性，不能证明外部分发身份 |
 | `--signing developer-id --identity ID` | 必须显式指定身份；检查 app / extension / helper 同一 team 且均为 Developer ID Application |
 
-签名顺序为 helper → 重建签名后摘要清单 → extension → app，再逐项与 deep / strict 验证。公证和 runtime 验收独立，签名成功不表示灵动岛可用。
+签名顺序为 helper → 重建 Resources 中签名后摘要清单 → extension → app，再逐项与 deep / strict 验证。Helpers 只保存可执行代码，详见 [bridge 布局修复](bridge-delivery.md)。公证和 runtime 验收独立，签名成功不表示灵动岛可用。
 
 外部分发准备可显式附带 `--notarize-profile PROFILE`，仅允许 Developer ID。脚本将应用 ZIP 提交 notarytool，要求 Accepted，再 staple / validate 应用并运行 Gatekeeper assess，重新生成含票据的应用 ZIP。这个选项会向 Apple 上传应用；当前开发没有执行，也未查询本机证书或公证凭据。
 

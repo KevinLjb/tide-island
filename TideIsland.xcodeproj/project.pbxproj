@@ -23,7 +23,7 @@
             );
             "outputPaths" = (
                 "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/tide-island-bridge",
-                "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/bridge-manifest.json",
+                "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/bridge-manifest.json",
             );
             "name" = "Embed event bridge";
             "runOnlyForDeploymentPostprocessing" = 0;

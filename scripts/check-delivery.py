@@ -60,12 +60,24 @@ def main():
 
         staged = embed()
         helper = contents / "Helpers/tide-island-bridge"
-        manifest = contents / "Helpers/bridge-manifest.json"
+        manifest = contents / "Resources/bridge-manifest.json"
         assert staged["status"] == "embedded" and not staged["hooks_installed"]
         assert helper.read_bytes() == binary.read_bytes()
         assert json.loads(manifest.read_text())["sha256"] == hashlib.sha256(binary.read_bytes()).hexdigest()
         assert stat.S_IMODE(helper.stat().st_mode) == 0o755
         assert not config.parent.exists() and not backups.exists()
+        legacy = contents / "Helpers/bridge-manifest.json"
+        legacy.write_bytes(manifest.read_bytes())
+        embed()
+        assert not legacy.exists() and manifest.is_file()
+        resources = contents / "Resources"
+        saved_resources = contents / "SavedResources"
+        resources.rename(saved_resources)
+        resources.symlink_to(saved_resources, target_is_directory=True)
+        embed(success=False)
+        invoke(success=False)
+        resources.unlink()
+        saved_resources.rename(resources)
         checks += 1
 
         # Execute the actual CI-built helper from its delivered path, not a stub.

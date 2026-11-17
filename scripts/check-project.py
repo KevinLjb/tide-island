@@ -69,7 +69,7 @@ def check():
     require(int(bridge_phase["alwaysOutOfDate"]) == 1, "Bridge must rebuild when package sources change")
     require(set(bridge_phase["outputPaths"]) == {
         "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/tide-island-bridge",
-        "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/bridge-manifest.json",
+        "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/bridge-manifest.json",
     }, "Missing bridge outputs")
     for key in objects[app["buildConfigurationList"]]["buildConfigurations"]:
         require(objects[key]["buildSettings"]["ENABLE_USER_SCRIPT_SANDBOXING"] == "NO", "SwiftPM build phase requires its own DerivedFileDir scratch")

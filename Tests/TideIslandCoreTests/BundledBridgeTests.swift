@@ -27,7 +27,7 @@ import Testing
 
 @Test func bundledBridgeRejectsDuplicateFutureOversizedAndUnexpectedManifestFields() throws {
     let root = try deliveryTestRoot(); defer { try? FileManager.default.removeItem(at: root) }
-    let app = try deliveryTestApp(in: root), manifest = app.appendingPathComponent("Contents/Helpers/bridge-manifest.json")
+    let app = try deliveryTestApp(in: root), manifest = app.appendingPathComponent("Contents/Resources/bridge-manifest.json")
     let original = try Data(contentsOf: manifest)
     for text in ["[]", "{\"version\":1,\"version\":1}", "{\"version\":2}", String(repeating: " ", count: 16385)] {
         try Data(text.utf8).write(to: manifest)
@@ -81,6 +81,21 @@ import Testing
     let app = try deliveryTestApp(in: build), alias = root.appendingPathComponent("Stable.app")
     try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: app)
     #expect(throws: BundledBridgeError.unstablePath) { try BundledBridge.inspect(applicationURL: alias) }
+}
+
+@Test func bundledBridgeRejectsLinkedResourceManifestAndDirectory() throws {
+    let root = try deliveryTestRoot(); defer { try? FileManager.default.removeItem(at: root) }
+    let app = try deliveryTestApp(in: root), resources = app.appendingPathComponent("Contents/Resources")
+    let manifest = resources.appendingPathComponent(BundledBridge.manifestName), outside = root.appendingPathComponent("manifest.json")
+    try FileManager.default.moveItem(at: manifest, to: outside)
+    try FileManager.default.createSymbolicLink(at: manifest, withDestinationURL: outside)
+    #expect(throws: BundledBridgeError.unsafeFile) { try BundledBridge.inspect(applicationURL: app) }
+    try FileManager.default.removeItem(at: manifest)
+    try FileManager.default.moveItem(at: outside, to: manifest)
+    let moved = root.appendingPathComponent("moved-resources")
+    try FileManager.default.moveItem(at: resources, to: moved)
+    try FileManager.default.createSymbolicLink(at: resources, withDestinationURL: moved)
+    #expect(throws: BundledBridgeError.unsafeFile) { try BundledBridge.inspect(applicationURL: app) }
 }
 
 @Test func bundledBridgePreviewBindsHelperBytesAndBundleVersionEvenWhenHookCommandIsUnchanged() throws {
@@ -164,6 +179,8 @@ private func deliveryInfo(_ app: URL, replacing overrides: [String: String] = [:
 
 private func deliveryManifest(_ app: URL) throws {
     let helpers = app.appendingPathComponent("Contents/Helpers"), bytes = try Data(contentsOf: helpers.appendingPathComponent("tide-island-bridge"))
+    let resources = app.appendingPathComponent("Contents/Resources")
+    try FileManager.default.createDirectory(at: resources, withIntermediateDirectories: true)
     let record: [String: Any] = ["version": 1, "kind": "tide-island-embedded-bridge", "executable": "tide-island-bridge", "sha256": CodexHookConfiguration.digest(bytes)]
-    try JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]).write(to: helpers.appendingPathComponent("bridge-manifest.json"))
+    try JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]).write(to: resources.appendingPathComponent(BundledBridge.manifestName))
 }

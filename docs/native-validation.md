@@ -1,6 +1,6 @@
 # 独立原生编译与统一验收入口
 
-T027 准备独立的手动 Native compile 工作流与本地执行入口。2026-11-18 初核时，macOS 27.3（26C5047e）搭配旧 Xcode 27.2，SDK 查询被许可阻止。后续按用户授权安装官方 Xcode 27.3 beta 2（27C5035i），用户完成管理员初始化与许可后，已选中新版、实际查到 SDK 27.3，首次初始化状态通过，旧版已移除。本轮准备本地 beta 编译；没有注册或调度 runner，正式验收仍单独记录。
+T027 准备独立的手动 Native compile 工作流与本地执行入口。2026-11-18 初核时，macOS 27.3（26C5047e）搭配旧 Xcode 27.2，SDK 查询被许可阻止。后续按用户授权安装官方 Xcode 27.3 beta 2（27C5035i），用户完成管理员初始化与许可后，已选中新版、实际查到 SDK 27.3，首次初始化状态通过，旧版已移除。本地 beta 双配置编译已通过；没有注册或调度 runner，正式验收仍单独记录。
 
 ## 与共享 CI 的区别
 
@@ -97,3 +97,5 @@ native_runtime_verified 始终为 false，signing_requested 为 false。归档�
 Xcode 27.3 的 Swift 6.4 会输出带 `in 0 suites` 的成功摘要。本机首次实际运行已执行 419 项，但旧计数检查未识别新格式；现由 CI 与本机共用 [摘要校验工具](../scripts/swift_test_summary.py)，用 9 组 fixture 保留零测试、未完整执行和失败摘要的拒绝条件，不放松实际数量守卫。该兼容修复本身不证明原生应用已编译。
 
 首次真实 Debug 编译在 `NativeActivityController` 的 update / end 处因发送主 actor 隔离句柄失败，Release 尚未执行。已对照安装 SDK 的 ActivityKit swiftinterface：Activity 没有 Sendable 声明，并发方法需在调用域中持有句柄。修复通过非隔离辅助方法仅接收 Sendable 的 ID / 展示值、按 ID 重新取得句柄并复核状态；保留主 actor 的归属与监听、共享串行和取消规则，不降低 Swift 并发检查。SDK 的 pending 状态显式映射为共享 unknown。该改动继续以新的同源双配置编译报告及后续运行验收为准。
+
+2026-11-18，修复提交 `72fa654b092492357579077171db9c6756f44256` 的 clean 源码在上述 beta 系统 / Xcode / SDK 上完成 arm64 Debug 和 Release。`native-72fa654b0924-3869e4f2/native-validation.json` 记录两项 build_completed、产物与包内 bridge 校验通过，渠道为 prerelease；signing_requested 和 native_runtime_verified 均为 false。同源本机实际执行 419 / 声明 419 项共享测试及 10 组 CLI 检查，[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/44152163319)同样实际 419 项和七项检查通过。完整日志与 xcresult 保留在本机验证证据目录；此后源变更需重新执行受影响检查。

@@ -375,11 +375,13 @@ private func notifyFixture() throws -> (root: URL, config: String, bridge: Bundl
     let root = base.appendingPathComponent("tide-island-notify-" + UUID().uuidString), app = root.appendingPathComponent("TideIsland.app")
     let helpers = app.appendingPathComponent("Contents/Helpers")
     try FileManager.default.createDirectory(at: helpers, withIntermediateDirectories: true)
+    let resources = app.appendingPathComponent("Contents/Resources")
+    try FileManager.default.createDirectory(at: resources, withIntermediateDirectories: true)
     let info = ["CFBundleIdentifier": "dev.kevinljb.tide-island", "CFBundlePackageType": "APPL", "CFBundleExecutable": "TideIsland", "CFBundleShortVersionString": "0.1.0", "CFBundleVersion": "1"]
     try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0).write(to: app.appendingPathComponent("Contents/Info.plist"))
     let bytes = Data("#!/bin/sh\nexit 0\n".utf8), helper = helpers.appendingPathComponent(BundledBridge.executableName)
     try bytes.write(to: helper); try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: helper.path)
     let manifest: [String: Any] = ["version": 1, "kind": "tide-island-embedded-bridge", "executable": BundledBridge.executableName, "sha256": CodexHookConfiguration.digest(bytes)]
-    try JSONSerialization.data(withJSONObject: manifest).write(to: helpers.appendingPathComponent(BundledBridge.manifestName))
+    try JSONSerialization.data(withJSONObject: manifest).write(to: resources.appendingPathComponent(BundledBridge.manifestName))
     return (root, root.appendingPathComponent("config.toml").path, try BundledBridge.inspect(applicationURL: app))
 }

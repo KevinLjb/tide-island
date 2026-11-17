@@ -54,7 +54,7 @@ flowchart LR
 
 配置管理只编辑指定的 `hooks.json`，保留 `config.toml` 中 notify、内联 hooks 和信任状态。专用分组正常升级时原地更新，卸载保留空分组，减少其他条目索引变化。文件安装与 Codex 信任审查、真实运行分别记录；完成 notify 的完整接入与共存仍由 T025 处理。命令、备份、并发边界和回退说明见 [hooks 配置管理](codex-hooks.md)。
 
-T024 的应用构建阶段按配置 / 架构生成 bridge，先处理 helper 签名，再将固定可执行文件及摘要清单嵌入 Contents/Helpers，外层应用由 Xcode 签署。BundledBridge 只读检查包元数据、路径和有界文件完整性；`hooks install --app` 将 helper 摘要 / 应用版本加入预览指纹，应用前重验，移动后只修复受管 handler。它不执行 helper 或替代系统签名验证；构建阶段未在原生 SDK 执行，详见 [bridge 交付](bridge-delivery.md)。
+T024 的应用构建阶段按配置 / 架构生成 bridge，先处理 helper 签名，将可执行文件嵌入 Contents/Helpers、摘要清单写入 Contents/Resources，外层应用由 Xcode 签署。Helpers 只含代码，嵌入脚本清除旧位置清单并拒绝输出链接，避免真实签名失败。BundledBridge 只读检查包元数据、路径和有界文件完整性；`hooks install --app` 将 helper 摘要 / 应用版本加入预览指纹，应用前重验，移动后只修复受管 handler。它不执行 helper 或替代系统签名验证；beta 双配置编译已执行，后续签名与运行见 [bridge 交付](bridge-delivery.md)及开发进度。
 
 T025 的独立 notify 共存以共享 NotifyDispatchConfiguration 保留既有 argv 的明确边界和缺失 / 空数组恢复标记；TOMLNotifyDocument 只编辑顶层 notify 值，CodexNotifyConfiguration 绑定内容与 bundle 证据。NotifyConfigurationFile 实现私有原始备份、锁、指纹及发布前复核；notify-config 暴露显式预览 / 应用。内部 callback 先写必要元数据，再用 Process 转发原 argv / JSON，不使用 shell、正文存储或基于 payload cwd 的目录切换，两个结果互不阻断，详见 [完成 notify 共存](notify-integration.md)。
 
@@ -84,7 +84,7 @@ T018 通过有界完整清单接管唯一活动、清理重复、响应授权及
 
 T019 的 IslandActivityViewState 为系统活动 / expanded / compact / minimal 统一生成状态、符号、分类计数、会话链接和完整读屏文案；stale 隐去实时计数，compact 只在视觉上将大总数缩为 99+。原生采用可换行 / 省略项目名、计数分行回退及同一目标的标准 Link，不增加 wire 字段或改变会话优先级；无障碍、窄布局和输入效果待实测，详见 [活动视图](activity-views.md)。
 
-原生列表源码已加入已读、忽略、置顶和选择。Activity 候选始终优先新鲜待处理，随后才使用选择或置顶的新鲜工作；忽略及历史记录不参与实时聚合。相同注意力策略供共享层测试和原生接入使用，详细操作一致性、稳定排序与恢复语义见 [会话注意力规则](session-attention.md)。原生交互仍未编译或实测。
+原生列表源码已加入已读、忽略、置顶和选择。Activity 候选始终优先新鲜待处理，随后才使用选择或置顶的新鲜工作；忽略及历史记录不参与实时聚合。相同注意力策略供共享层测试和原生接入使用，详细操作一致性、稳定排序与恢复语义见 [会话注意力规则](session-attention.md)。beta 原生已编译，实际交互仍待验证。
 
 ## 会话提醒
 

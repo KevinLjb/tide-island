@@ -39,13 +39,15 @@ def embed(binary, application):
         if len(data) != before.st_size or (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
             raise ValueError("The helper changed during embedding")
     helpers = contents / "Helpers"
-    if helpers.is_symlink():
-        raise ValueError("Helpers must not be a symlink")
-    helpers.mkdir(exist_ok=True)
-    if not stat.S_ISDIR(helpers.lstat().st_mode):
-        raise ValueError("Helpers must be a directory")
-    for name in ("tide-island-bridge", "bridge-manifest.json"):
-        target = helpers / name
+    resources = contents / "Resources"
+    for directory in (helpers, resources):
+        if directory.is_symlink():
+            raise ValueError("Bundle output directories must not be symlinks")
+        directory.mkdir(exist_ok=True)
+        if not stat.S_ISDIR(directory.lstat().st_mode):
+            raise ValueError("Bundle outputs must use real directories")
+    legacy_manifest = helpers / "bridge-manifest.json"
+    for target in (helpers / "tide-island-bridge", resources / "bridge-manifest.json", legacy_manifest):
         if target.is_symlink() or (target.exists() and not stat.S_ISREG(target.lstat().st_mode)):
             raise ValueError("Refusing a symlink or special output file")
     manifest = {
@@ -53,7 +55,7 @@ def embed(binary, application):
         "sha256": hashlib.sha256(data).hexdigest(),
     }
     # Both files are individually atomic; inspection rejects an incomplete pair.
-    with tempfile.TemporaryDirectory(prefix=".tide-island-embed-", dir=helpers) as staging:
+    with tempfile.TemporaryDirectory(prefix=".tide-island-embed-", dir=resources) as staging:
         staged = Path(staging)
         helper = staged / "tide-island-bridge"
         helper.write_bytes(data)
@@ -62,7 +64,10 @@ def embed(binary, application):
         record.write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n")
         record.chmod(0o644)
         os.replace(helper, helpers / helper.name)
-        os.replace(record, helpers / record.name)
+        os.replace(record, resources / record.name)
+    # Incremental builds can still contain our old metadata location. Helpers
+    # is a code-only directory: an unsigned JSON there prevents outer signing.
+    legacy_manifest.unlink(missing_ok=True)
     return {"status": "embedded", "sha256": manifest["sha256"], "bytes": len(data), "hooks_installed": False}
 
 

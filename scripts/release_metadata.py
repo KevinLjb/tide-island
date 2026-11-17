@@ -94,7 +94,7 @@ def inspect_application(application, record, expected_architectures=None, expect
     if app.suffix != ".app":
         raise ValueError("Expected an application bundle")
     extension = app / "Contents/PlugIns/TideIslandActivity.appex"
-    for directory in (app, app / "Contents", app / "Contents/MacOS", app / "Contents/Helpers", app / "Contents/PlugIns",
+    for directory in (app, app / "Contents", app / "Contents/MacOS", app / "Contents/Helpers", app / "Contents/Resources", app / "Contents/PlugIns",
                       extension, extension / "Contents", extension / "Contents/MacOS"):
         require_directory(directory)
     app_info = plistlib.loads(read_regular(app / "Contents/Info.plist", 65536))
@@ -121,7 +121,7 @@ def inspect_application(application, record, expected_architectures=None, expect
         raise ValueError("Invalid native deployment version metadata")
     if len(revisions) != 1 or app_info.get("NSSupportsLiveActivities") is not True or not isinstance(point, dict) or point.get("NSExtensionPointIdentifier") != "com.apple.widgetkit-extension":
         raise ValueError("Inconsistent release capability metadata")
-    manifest = json.loads(read_regular(app / "Contents/Helpers/bridge-manifest.json", 16384), object_pairs_hook=unique_object)
+    manifest = json.loads(read_regular(app / "Contents/Resources/bridge-manifest.json", 16384), object_pairs_hook=unique_object)
     if not isinstance(manifest, dict) or set(manifest) != {"version", "kind", "executable", "sha256"} or type(manifest["version"]) is not int or manifest["version"] != 1 or manifest["kind"] != "tide-island-embedded-bridge" or manifest["executable"] != "tide-island-bridge":
         raise ValueError("Invalid embedded bridge delivery metadata")
     files = {}

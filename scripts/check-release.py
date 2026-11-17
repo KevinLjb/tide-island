@@ -105,7 +105,9 @@ def main():
         helpers.mkdir()
         helper = helpers / "tide-island-bridge"
         helper.write_bytes(universal()); helper.chmod(0o755)
-        manifest = helpers / "bridge-manifest.json"
+        resources = app / "Contents/Resources"
+        resources.mkdir()
+        manifest = resources / "bridge-manifest.json"
         manifest.write_text(json.dumps({"version": 1, "kind": "tide-island-embedded-bridge", "executable": helper.name, "sha256": hashlib.sha256(helper.read_bytes()).hexdigest()}))
         inspected = inspect_application(app, record, ["arm64", "x86_64"], revision)
         assert len(inspected["files"]) == 3 and inspected["signature_verified"] is False and inspected["native_runtime_verified"] is False

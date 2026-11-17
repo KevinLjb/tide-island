@@ -1,6 +1,6 @@
 # 应用内 bridge 交付
 
-T024 将 `tide-island-bridge` 放到应用包内固定的 `Contents/Helpers/`，并提供应用完整性检查和受管 hooks 路径修复。源码与隔离检查已准备；实际应用打包、签名安装和原生构建仍待 27.3 验收。
+T024 将 `tide-island-bridge` 放到应用包内固定的 `Contents/Helpers/`，摘要清单位于 `Contents/Resources/`，并提供应用完整性检查和受管 hooks 路径修复。beta 环境已完成原生双配置编译；实际签名安装继续由 V003 验证。
 
 ## 构建位置
 
@@ -9,9 +9,11 @@ T024 将 `tide-island-bridge` 放到应用包内固定的 `Contents/Helpers/`，
 1. 按 Xcode 当前 Debug / Release 配置及 `ARCHS` 构建 SwiftPM bridge；只处理 arm64 / x86_64，未识别架构明确失败。
 2. 每个架构使用独立的 `DERIVED_FILE_DIR/bridge-<arch>` scratch，避免与 Xcode 自身 package 构建共用缓存。
 3. 合并目标架构，若 Xcode 允许签名则先签署 helper；无签名编译不会申请签名身份。
-4. [嵌入脚本](../scripts/embed-bridge.py)复制 helper 到 `Contents/Helpers/tide-island-bridge`，生成 `bridge-manifest.json`；随后 Xcode 签署外层应用。
+4. [嵌入脚本](../scripts/embed-bridge.py)复制 helper 到 `Contents/Helpers/tide-island-bridge`，在 `Contents/Resources/bridge-manifest.json` 生成清单；随后 Xcode 签署外层应用。
 
 清单是 version 1 的 `tide-island-embedded-bridge`，只含固定文件名和签名后的 SHA-256，不保存构建目录、用户名或时间。两文件分别原子发布，中断时检查器拒绝不完整配对；它不是跨文件事务。
+
+首次真实签名发现 Helpers 中的 JSON 被当作未签署嵌套代码。按 [Apple 的包布局规则](https://developer.apple.com/library/archive/technotes/tn2206/)，数据移入 Resources，helper 的稳定执行路径保持不变。嵌入时清除本项目旧位置的普通清单文件，拒绝资源目录、清单或 helper 链接；增量构建也会生成可签署布局。
 
 原生 target 仍只有应用 / 扩展两个。应用 target 为嵌套 SwiftPM 构建关闭 Xcode 的用户脚本 sandbox，扩展设置不变；脚本的构建产物和暂存均位于 DerivedFileDir。该流程没有执行 hooks 安装、读取 Codex 配置或启动应用。
 

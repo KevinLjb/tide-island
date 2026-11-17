@@ -4,13 +4,13 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 让 AI 的工作状态，在岛上一目了然。面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。
 
-> 当前阶段：首版开发与交付准备。共享状态、观察型 hooks / notify 统一接入、诊断与合成回放已经通过共享 CI；菜单栏、设置、导出与原生扩展源码已准备。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
+> 当前阶段：原生验证与交付准备。共享状态、观察型 hooks / notify 统一接入、诊断与合成回放已经通过共享 CI；macOS / Xcode 27.3 beta 的原生 Debug / Release 编译已通过。本机签名安装正在验证，真实接入和原生运行尚未验证，暂未发布可安装版本。
 
 第一次使用请看 [开始指南](docs/getting-started.md)。[常见问题](docs/faq.md)说明状态、提醒、Wave 返回、诊断和卸载的实际边界；完整接入命令见 [安装、升级与卸载](docs/installation.md)。
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T028 的必要元数据诊断与 CLI 离线清单已通过 [共享 CI](https://github.com/KevinLjb/tide-island/actions/runs/43989656395)，实际执行 419 项测试；应用导出菜单源码接入。T027 的 [独立手动原生验证入口](docs/native-validation.md)保留完整 SHA、正式环境声明与逐配置报告。当前未调度原生机器、编译 / 签名 / 公证或安装，仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。`72fa654` 在本机 beta 环境完成原生双配置编译、419 项共享测试和 10 组 CLI 检查，[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44152163319)七项通过。[原生验证入口](docs/native-validation.md)保留完整 SHA、发行渠道及逐配置报告；正式环境、签名分发和真实交互分别验收。
 
 T029—T030 的兼容 / 迁移 / 许可和开始指南 / FAQ 已完成，[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/43991766217)实际执行 419 项测试与七项检查通过。T031 的 [公开 app-server 研究](docs/app-server-research.md)完成，暂不接入运行时；没有为观察状态连接或恢复用户现有会话。
 
@@ -126,9 +126,9 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-原生构建使用 `MACOSX_DEPLOYMENT_TARGET=27.3`，不会回退为模拟刘海浮层。应用构建阶段会在独立 scratch 中构建目标架构的 bridge 并嵌入 `Contents/Helpers`，再由 Xcode 处理应用签名；流程及尚未验证范围见 [bridge 交付](docs/bridge-delivery.md)。
+原生构建使用 `MACOSX_DEPLOYMENT_TARGET=27.3`，不会回退为模拟刘海浮层。应用构建阶段会在独立 scratch 中构建目标架构的 bridge 并嵌入 `Contents/Helpers`，摘要清单写入 `Contents/Resources`，再由 Xcode 处理应用签名；流程及尚未验证范围见 [bridge 交付](docs/bridge-delivery.md)。
 
-版本从 VERSION.json 生成应用 / 扩展共享 xcconfig 和 CLI 常量。正式环境中的 Release archive、应用 / CLI ZIP、签名、公证及摘要记录使用 [打包入口](docs/packaging.md)，当前只准备源码，尚未执行原生交付。
+版本从 VERSION.json 生成应用 / 扩展共享 xcconfig 和 CLI 常量。Release archive、应用 / CLI ZIP、签名、公证及摘要记录使用 [打包入口](docs/packaging.md)；本机 beta arm64 archive 已成功，后续签名安装正在验证，正式交付尚未完成。
 
 独立 [Native compile 手动工作流](docs/native-validation.md)需要专用正式环境 runner、审阅后的完整 SHA 与操作者确认；workflow 已注册，专用 runner 未注册且未调度原生任务。共享 CI 只检查来源和默认保护，不能据此宣称原生 Debug / Release 编译通过。
 
@@ -224,7 +224,8 @@ hooks 工具保持 `config.toml`、既有 notify 和内联 hooks 原样。独立
 ## 当前能力与后续计划
 
 - 已实现：v1 / v2 元数据事件、可选 Wave 位置与有效性投影、定位路线策略与可注入请求编排、应用级返回流程和严格会话链接、共享实时活动展示 / 客户端 / 更新调度、增量 inbox、可预览历史清理、通道恢复与单接收者、会话 / 偏好持久化和清除、轮次状态机、有界重复 / 退役轮次 / 工具窗口、会话新鲜度与展示过期、已读 / 忽略 / 置顶 / 选择与可解释排序、Codex hook / notify 转换、hooks 配置管理、确定性回放与逐步断言、隔离 CLI 检查、菜单栏与原生扩展源码。
-- 待验证：macOS 27.3 原生编译、签名安装、灵动岛更新与点击、触摸交互及系统活动协调。
+- 已验证：macOS / Xcode 27.3 beta 的 arm64 原生 Debug / Release 编译；正式环境仍待复验。
+- 待验证：签名安装、灵动岛更新与点击、触摸交互及系统活动协调。
 - 交付准备就绪、待实际执行：诊断菜单、打包入口和独立手动原生 CI；尚无真实原生安装包，编译 / 签名 / 运行继续分别验收。
 - 待开发：普通问答 / 最终失败补充来源、可靠进程存活证据、Wave 精确定位、额度信息与小宠物。
 

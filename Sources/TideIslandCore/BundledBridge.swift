@@ -43,7 +43,8 @@ public struct BundledBridge: Equatable, Sendable {
         }
         let contents = app.appendingPathComponent("Contents", isDirectory: true)
         let helpers = contents.appendingPathComponent("Helpers", isDirectory: true)
-        for directory in [app, contents, helpers] { try requireDirectory(directory) }
+        let resources = contents.appendingPathComponent("Resources", isDirectory: true)
+        for directory in [app, contents, helpers, resources] { try requireDirectory(directory) }
         let infoData = try read(contents.appendingPathComponent("Info.plist"), maximum: 64 * 1024)
         let rawInfo = try? PropertyListSerialization.propertyList(from: infoData, format: nil)
         guard let info = rawInfo as? [String: Any],
@@ -53,7 +54,7 @@ public struct BundledBridge: Equatable, Sendable {
               let version = info["CFBundleShortVersionString"] as? String,
               let build = info["CFBundleVersion"] as? String,
               validVersion(version), validVersion(build) else { throw BundledBridgeError.invalidApplication }
-        let manifestData = try read(helpers.appendingPathComponent(manifestName), maximum: 16 * 1024)
+        let manifestData = try read(resources.appendingPathComponent(manifestName), maximum: 16 * 1024)
         let manifest: [String: ConfigurationJSON]
         do {
             guard let fields = try ConfigurationJSON.decode(manifestData).object else { throw BundledBridgeError.invalidManifest }

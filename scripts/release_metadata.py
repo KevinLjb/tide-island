@@ -11,6 +11,7 @@ import struct
 
 MAXIMUM_CODE_BYTES = 64 * 1024 * 1024
 CPU_NAMES = {0x01000007: "x86_64", 0x0100000C: "arm64"}
+NOTICE_FILENAMES = ("LICENSE", "THIRD_PARTY_NOTICES.md")
 
 
 def unique_object(pairs):
@@ -137,9 +138,15 @@ def inspect_application(application, record, expected_architectures=None, expect
     bridge = files["Contents/Helpers/tide-island-bridge"]
     if bridge["sha256"] != manifest["sha256"] or len({tuple(value["architectures"]) for value in files.values()}) != 1:
         raise ValueError("Embedded helper integrity or bundle architectures differ")
+    notices = {}
+    for name in NOTICE_FILENAMES:
+        data = read_regular(app / "Contents/Resources" / name, 65536)
+        if not data.decode("utf-8").strip():
+            raise ValueError("Missing distribution notice text")
+        notices[name] = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
     return {"scope": "archive-metadata-and-headers-only", "version": record["version"], "build": str(record["build"]),
             "source_revision": next(iter(revisions)), "minimum_native_system": minimum,
-            "files": files, "native_runtime_verified": False, "signature_verified": False}
+            "files": files, "notices": notices, "native_runtime_verified": False, "signature_verified": False}
 
 
 def verify_manifest(manifest_path, directory):

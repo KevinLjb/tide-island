@@ -62,10 +62,19 @@ def main():
         helper = contents / "Helpers/tide-island-bridge"
         manifest = contents / "Resources/bridge-manifest.json"
         assert staged["status"] == "embedded" and not staged["hooks_installed"]
+        assert staged["bytes"] == len(binary.read_bytes())
         assert helper.read_bytes() == binary.read_bytes()
         assert json.loads(manifest.read_text())["sha256"] == hashlib.sha256(binary.read_bytes()).hexdigest()
         assert stat.S_IMODE(helper.stat().st_mode) == 0o755
         assert not config.parent.exists() and not backups.exists()
+        for name in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+            assert (contents / "Resources" / name).read_bytes() == (ROOT / name).read_bytes()
+        notice = contents / "Resources/LICENSE"
+        notice.unlink()
+        notice.symlink_to(ROOT / "LICENSE")
+        embed(success=False)
+        notice.unlink()
+        embed()
         legacy = contents / "Helpers/bridge-manifest.json"
         legacy.write_bytes(manifest.read_bytes())
         embed()

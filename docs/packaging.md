@@ -2,6 +2,8 @@
 
 T026 提供可追溯的原生归档与应用 / CLI ZIP。`ef2f764` 已在用户授权的 macOS / Xcode 27.3 beta 环境完成 arm64 Release archive、helper / extension / app 的 ad hoc 签名及两个 ZIP 校验；本机安装、首次启动和扩展注册通过。首次签名暴露的 Helpers JSON 问题已修正为 Resources 清单。尚未执行 Developer ID、公证或发布 release；正式分发仍需正式环境复验。
 
+实际 ZIP 清点另发现项目许可证未随二进制附带。构建现将 LICENSE 与 THIRD_PARTY_NOTICES.md 写入 app 的 Resources，并由归档检查核对两份有界普通 UTF-8 文件；独立 CLI ZIP 从同一 app 复制它们，发布清单记录各自 SHA-256 / 大小。缺失、空白、无效编码、超限或链接均拒绝；这项资源检查不代替实际组件与声明的人工核对。
+
 ## 单一版本来源
 
 根目录 [VERSION.json](../VERSION.json)保存 schema version 1、三段数字版本和正整数 build。当前为 0.1.0 / 1。修改它后运行：
@@ -50,10 +52,10 @@ package-artifacts.py 只用于自己构建并审阅的 xcarchive，会检查 app
 
 成功输出包含：
 
-- TideIsland.app：应用与嵌入扩展 / helper。
+- TideIsland.app：应用与嵌入扩展 / helper，Resources 含项目 LICENSE 与许可清单。
 - TideIsland-VERSION-BUILD-macos-ARCH.zip：可解压后移至稳定位置的应用归档。
-- TideIsland-bridge-VERSION-BUILD-macos-ARCH.zip：同一 helper 的独立命令行归档及版本标记。
-- release-manifest.json：版本、Git revision、SDK、架构、签名 / 公证步骤、组件和两个 ZIP 的 SHA-256 / 大小；不记录构建绝对目录或环境集合。
+- TideIsland-bridge-VERSION-BUILD-macos-ARCH.zip：同一 helper、版本标记、项目 LICENSE 与许可清单。
+- release-manifest.json：版本、Git revision、SDK、架构、签名 / 公证步骤、组件、两份 notices 和两个 ZIP 的 SHA-256 / 大小；不记录构建绝对目录或环境集合。
 
 只有成功写出 release-manifest 才表示打包步骤完成。失败保留中间输出供检查，下一次使用新目录，不自动覆盖或把半成品发布。脚本不创建 GitHub release、tag，也不执行安装；当前源代码提交不等于已经交付可安装版本。
 
@@ -67,6 +69,6 @@ python3 scripts/verify-artifacts.py --manifest /absolute/path/release-manifest.j
 
 ## 验证范围
 
-本地执行 `check-release.py --metadata-only` 的 11 项检查，覆盖版本生成漂移、错误 / 重复元数据、合成 Mach-O header、架构 / 提交 / 扩展版本不一致、helper 损坏 / 链接、ZIP 摘要和范围；没有执行任何合成二进制。
+本地执行 `check-release.py --metadata-only` 的 12 项检查，覆盖版本生成漂移、错误 / 重复元数据、合成 Mach-O header、架构 / 提交 / 扩展版本不一致、helper 损坏 / 链接、许可文本缺失 / 空白 / 编码 / 超限 / 链接、ZIP 摘要和范围；没有执行任何合成二进制。
 
-共享 CI 另外用实际编译的 bridge 核对 version / --version 和代码架构，合计 12 项发布元数据检查。本机 beta arm64 的 archive / ad hoc 签名、两个 ZIP 与安装启动已有独立实测；公证、外部分发和完整交互仍见 [统一验收](development-progress.md#6-macos-273-正式环境统一验收)。T027 的 [手动正式工作流](native-validation.md)仍未调度，本机已通过独立 beta 双配置编译。
+共享 CI 另外用实际编译的 bridge 核对 version / --version 和代码架构，合计 13 项发布元数据检查。本机 beta arm64 的 archive / ad hoc 签名、两个 ZIP 与安装启动已有独立实测；新许可交付修复继续执行同源归档验包，公证、外部分发和完整交互仍见 [统一验收](development-progress.md#6-macos-273-正式环境统一验收)。T027 的 [手动正式工作流](native-validation.md)仍未调度，本机已通过独立 beta 双配置编译。

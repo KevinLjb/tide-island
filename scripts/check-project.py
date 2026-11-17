@@ -67,9 +67,19 @@ def check():
     bridge_phase = bridge_phases[0]
     require(bridge_phase["shellPath"] == "/bin/bash" and bridge_phase["shellScript"] == '/bin/bash "$SRCROOT/scripts/build-embedded-bridge.sh"\n', "Incorrect bridge build command")
     require(int(bridge_phase["alwaysOutOfDate"]) == 1, "Bridge must rebuild when package sources change")
+    require(set(bridge_phase["inputPaths"]) == {
+        "$(SRCROOT)/scripts/build-embedded-bridge.sh",
+        "$(SRCROOT)/scripts/embed-bridge.py",
+        "$(SRCROOT)/scripts/release_metadata.py",
+        "$(SRCROOT)/LICENSE",
+        "$(SRCROOT)/THIRD_PARTY_NOTICES.md",
+        "$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)",
+    }, "Missing bridge / notice inputs")
     require(set(bridge_phase["outputPaths"]) == {
         "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/tide-island-bridge",
         "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/bridge-manifest.json",
+        "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/LICENSE",
+        "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/THIRD_PARTY_NOTICES.md",
     }, "Missing bridge outputs")
     for key in objects[app["buildConfigurationList"]]["buildConfigurations"]:
         require(objects[key]["buildSettings"]["ENABLE_USER_SCRIPT_SANDBOXING"] == "NO", "SwiftPM build phase requires its own DerivedFileDir scratch")

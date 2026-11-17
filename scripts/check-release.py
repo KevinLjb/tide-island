@@ -107,10 +107,38 @@ def main():
         helper.write_bytes(universal()); helper.chmod(0o755)
         resources = app / "Contents/Resources"
         resources.mkdir()
+        for name in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+            (resources / name).write_bytes((ROOT / name).read_bytes())
         manifest = resources / "bridge-manifest.json"
         manifest.write_text(json.dumps({"version": 1, "kind": "tide-island-embedded-bridge", "executable": helper.name, "sha256": hashlib.sha256(helper.read_bytes()).hexdigest()}))
         inspected = inspect_application(app, record, ["arm64", "x86_64"], revision)
         assert len(inspected["files"]) == 3 and inspected["signature_verified"] is False and inspected["native_runtime_verified"] is False
+        assert set(inspected["notices"]) == {"LICENSE", "THIRD_PARTY_NOTICES.md"}
+        checks += 1
+        for name in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+            notice = resources / name
+            original_notice = notice.read_bytes()
+            for invalid in (b"", b" \n\t", b"\xff", b"x" * 65537):
+                notice.write_bytes(invalid)
+                try:
+                    inspect_application(app, record)
+                    raise AssertionError("Invalid distribution notice was accepted")
+                except ValueError:
+                    pass
+            notice.unlink()
+            try:
+                inspect_application(app, record)
+                raise AssertionError("Missing distribution notice was accepted")
+            except OSError:
+                pass
+            notice.symlink_to(ROOT / name)
+            try:
+                inspect_application(app, record)
+                raise AssertionError("Linked distribution notice was accepted")
+            except OSError:
+                pass
+            notice.unlink()
+            notice.write_bytes(original_notice)
         checks += 1
         for architectures, source in [(["arm64"], revision), (["arm64", "x86_64"], "b" * 40)]:
             try:

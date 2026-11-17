@@ -131,6 +131,8 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland \
 
 版本从 VERSION.json 生成应用 / 扩展共享 xcconfig 和 CLI 常量。Release archive、应用 / CLI ZIP、签名、公证及摘要记录使用 [打包入口](docs/packaging.md)；本机 beta arm64 archive / ad hoc 包及本机安装启动已通过，正式交付尚未完成。
 
+应用 Resources 与独立 CLI ZIP 均附带项目 LICENSE 和 THIRD_PARTY_NOTICES.md；归档检查两份许可文本，发布清单记录其摘要，实际组件范围见[许可清单](THIRD_PARTY_NOTICES.md)。
+
 独立 [Native compile 手动工作流](docs/native-validation.md)需要专用正式环境 runner、审阅后的完整 SHA 与操作者确认；workflow 已注册，专用 runner 未注册且未调度原生任务。共享 CI 只检查来源和默认保护，不能据此宣称原生 Debug / Release 编译通过。
 
 本地已明确采用 beta 环境测试时，可使用验收脚本的 `--prerelease-environment-confirmed`，结果单独记录为 prerelease。它保留 clean SHA、SDK 和输出目录门禁；正式环境手动工作流继续只接受正式环境声明，具体用法见 [显式 beta 编译](docs/native-validation.md#显式-beta-编译)。

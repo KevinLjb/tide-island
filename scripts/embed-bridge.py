@@ -8,9 +8,11 @@ from pathlib import Path
 import plistlib
 import stat
 import tempfile
+from release_metadata import NOTICE_FILENAMES, read_regular
 
 
 MAXIMUM_BYTES = 64 * 1024 * 1024
+ROOT = Path(__file__).resolve().parent.parent
 
 
 def embed(binary, application):
@@ -38,6 +40,9 @@ def embed(binary, application):
         after = os.fstat(source.fileno())
         if len(data) != before.st_size or (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
             raise ValueError("The helper changed during embedding")
+    notices = {name: read_regular(ROOT / name, 65536) for name in NOTICE_FILENAMES}
+    if any(not data.decode("utf-8").strip() for data in notices.values()):
+        raise ValueError("Missing distribution notice text")
     helpers = contents / "Helpers"
     resources = contents / "Resources"
     for directory in (helpers, resources):
@@ -47,14 +52,16 @@ def embed(binary, application):
         if not stat.S_ISDIR(directory.lstat().st_mode):
             raise ValueError("Bundle outputs must use real directories")
     legacy_manifest = helpers / "bridge-manifest.json"
-    for target in (helpers / "tide-island-bridge", resources / "bridge-manifest.json", legacy_manifest):
+    for target in (helpers / "tide-island-bridge", resources / "bridge-manifest.json", legacy_manifest,
+                   *(resources / name for name in NOTICE_FILENAMES)):
         if target.is_symlink() or (target.exists() and not stat.S_ISREG(target.lstat().st_mode)):
             raise ValueError("Refusing a symlink or special output file")
     manifest = {
         "version": 1, "kind": "tide-island-embedded-bridge", "executable": "tide-island-bridge",
         "sha256": hashlib.sha256(data).hexdigest(),
     }
-    # Both files are individually atomic; inspection rejects an incomplete pair.
+    # Each output is individually atomic. Only a completed build is packaged;
+    # this is not a transaction across the helper, manifest and notices.
     with tempfile.TemporaryDirectory(prefix=".tide-island-embed-", dir=resources) as staging:
         staged = Path(staging)
         helper = staged / "tide-island-bridge"
@@ -65,6 +72,11 @@ def embed(binary, application):
         record.chmod(0o644)
         os.replace(helper, helpers / helper.name)
         os.replace(record, resources / record.name)
+        for name, notice_data in notices.items():
+            notice = staged / name
+            notice.write_bytes(notice_data)
+            notice.chmod(0o644)
+            os.replace(notice, resources / name)
     # Incremental builds can still contain our old metadata location. Helpers
     # is a code-only directory: an unsigned JSON there prevents outer signing.
     legacy_manifest.unlink(missing_ok=True)

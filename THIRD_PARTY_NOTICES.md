@@ -1,12 +1,12 @@
 # 第三方组件与许可清单
 
-核对日期：2026-11-17。本清单针对当前仓库源码及开发工具；原生归档和最终二进制尚未生成，分发包实际内含库仍须在 V003 验收时复核。
+核对日期：2026-11-18。本清单针对当前仓库源码、开发工具和已生成的 beta arm64 Release 包。首次实际 ZIP 清点只有本项目的 app / extension / helper 三份代码，没有另附 Frameworks 或动态库；其余架构、正式分发及新增依赖仍须单独复核。
 
 ## 当前随源码交付的内容
 
 TideIsland 自有源码使用根目录 [MIT License](LICENSE)，Copyright (c) 2026 Kevin.Liao。Swift Package 只有本仓库 target，未声明第三方 package；Xcode 仅引用本地 package，无远程 package 引用。没有内置 Codex / Wave 二进制、下载的 SDK、外部 npm / Python 包或第三方图片 / 字体。
 
-[Codex fixture](Tests/TideIslandCoreTests/Fixtures/Codex/lifecycle.json)与 [回放场景](Tests/TideIslandCoreTests/Fixtures/Replay/lifecycle.json)为仓库合成测试输入；文件记录审阅版本 / schema 名称，不是上游完整 schema 或用户会话的副本。版本常量与 xcconfig 由本项目脚本生成。当前没有需要随源码附带全文的第三方组件许可。
+`Tests/TideIslandCoreTests/Fixtures/Codex/lifecycle.json` 与 `Tests/TideIslandCoreTests/Fixtures/Replay/lifecycle.json` 为仓库合成测试输入；文件记录审阅版本 / schema 名称，不是上游完整 schema 或用户会话的副本。版本常量与 xcconfig 由本项目脚本生成。当前没有需要随源码附带全文的第三方组件许可。
 
 ## 运行环境与外部集成
 
@@ -32,4 +32,6 @@ TideIsland 自有源码使用根目录 [MIT License](LICENSE)，Copyright (c) 20
 
 增加 package / 资源 / 复制源码时，同一提交记录名称、精确版本或 commit、许可证、NOTICE / 修改要求和实际交付路径；不能把“参考思路”当成复制代码的许可。删除依赖时核对最终 app、extension、helper 与 ZIP 是否仍带有对应文件。
 
-正式发布前对实际归档做依赖与资源清点，按所含组件带上许可证、NOTICE 和本项目 LICENSE；[当前打包脚本](scripts/package-artifacts.py)不把本文的存在当作二进制许可检查或自动补齐所有声明。当前没有发布、签名 / 公证或最终包许可验收的结论。支持范围与格式维护见 [兼容清单](docs/compatibility.md)及 [开发进度](docs/development-progress.md)。
+构建阶段把本项目 LICENSE 与本清单写入 app 的 Contents/Resources，归档检查要求两份有界普通 UTF-8 文件；签名覆盖这些资源。独立 CLI ZIP 同样带上这两份文件，发布清单记录其 SHA-256 / 大小。首次 ZIP 缺少许可证的问题已由此流程修复，仍须用同源实际包验证。
+
+正式发布前继续按实际内含组件复核许可证、NOTICE 和修改要求；[打包脚本](https://github.com/KevinLjb/tide-island/blob/main/scripts/package-artifacts.py)不会因这两份文件存在就自动证明全部组件声明完整。当前已有 beta 本机 ad hoc 包及初步清点，尚未执行 Developer ID、公证或公开发布。支持范围与格式维护见[兼容清单](https://github.com/KevinLjb/tide-island/blob/main/docs/compatibility.md)及[开发进度](https://github.com/KevinLjb/tide-island/blob/main/docs/development-progress.md)。

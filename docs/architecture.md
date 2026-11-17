@@ -58,7 +58,7 @@ Debug 的 `--native-sdk-smoke` 显式模式通过真实 NativeActivityController
 
 配置管理只编辑指定的 `hooks.json`，保留 `config.toml` 中 notify、内联 hooks 和信任状态。专用分组正常升级时原地更新，卸载保留空分组，减少其他条目索引变化。文件安装与 Codex 信任审查、真实运行分别记录；完成 notify 的完整接入与共存仍由 T025 处理。命令、备份、并发边界和回退说明见 [hooks 配置管理](codex-hooks.md)。
 
-T024 的应用构建阶段按配置 / 架构生成 bridge，先处理 helper 签名，将可执行文件嵌入 Contents/Helpers、摘要清单写入 Contents/Resources，外层应用由 Xcode 签署。Helpers 只含代码，嵌入脚本清除旧位置清单并拒绝输出链接，避免真实签名失败。BundledBridge 只读检查包元数据、路径和有界文件完整性；`hooks install --app` 将 helper 摘要 / 应用版本加入预览指纹，应用前重验，移动后只修复受管 handler。它不执行 helper 或替代系统签名验证；beta 双配置编译已执行，后续签名与运行见 [bridge 交付](bridge-delivery.md)及开发进度。
+T024 的应用构建阶段按配置 / 架构生成 bridge，先处理 helper 签名，将可执行文件嵌入 Contents/Helpers、摘要清单和项目两份许可文本写入 Contents/Resources，外层应用由 Xcode 签署。Helpers 只含代码，嵌入脚本清除旧位置清单并拒绝输出链接，避免真实签名失败。归档检查许可文本及其摘要，独立 CLI ZIP 同样附带两份文本，发布清单分别记录资源与代码。BundledBridge 仍只读检查包元数据、路径和 helper 完整性；`hooks install --app` 将 helper 摘要 / 应用版本加入预览指纹，应用前重验，移动后只修复受管 handler。它不执行 helper 或替代系统签名验证；beta 双配置与本机签名已执行，真实运行见 [bridge 交付](bridge-delivery.md)及开发进度。
 
 T025 的独立 notify 共存以共享 NotifyDispatchConfiguration 保留既有 argv 的明确边界和缺失 / 空数组恢复标记；TOMLNotifyDocument 只编辑顶层 notify 值，CodexNotifyConfiguration 绑定内容与 bundle 证据。NotifyConfigurationFile 实现私有原始备份、锁、指纹及发布前复核；notify-config 暴露显式预览 / 应用。内部 callback 先写必要元数据，再用 Process 转发原 argv / JSON，不使用 shell、正文存储或基于 payload cwd 的目录切换，两个结果互不阻断，详见 [完成 notify 共存](notify-integration.md)。
 

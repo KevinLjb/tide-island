@@ -9,7 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
-from release_metadata import inspect_application, read_regular, version_record
+from release_metadata import NOTICE_FILENAMES, inspect_application, read_regular, version_record
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -108,6 +108,8 @@ def main():
     cli = args.output / ("TideIsland-bridge-" + suffix)
     cli.mkdir()
     shutil.copy2(helper, cli / "tide-island-bridge")
+    for name in NOTICE_FILENAMES:
+        shutil.copy2(app / "Contents/Resources" / name, cli / name)
     (cli / "version.json").write_text(json.dumps({"version": record["version"], "build": str(record["build"]), "source_revision": args.source_revision}, sort_keys=True) + "\n")
     cli_zip = args.output / (cli.name + ".zip")
     zip_directory(cli, cli_zip)
@@ -119,7 +121,8 @@ def main():
                 "source_revision": args.source_revision, "sdk_version": args.sdk_version, "architectures": architectures,
                 "signing": args.signing, "code_signatures_verified": signature_verified, "team_identifier": team,
                 "notarization": notarization, "native_runtime_verified": False, "bridge_execution": execution,
-                "validation_scope": inspection["scope"], "components": inspection["files"], "artifacts": artifacts}
+                "validation_scope": inspection["scope"], "components": inspection["files"],
+                "notices": inspection["notices"], "artifacts": artifacts}
     (args.output / "release-manifest.json").write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n")
     print(json.dumps({"status": "packaged", "version": record["version"], "build": str(record["build"]), "artifacts": len(artifacts),
                       "signing": args.signing, "notarization": notarization, "native_runtime_verified": False}))

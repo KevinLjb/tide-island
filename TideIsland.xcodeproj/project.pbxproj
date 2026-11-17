@@ -29,11 +29,16 @@
             "inputPaths" = (
                 "$(SRCROOT)/scripts/build-embedded-bridge.sh",
                 "$(SRCROOT)/scripts/embed-bridge.py",
+                "$(SRCROOT)/scripts/release_metadata.py",
+                "$(SRCROOT)/LICENSE",
+                "$(SRCROOT)/THIRD_PARTY_NOTICES.md",
                 "$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)",
             );
             "outputPaths" = (
                 "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/tide-island-bridge",
                 "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/bridge-manifest.json",
+                "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/LICENSE",
+                "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/THIRD_PARTY_NOTICES.md",
             );
             "name" = "Embed event bridge";
             "runOnlyForDeploymentPostprocessing" = 0;

@@ -118,6 +118,8 @@ URL scheme 只识别 `tide-island://session?id=...`；ID / URL 有界，拒绝�
 
 T026 从 VERSION.json 生成 Xcode / 共享 CLI 版本，应用与扩展记录归档 source revision；显式构建脚本先核对环境，再准备原生 archive、签名后 helper 清单、应用 / CLI ZIP 和无绝对路径的摘要记录。签名方式、可选公证、归档头部检查及 checksum 校验分别记录，产物元数据不证明原生运行；当前只执行共享 / 隔离检查，详见 [版本与打包](packaging.md)。
 
+T027 提供默认不运行的 workflow_dispatch 原生流水线与明确正式环境的执行脚本，绑定完整 reviewed SHA / clean source、真实环境数字检查及逐配置结果。Debug / Release 编译前后复核源，artifact / CLI version 检查与运行验收分离；共享 CI 只检查入口和来源保护，不调用 native tools。实际 runner / 构建未调度，详见 [原生验证入口](native-validation.md)。
+
 共享层测试覆盖协议、非法输入、隐私边界、重复 / 乱序事件、多会话隔离、URL 路由及损坏的 inbox 文件。工程结构检查核对文件成员、扩展嵌入和版本要求。
 
 原生目标必须另行完成：支持 SDK 的无签名编译、签名安装、启动 / 更新 / 结束 Activity、点击唤起 Wave、触摸、多屏、睡眠恢复和其他系统活动共存。这些项目在初始化阶段未通过实机验收。

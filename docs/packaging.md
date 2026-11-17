@@ -24,7 +24,7 @@ bash scripts/build-release.sh --output /absolute/path/to/NEW-output \
   --architectures universal --signing unsigned
 ```
 
-入口要求 clean 仓库、新的绝对输出目录及正确的生成版本，运行现有 SDK 27.3+ 检查后才创建输出。它不下载 SDK、接受许可、安装应用或写 Codex 配置；SDK 数字检查本身不能区分 beta / 正式，仍按当前安排由正式环境验收。
+入口要求 clean 仓库、新的绝对输出目录及正确的生成版本，输出放在仓库外或忽略的构建目录；归档后再次复核提交和 clean 状态，变化即停止打包。运行现有 SDK 27.3+ 检查后才创建输出。它不下载 SDK、接受许可、安装应用或写 Codex 配置；SDK 数字检查本身不能区分 beta / 正式，仍按当前安排由正式环境验收。
 
 Release archive 使用 Xcode app / extension 与 T024 的包内 bridge 构建阶段。默认 universal，另外可显式选择 arm64 / x86_64；scratch、DerivedData、xcarchive 和 native-build.log 都保留在指定输出中。当前没有执行这个原生阶段。
 
@@ -69,4 +69,4 @@ python3 scripts/verify-artifacts.py --manifest /absolute/path/release-manifest.j
 
 本地执行 `check-release.py --metadata-only` 的 11 项检查，覆盖版本生成漂移、错误 / 重复元数据、合成 Mach-O header、架构 / 提交 / 扩展版本不一致、helper 损坏 / 链接、ZIP 摘要和范围；没有执行任何合成二进制。
 
-共享 CI 另外用实际编译的 bridge 核对 version / --version 和代码架构，合计 12 项发布元数据检查。原生 archive、签名、公证、安装与完整包运行继续待 [统一验收](development-progress.md#6-macos-273-正式环境统一验收)，原生构建 CI 入口由 T027 接续。
+共享 CI 另外用实际编译的 bridge 核对 version / --version 和代码架构，合计 12 项发布元数据检查。原生 archive、签名、公证、安装与完整包运行继续待 [统一验收](development-progress.md#6-macos-273-正式环境统一验收)；T027 已准备 [独立手动原生编译入口](native-validation.md)，当前仍未调度或执行。

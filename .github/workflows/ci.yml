@@ -76,3 +76,4 @@ jobs:
         run: |
           python3 scripts/check-project.py
           python3 scripts/check-release.py --temporary-root "${{ runner.temp }}"
+          python3 scripts/check-native-entry.py

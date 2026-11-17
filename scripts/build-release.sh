@@ -27,6 +27,9 @@ while [ "$#" -gt 0 ]; do
 done
 case "$tide_output" in /*) ;; *) echo "Use an absolute output path" >&2; exit 2 ;; esac
 [ ! -e "$tide_output" ] && [ ! -L "$tide_output" ] || { echo "Output must be a new directory" >&2; exit 2; }
+case "$tide_output" in
+  "$tide_root"/*) git -C "$tide_root" check-ignore --quiet "$tide_output" || { echo "Use output outside the source or in an ignored build directory" >&2; exit 2; } ;;
+esac
 case "$tide_architectures" in universal) tide_xcode_archs="arm64 x86_64" ;; arm64|x86_64) tide_xcode_archs=$tide_architectures ;; *) exit 2 ;; esac
 case "$tide_signing" in
   unsigned|adhoc) [ -z "$tide_identity" ] && [ -z "$tide_notarize_profile" ] || exit 2 ;;
@@ -46,6 +49,7 @@ if ! /usr/bin/xcodebuild -project "$tide_root/TideIsland.xcodeproj" -scheme Tide
   echo "Native archive failed; inspect $tide_output/native-build.log" >&2
   exit 1
 fi
+[ "$(git -C "$tide_root" rev-parse HEAD)" = "$tide_revision" ] && [ -z "$(git -C "$tide_root" status --porcelain)" ] || { echo "Source changed during native archive; no package was made" >&2; exit 1; }
 tide_options=(--archive "$tide_output/TideIsland.xcarchive" --output "$tide_output/Package" --source-revision "$tide_revision" \
   --sdk-version "$tide_sdk" --architectures "$tide_architectures" --signing "$tide_signing")
 if [ -n "$tide_identity" ]; then tide_options+=(--identity "$tide_identity"); fi

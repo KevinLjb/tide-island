@@ -1,0 +1,67 @@
+name: Native compile (manual)
+
+"on":
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Full reviewed 40-character commit SHA
+        required: true
+        type: string
+      stable_environment_confirmed:
+        description: Confirm stable macOS and Xcode 27.3+ are ready
+        required: true
+        type: boolean
+        default: false
+      architectures:
+        description: Architectures to compile
+        required: true
+        type: choice
+        options:
+          - arm64
+          - universal
+        default: arm64
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    if: ${{ inputs.stable_environment_confirmed }}
+    runs-on: [self-hosted, macOS, ARM64, tide-island-native-27.3]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Verify reviewed source
+        env:
+          TIDE_NATIVE_REVIEWED_REVISION: ${{ inputs.revision }}
+        run: python3 scripts/native-validation.py --expected-revision "$TIDE_NATIVE_REVIEWED_REVISION" --check-request-only
+      - name: Check source contracts
+        run: |
+          python3 scripts/sync-version.py
+          python3 scripts/check-project.py
+          python3 scripts/check-native-entry.py
+      - name: Native Debug and Release compile
+        env:
+          TIDE_NATIVE_REVIEWED_REVISION: ${{ inputs.revision }}
+          TIDE_NATIVE_ARCHITECTURES: ${{ inputs.architectures }}
+        run: |
+          python3 scripts/native-validation.py --expected-revision "$TIDE_NATIVE_REVIEWED_REVISION" \
+            --output "$RUNNER_TEMP/tide-island-native-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --configuration both --architectures "$TIDE_NATIVE_ARCHITECTURES" --stable-environment-confirmed
+      - name: Retain native compile evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-compile-${{ inputs.revision }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/tide-island-native-${{ github.run_id }}-${{ github.run_attempt }}/native-validation.json
+            ${{ runner.temp }}/tide-island-native-${{ github.run_id }}-${{ github.run_attempt }}/*.log
+            ${{ runner.temp }}/tide-island-native-${{ github.run_id }}-${{ github.run_attempt }}/*.xcresult/**
+          if-no-files-found: ignore
+          retention-days: 7

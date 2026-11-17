@@ -125,20 +125,44 @@ private final class NativeActivityKitClient: IslandActivityClient {
         guard let activity = owned[identifier], sharedState(activity.activityState) == .active || sharedState(activity.activityState) == .stale else {
             throw ClientError.activityMissing
         }
-        await activity.update(ActivityContent(state: presentation.state, staleDate: presentation.staleAt))
+        try await Self.updateActivity(identifier, presentation: presentation)
     }
 
     func end(_ identifier: String) async throws {
         try Task.checkCancellation()
         guard let activity = owned[identifier] else { throw ClientError.activityMissing }
         guard sharedState(activity.activityState) != .unknown else { throw ClientError.activityMissing }
-        await activity.end(nil, dismissalPolicy: .immediate)
+        try await Self.endActivity(identifier)
         owned.removeValue(forKey: identifier)
         watchers.removeValue(forKey: identifier)?.cancel()
     }
 
+    // Activity is not Sendable in the 27.3 SDK. Pass only the Sendable ID and
+    // presentation across this boundary, then obtain an operation-local SDK
+    // handle. Actor-owned inventory / watcher handles are never sent to the
+    // SDK's concurrent update and end methods. The shared scheduler continues
+    // to serialize these operations and own cancellation / reconciliation.
+    nonisolated private static func updateActivity(_ identifier: String, presentation: IslandActivityPresentation) async throws {
+        try Task.checkCancellation()
+        guard let activity = Activity<TideIslandAttributes>.activities.first(where: { $0.id == identifier }),
+              activity.activityState == .active || activity.activityState == .stale else { throw ClientError.activityMissing }
+        await activity.update(ActivityContent(state: presentation.state, staleDate: presentation.staleAt))
+    }
+
+    nonisolated private static func endActivity(_ identifier: String) async throws {
+        try Task.checkCancellation()
+        guard let activity = Activity<TideIslandAttributes>.activities.first(where: { $0.id == identifier }) else { throw ClientError.activityMissing }
+        switch activity.activityState {
+        case .active, .stale, .ended, .dismissed: break
+        case .pending: throw ClientError.activityMissing
+        @unknown default: throw ClientError.activityMissing
+        }
+        await activity.end(nil, dismissalPolicy: .immediate)
+    }
+
     private func watch(_ activity: Activity<TideIslandAttributes>) {
-        guard watchers[activity.id] == nil, activity.activityState == .active || activity.activityState == .stale else { return }
+        guard watchers[activity.id] == nil,
+              activity.activityState == .pending || activity.activityState == .active || activity.activityState == .stale else { return }
         watchers[activity.id] = Task { [weak self] in
             for await _ in activity.activityStateUpdates {
                 guard !Task.isCancelled else { break }
@@ -153,6 +177,7 @@ private final class NativeActivityKitClient: IslandActivityClient {
         case .stale: .stale
         case .ended: .ended
         case .dismissed: .dismissed
+        case .pending: .unknown
         @unknown default: .unknown
         }
     }

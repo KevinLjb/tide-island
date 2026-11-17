@@ -1,6 +1,6 @@
 # 实时活动展示与客户端边界
 
-T016 将 Activity 展示数据、时间检查和基本自有活动控制移到共享层，以测试替身验证；ActivityKit 只留在原生适配中，真实 SDK、授权和系统显示仍待 macOS 27.3 统一验收。
+T016 将 Activity 展示数据、时间检查和基本自有活动控制移到共享层，以测试替身验证；ActivityKit 只留在原生适配中。当前 beta SDK 的编译进展见 [原生验收入口](native-validation.md)，正式 SDK、授权和系统显示分别验收。
 
 ## 共享展示数据
 
@@ -42,9 +42,9 @@ T023 的 [系统状态](system-status.md)将接口 / 权限、来源与上次交
 
 ## 原生适配源码
 
-`NativeActivityController` 委托共享调度器及其基本控制器；`NativeActivityKitClient` 在主 actor 使用公开 ActivityAuthorizationInfo、Activity.request、update、end，并保留本次请求 / 经主接收器授权接管的 SDK 对象。ContentState 与 staleDate 直接取共享投影，不在适配层重新计算计数或刷新时间。
+`NativeActivityController` 委托共享调度器及其基本控制器；`NativeActivityKitClient` 在主 actor 管理授权、request、归属与监听，并保留本次请求 / 经主接收器授权接管的 SDK 对象。27.3 SDK 的 Activity 不是 Sendable，update / end 的异步辅助方法只接收 ID / 共享展示值，在非隔离调用域重新取 SDK 句柄、复核状态后调用；主 actor 字典的句柄不跨该并发边界。ContentState 与 staleDate 直接取共享投影，不在适配层重新计算计数或刷新时间。
 
-T016 重构本身没有新增 Native 文件，两个 target 的共享声明和本地 package 依赖保持现有结构。原生类型别名、客户端隔离、授权、系统生命周期和显示效果均未编译 / 运行；工程结构检查只确认文件和 target，不代替这些验收。
+T016 重构本身没有新增 Native 文件，两个 target 的共享声明和本地 package 依赖保持现有结构。后续 V002 已开始实际 beta SDK 编译，客户端隔离修复的开发态 Debug 通过；精确 clean SHA 双配置结果以 [进度](development-progress.md)为准。授权、系统生命周期和显示效果仍需运行验收，工程结构检查不能替代。
 
 ## 验证与后续
 

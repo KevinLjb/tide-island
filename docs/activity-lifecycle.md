@@ -28,6 +28,8 @@ SDK 列表、进程观察和 inbox 锁并非同一个系统事务。上述规则
 
 公开 activityEnablementUpdates、activityUpdates 和每个已管理活动的 activityStateUpdates 仅触发重新协调。原生先重读 inbox，使用重新确认的帧和源端序号提交 `forceReconciliation`，不直接拿唤醒前缓存当成当前来源。监听使用可取消任务，没有固定轮询。
 
+27.3 beta SDK 的 pending 显式映射为共享 unknown，继续保留整份清单的保守校验；原生仍监听 pending 的后续状态变化，取得可确认状态后由既有来源 / 权威链重新协调。update / end 的 SDK 句柄隔离修复及实际编译范围见 [原生验收入口](native-validation.md)。
+
 强制标志与 scope 绑定同一有序输入：迟到序号不能改变权威；pending 被更晚普通快照替换时保留强制协调。强制协调绕过去重及普通限频，已发出 SDK 操作仍先完成，随后串行处理最新输入。
 
 检测到当前活动 dismissed，或发现与当前展示内容相同的 dismissed 遗留记录时，在进程内记住原状态，结束其他重复活动，按 sessionID、phase、计数和原观察时间抑制相同观察的立即重建，忽略显示名差异。临时空来源、清单移除记录后仍保留该抑制。新的观察 / 聚合状态（包含原观察时间）可恢复活动，T021 的显示名切换不重建刚关闭的相同观察，不修改会话忽略 / 已读偏好。

@@ -82,6 +82,8 @@ T025 的独立 notify 共存以共享 NotifyDispatchConfiguration 保留既有 a
 
 T017 的共享 IslandActivityScheduler 接收源端单调序号，拒绝迟到提交，只保留一个最新 pending；SDK 操作串行，展示 / 截止相同则去重，普通变化按单调时钟作 1 秒开发限频，待处理增加或失去确认可打断等待。失败后的去重缓存视为不确定，只在新输入恢复；原生改为提交快照并订阅响应流，详见 [活动更新调度](activity-delivery.md)。这些间隔及共享预算不代表正式 SDK 限额或能耗已验收。
 
+V011 已对 beta arm64 Release 的空闲进程采样 120 秒，记录 CPU、resident / physical footprint、唤醒计数及磁盘变化，见[资源基线](performance.md)。该结果只覆盖未接入真实事件的空闲条件，持续开发、多会话和能耗仍待实测。
+
 T018 通过有界完整清单接管唯一活动、清理重复、响应授权及系统状态变化；只有健康主接收器可导入遗留活动，原生同时排除另一个运行实例。用户系统关闭后抑制相同展示的立即重建；强制同步保留源序号 / scope，退出拒绝新输入、等待进行中操作、在释放接收器前清理。未知清单完整保留，原生多实例 / 监听 / 退出仍待验证，详见 [活动生命周期](activity-lifecycle.md)。
 
 27.3 beta SDK 的 Activity 句柄没有 Sendable 声明，异步 update / end 属于并发调用边界。原生客户端在 MainActor 保留归属及监听，只将 ID 与共享展示值传入非隔离的异步辅助方法，在调用域内重新取得 SDK 句柄并复核状态；不把 actor 字典中的句柄发送到该边界。缺失目标继续明确失败，shared scheduler 的串行、取消及重新协调规则保持。SDK 新增 pending 显式映射为共享 unknown，保留保守处理，真实生命周期仍待实测。

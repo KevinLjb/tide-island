@@ -66,6 +66,7 @@ docs/notify-integration.md    完成 notify 共存、argv 边界与可撤销局�
 docs/installation.md          统一配置安装 / 升级 / 卸载、数据选择与回退
 docs/packaging.md             版本生成、归档 / 签名 / 公证与 ZIP 一致性
 docs/native-validation.md     独立手动原生编译、来源保护和实际报告范围
+docs/performance.md           本机空闲资源基线、计数单位与未验证负载
 docs/diagnostics.md           按需元数据诊断、离线清单、私有导出与合成回放
 docs/compatibility.md         平台、固定外部契约与各项数据格式版本
 docs/migrations.md            升级、未知格式保留、清除边界与降级限制

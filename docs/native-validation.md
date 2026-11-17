@@ -111,7 +111,7 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland -configuration Debug
 
 只有 JSON 的 status 为 passed 且五项验证均为 true 才表示这个前台合成生命周期已通过。visible_island_verified 和 real_session_integration_verified 持续为 false；扩展实际渲染、点击 / 触摸、真实 Codex 链路、背景创建、睡眠 / 重启和能耗仍分别执行 V004—V011。
 
-本机开发态重跑已验证：ad hoc 单体 Debug 能加载并正常退出，inbox 文件元数据未改变；当前自动启动未能在五秒内确认应用进入前台，报告 foreground-activation-timeout、cleanup_verified 为 true、四项 SDK 操作为 false，尚未请求活动。此结果只证明前置条件失败时正确报告并退出；不能算作 SDK 生命周期通过，也未确认前台不可用的系统原因。后续以 clean SHA 的独立报告复核。
+本机开发态及 clean SHA `e9ce743386d38942cd2a97bf084d2bf11319637f` 重跑均确认：ad hoc 单体 Debug 能加载并正常退出，inbox 文件元数据未改变；当前自动启动未能在五秒内确认应用进入前台，报告 foreground-activation-timeout、cleanup_verified 为 true、四项 SDK 操作为 false，尚未请求活动。clean 报告 sdk-e9ce743386d3-a4120918/native-smoke-validation.json 保留实际 SDK status failed；验收只将这次前置条件报告与正常退出记为已观察，SDK 生命周期持续 blocked。没有确认前台不可用的系统原因，不能把这项门禁检查通过写成生命周期通过。
 
 ## 报告与验收
 

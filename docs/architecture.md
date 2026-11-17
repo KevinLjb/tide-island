@@ -122,7 +122,7 @@ T026 从 VERSION.json 生成 Xcode / 共享 CLI 版本，应用与扩展记录�
 
 T027 提供默认不运行的 workflow_dispatch 原生流水线与明确正式环境的执行脚本，绑定完整 reviewed SHA / clean source、真实环境数字检查及逐配置结果。Debug / Release 编译前后复核源，artifact / CLI version 检查与运行验收分离；共享 CI 只检查入口和来源保护，不调用 native tools。实际 runner / 构建未调度，详见 [原生验证入口](native-validation.md)。
 
-V001 新增只读 `native_environment.py`，通过四个固定版本查询分别报告 host / Xcode / SDK 与全部可确认问题，不保存原始工具错误，不接受许可或修改系统。独立调用无需源码 / 正式版声明；实际 native-validation 仍先经过正式环境声明与精确 clean source 门禁，再复用预检。数字条件就绪与 release_channel 未核验分别记录，不能据此宣称正式环境或编译 / 运行通过，见 [环境与公开 API 初核](native-validation.md#只读环境预检)。
+V001 新增只读 `native_environment.py`，通过四个固定版本查询分别报告 host / Xcode / SDK 与全部可确认问题，不保存原始工具错误，不接受许可或修改系统。独立调用无需源码 / 发行渠道声明；实际 native-validation 先要求互斥的正式或 prerelease 声明与精确 clean source，再复用预检。V002 本地 beta 验证明确输出 validation_channel 与两项互斥声明，保留同一版本 / 来源 / 输出和逐配置证据；手动 native workflow 仍只允许正式环境。数字条件就绪与 release_channel 未核验分别记录，不能据此宣称正式环境或编译 / 运行通过，见 [环境与公开 API 初核](native-validation.md#只读环境预检)。
 
 T029 将平台目标、已审阅外部契约和实际测试环境集中在 [兼容清单](compatibility.md)。事件、位置、checkpoint、显示设置、配置 wrapper 与发布清单分开版本化；未知格式失败保留、只读加载不迁移、必要保存才更新及降级限制见 [迁移说明](migrations.md)。[许可清单](../THIRD_PARTY_NOTICES.md)区分当前无第三方 package 的源码与系统 / 外部 / CI 环境，实际二进制内含库留待归档验收。
 

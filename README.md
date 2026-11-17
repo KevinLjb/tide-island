@@ -129,6 +129,8 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland \
 
 独立 [Native compile 手动工作流](docs/native-validation.md)需要专用正式环境 runner、审阅后的完整 SHA 与操作者确认；workflow 已注册，专用 runner 未注册且未调度原生任务。共享 CI 只检查来源和默认保护，不能据此宣称原生 Debug / Release 编译通过。
 
+本地已明确采用 beta 环境测试时，可使用验收脚本的 `--prerelease-environment-confirmed`，结果单独记录为 prerelease。它保留 clean SHA、SDK 和输出目录门禁；正式环境手动工作流继续只接受正式环境声明，具体用法见 [显式 beta 编译](docs/native-validation.md#显式-beta-编译)。
+
 ## 发送一个事件
 
 ```bash

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Explicit native compile validation for a reviewed commit on a stable host."""
+"""Explicit native compile validation for a reviewed commit and declared channel."""
 import argparse
 import json
 import platform
@@ -15,9 +15,10 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 class GateFailure(Exception):
-    def __init__(self, code, environment=None):
+    def __init__(self, code, environment=None, attestation=None):
         super().__init__(code)
         self.environment = environment
+        self.attestation = attestation
 
 
 def read_command(words):
@@ -41,17 +42,29 @@ def source_request(revision):
             "native_compile_verified": False, "native_runtime_verified": False}
 
 
+def environment_attestation(*, stable, prerelease):
+    if not stable and not prerelease:
+        raise GateFailure("environment-attestation-required")
+    if stable and prerelease:
+        raise GateFailure("conflicting-environment-attestations")
+    return {"validation_channel": "stable" if stable else "prerelease",
+            "operator_attested_stable_environment": stable,
+            "operator_attested_prerelease_environment": prerelease}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-revision", required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--configuration", choices=["Debug", "Release", "both"], default="both")
     parser.add_argument("--architectures", choices=["arm64", "x86_64", "universal"], default="arm64")
-    parser.add_argument("--stable-environment-confirmed", action="store_true")
+    channel = parser.add_mutually_exclusive_group()
+    channel.add_argument("--stable-environment-confirmed", action="store_true")
+    channel.add_argument("--prerelease-environment-confirmed", action="store_true", help="Explicit beta compile only; does not complete stable acceptance")
     parser.add_argument("--check-request-only", action="store_true")
     args = parser.parse_args()
-    if not args.check_request_only and not args.stable_environment_confirmed:
-        raise GateFailure("stable-environment-attestation-required")
+    attestation = None if args.check_request_only else environment_attestation(
+        stable=args.stable_environment_confirmed, prerelease=args.prerelease_environment_confirmed)
     request = source_request(args.expected_revision)
     if args.check_request_only:
         print(json.dumps(request)); return
@@ -64,7 +77,7 @@ def main():
             raise GateFailure("output-must-be-outside-source-or-ignored")
     environment = inspect_environment()
     if environment["status"] != "ready":
-        raise GateFailure("native-environment-blocked", environment)
+        raise GateFailure("native-environment-blocked", environment, attestation)
     system, sdk = environment["host_version"], environment["sdk_version"]
     xcode = "Xcode " + environment["xcode_version"] + "\nBuild version " + environment["xcode_build"]
     # The numeric checks do not identify beta vs stable; the operator assertion
@@ -75,7 +88,7 @@ def main():
     configurations = ["Debug", "Release"] if args.configuration == "both" else [args.configuration]
     report = {"schema_version": 1, "status": "running", "source_revision": args.expected_revision,
               "version": record["version"], "build": str(record["build"]), "host_system": system, "sdk_version": sdk,
-              "xcode": xcode, "environment": environment, "operator_attested_stable_environment": True, "architectures": architectures,
+              "xcode": xcode, "environment": environment, **attestation, "architectures": architectures,
               "configurations": {}, "signing_requested": False, "native_compile_verified": False, "native_runtime_verified": False}
     args.output.mkdir(parents=True, exist_ok=False)
     report_path = args.output / "native-validation.json"
@@ -114,14 +127,14 @@ def main():
             row["status"] = "failed"
             row["failure_code"] = str(error) if isinstance(error, GateFailure) else "native-check-incomplete"
             report["status"] = "failed"; save()
-            print(json.dumps({"status": "failed", "configuration": configuration, "failure_code": row["failure_code"],
+            print(json.dumps({"status": "failed", **attestation, "configuration": configuration, "failure_code": row["failure_code"],
                               "native_compile_verified": False, "native_runtime_verified": False}))
             return 1
         save()
     report["status"] = "passed"; report["native_compile_verified"] = True
     report["both_configurations_verified"] = configurations == ["Debug", "Release"]
     save()
-    print(json.dumps({"status": "passed", "scope": "native-compile-and-artifact-metadata", "configurations": configurations,
+    print(json.dumps({"status": "passed", "scope": "native-compile-and-artifact-metadata", **attestation, "configurations": configurations,
                       "native_compile_verified": True, "native_runtime_verified": False}))
     return 0
 
@@ -133,5 +146,7 @@ if __name__ == "__main__":
         report = {"status": "blocked", "failure_code": str(error), "native_compile_verified": False, "native_runtime_verified": False}
         if error.environment is not None:
             report["environment"] = error.environment
+        if error.attestation is not None:
+            report.update(error.attestation)
         print(json.dumps(report))
         sys.exit(2)

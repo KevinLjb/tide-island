@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Validate manual native workflow / request guards without invoking native tools."""
 import argparse
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
 import sys
+from unittest.mock import Mock, patch
 from native_environment import COMMANDS, inspect_environment
 
 
@@ -69,6 +71,47 @@ def check_environment_guards():
     return 10
 
 
+def check_channel_attestations():
+    spec = importlib.util.spec_from_file_location("native_validation_checks", ROOT / "scripts/native-validation.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    stable = module.environment_attestation(stable=True, prerelease=False)
+    beta = module.environment_attestation(stable=False, prerelease=True)
+    assert stable == {"validation_channel": "stable", "operator_attested_stable_environment": True, "operator_attested_prerelease_environment": False}
+    assert beta == {"validation_channel": "prerelease", "operator_attested_stable_environment": False, "operator_attested_prerelease_environment": True}
+    for declaration in [stable, beta]:
+        output = Mock()
+        output.is_absolute.return_value = True
+        output.exists.return_value = False
+        output.is_symlink.return_value = False
+        output.resolve.return_value = output
+        output.is_relative_to.return_value = False
+        args = argparse.Namespace(expected_revision="a" * 40, output=output, check_request_only=False,
+                                  stable_environment_confirmed=declaration["operator_attested_stable_environment"],
+                                  prerelease_environment_confirmed=declaration["operator_attested_prerelease_environment"])
+        environment = {"status": "blocked", "issues": [{"component": "sdk", "code": "tool-unavailable"}]}
+        with patch.object(module.argparse.ArgumentParser, "parse_args", return_value=args), \
+             patch.object(module, "source_request") as source, \
+             patch.object(module, "inspect_environment", return_value=environment) as inspect, \
+             patch.object(module, "read_command", side_effect=AssertionError("Unexpected build or source command")):
+            try:
+                module.main()
+                raise AssertionError("Blocked environment was accepted")
+            except module.GateFailure as error:
+                assert str(error) == "native-environment-blocked" and error.environment == environment
+                assert error.attestation == declaration
+            source.assert_called_once_with("a" * 40)
+            inspect.assert_called_once_with()
+            output.mkdir.assert_not_called()
+    for value, code in [(False, "environment-attestation-required"), (True, "conflicting-environment-attestations")]:
+        try:
+            module.environment_attestation(stable=value, prerelease=value)
+            raise AssertionError("Missing or conflicting attestation was accepted")
+        except module.GateFailure as error:
+            assert str(error) == code
+    return 4
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skip-request-check", action="store_true", help="Only source checks while editing; CI must not use this")
@@ -88,13 +131,15 @@ def main():
     assert checkout["with"]["ref"] == "${{ inputs.revision }}" and checkout["with"]["persist-credentials"] is False
     compile_step = next(step for step in job["steps"] if step.get("name") == "Native Debug and Release compile")
     assert "--configuration both" in compile_step["run"] and "--stable-environment-confirmed" in compile_step["run"]
+    assert "--prerelease-environment-confirmed" not in compile_step["run"]
     assert "${{ inputs.revision }}" not in compile_step["run"]
     assert not any("--notarize-profile" in step.get("run", "") or "integration install" in step.get("run", "") for step in job["steps"])
     script = ROOT / "scripts/native-validation.py"
     blocked = subprocess.run([sys.executable, str(script), "--expected-revision", "0" * 40], capture_output=True, text=True, cwd=ROOT)
-    assert blocked.returncode == 2 and json.loads(blocked.stdout)["failure_code"] == "stable-environment-attestation-required"
+    assert blocked.returncode == 2 and json.loads(blocked.stdout)["failure_code"] == "environment-attestation-required"
     environment_checks = check_environment_guards()
-    checks = 2 + environment_checks
+    attestation_checks = check_channel_attestations()
+    checks = 2 + environment_checks + attestation_checks
     if not args.skip_request_check:
         revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         valid = subprocess.run([sys.executable, str(script), "--expected-revision", revision, "--check-request-only"], capture_output=True, text=True, cwd=ROOT)
@@ -107,6 +152,7 @@ def main():
         checks += 3
     print(json.dumps({"status": "passed", "checks": checks, "scope": "native-workflow-source-request-and-isolated-environment", "request_checked": not args.skip_request_check,
                       "environment_fixture_checks": environment_checks, "native_environment_queried": False,
+                      "attestation_fixture_checks": attestation_checks,
                       "native_compile_verified": False, "native_runtime_verified": False}))
 
 

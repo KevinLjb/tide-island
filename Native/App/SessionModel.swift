@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import Foundation
 import TideIslandCore
+import UniformTypeIdentifiers
 
 @MainActor
 final class SessionModel: ObservableObject {
@@ -15,6 +16,7 @@ final class SessionModel: ObservableObject {
     @Published private(set) var loginBusy = false
     @Published private(set) var loginItemState = LoginItemState.disabled
     @Published private(set) var systemStatusBusy = false
+    @Published private(set) var diagnosticMessage: String?
     @Published private var activityAvailability = NativeActivityAvailability.unknown
     @Published private var notificationAuthorization: SessionReminderAuthorization?
     @Published private var activityProblem: IslandActivityError?
@@ -47,6 +49,9 @@ final class SessionModel: ObservableObject {
     private var returnRevision: UInt64 = 0
     private var returnMessage: String?
     private var channelMessage: String?
+    private var diagnosticFrame: InboxFrame?
+    private var diagnosticFrameReceivedAt: Date?
+    private var lastDiagnosticWaveReturn: DiagnosticWaveReturn?
 
     init() {
         preferences = preferenceStore.document.preferences
@@ -325,6 +330,9 @@ final class SessionModel: ObservableObject {
                 return
             }
             let result = await waveReturn.returnToWave(for: reference)
+            // Keep only the real action's enum result, even if the selected
+            // row changes before its UI message can be shown. No identity/log.
+            lastDiagnosticWaveReturn = try? DiagnosticWaveReturn(result: result, at: Date())
             guard !Task.isCancelled, returnRevision == revision else { return }
             let current = await receiver.current()
             guard !Task.isCancelled, returnRevision == revision else { return }
@@ -348,6 +356,10 @@ final class SessionModel: ObservableObject {
 
     private func publish(_ frame: InboxFrame) {
         guard !stopping else { return }
+        // Health / persistence can change without changing the snapshot. Keep
+        // every received frame before the activity submission equality guard.
+        diagnosticFrame = frame
+        diagnosticFrameReceivedAt = Date()
         channelMessage = frame.persistence.message ?? frame.health.message ?? frame.notice
         refreshStatusMessage()
         channelNeedsRecovery = frame.health.state != .healthy || frame.persistence.phase == .unavailable
@@ -359,6 +371,32 @@ final class SessionModel: ObservableObject {
         let force = requiresActivityReconciliation
         requiresActivityReconciliation = false
         submitActivity(force: force)
+    }
+
+    func exportDiagnostics() {
+        guard !stopping else { return }
+        diagnosticMessage = nil
+        do {
+            let now = Date()
+            let system = DiagnosticSystemStatus(activity: activityAvailability, activityProblem: activityProblem,
+                remindersEnabled: preferences.reminders.enabled, notificationAuthorization: notificationAuthorization,
+                reminderProblem: reminderProblem, login: loginItemState)
+            let report = try DiagnosticReport.live(frame: diagnosticFrame, frameReceivedAt: diagnosticFrameReceivedAt,
+                at: now, waveReturn: lastDiagnosticWaveReturn, system: system)
+            let panel = NSSavePanel()
+            panel.title = "导出诊断"
+            panel.message = "仅包含版本、汇总数量、时间和状态码；请选择新的文件。"
+            panel.allowedContentTypes = [.json]
+            panel.canCreateDirectories = true
+            let stamp = ISO8601DateFormatter().string(from: now).replacingOccurrences(of: ":", with: "-")
+            panel.nameFieldStringValue = "TideIsland-diagnostics-\(stamp).json"
+            guard panel.runModal() == .OK, !stopping, let destination = panel.url else { return }
+            let dataRoot = try EventInbox.applicationDefault().directory.deletingLastPathComponent()
+            try DiagnosticExport.write(report, to: destination, excluding: [dataRoot])
+            diagnosticMessage = "诊断已导出，可查看文件后自行分享。"
+        } catch {
+            diagnosticMessage = "诊断未导出。请在应用数据目录之外选择新的文件名，并检查目录是否可写。"
+        }
     }
 
     private func submitActivity(force: Bool = false) {

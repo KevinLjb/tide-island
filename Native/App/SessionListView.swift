@@ -70,6 +70,9 @@ struct SessionListView: View {
             if let message = model.statusMessage {
                 Text(message).font(.callout).foregroundStyle(.secondary).accessibilityLabel(message)
             }
+            if let message = model.diagnosticMessage {
+                Text(message).font(.callout).foregroundStyle(.secondary).accessibilityLabel(message)
+            }
         }
         .padding(20)
         .frame(minWidth: 420, minHeight: 340)
@@ -98,6 +101,7 @@ struct SessionListView: View {
         Menu("管理") {
             SettingsLink { Text("设置…") }
             Button("加载演示会话") { model.loadDemo() }
+            Button("导出诊断…") { model.exportDiagnostics() }
             Divider()
             Button("预览历史清理") { model.previewCleanup() }
             if let plan = model.cleanupPlan {

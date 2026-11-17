@@ -116,7 +116,7 @@ URL scheme 只识别 `tide-island://session?id=...`；ID / URL 有界，拒绝�
 
 ## 验证边界
 
-T028 的 DiagnosticReport 只投影版本、时间、汇总与固定原因，事件 / session / navigation reference 不进入报告。CLI 默认版本模式，仅显式 inbox 才以现有完整有界读取生成离线清单，不创建 receiver / checkpoint 或重放 reset 抑制历史。共享 live 投影保留帧时间、来源健康、持久化和系统缓存问题，实际 Wave 结果先去身份再保留单次观察；导出只创建数据根之外的私有新文件。诊断不上传、不证明原生运行，详见 [诊断与回放](diagnostics.md)。
+T028 的 DiagnosticReport 只投影版本、时间、汇总与固定原因，事件 / session / navigation reference 不进入报告。CLI 默认版本模式，仅显式 inbox 才以现有完整有界读取生成离线清单，不创建 receiver / checkpoint 或重放 reset 抑制历史。应用在每次 publish 去重前缓存帧及接收时间，Wave 实际返回先去身份再保留单次观察；管理菜单仅在用户动作时组装共享 live 报告、读取系统缓存并打开保存面板，创建数据根之外的私有新文件。诊断不重连、不上传、不证明原生运行，详见 [诊断与回放](diagnostics.md)。
 
 T026 从 VERSION.json 生成 Xcode / 共享 CLI 版本，应用与扩展记录归档 source revision；显式构建脚本先核对环境，再准备原生 archive、签名后 helper 清单、应用 / CLI ZIP 和无绝对路径的摘要记录。签名方式、可选公证、归档头部检查及 checksum 校验分别记录，产物元数据不证明原生运行；当前只执行共享 / 隔离检查，详见 [版本与打包](packaging.md)。
 

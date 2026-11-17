@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T027 已准备 [独立手动原生验证入口](docs/native-validation.md)，完整 SHA、正式环境声明、专用 runner 和逐配置报告分开记录。[共享 CI](https://github.com/KevinLjb/tide-island/actions/runs/43987268949) 实际执行 405 项测试，入口 / 来源检查通过。当前未调度原生机器、编译 / 签名 / 公证或安装，仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T028 的必要元数据诊断与 CLI 离线清单已通过 [共享 CI](https://github.com/KevinLjb/tide-island/actions/runs/43989656395)，实际执行 419 项测试；应用导出菜单源码接入。T027 的 [独立手动原生验证入口](docs/native-validation.md)保留完整 SHA、正式环境声明与逐配置报告。当前未调度原生机器、编译 / 签名 / 公证或安装，仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 
@@ -62,6 +62,7 @@ docs/notify-integration.md    完成 notify 共存、argv 边界与可撤销局�
 docs/installation.md          统一配置安装 / 升级 / 卸载、数据选择与回退
 docs/packaging.md             版本生成、归档 / 签名 / 公证与 ZIP 一致性
 docs/native-validation.md     独立手动原生编译、来源保护和实际报告范围
+docs/diagnostics.md           按需元数据诊断、离线清单、私有导出与合成回放
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -72,6 +73,7 @@ Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共
 swift test
 swift build --product tide-island-bridge
 python3 scripts/check-bridge.py
+python3 scripts/check-diagnostics.py
 python3 scripts/check-hooks.py
 python3 scripts/check-delivery.py
 python3 scripts/check-notify.py
@@ -133,7 +135,7 @@ CLI 将事件原子写入 `~/Library/Application Support/TideIsland/Events/`，�
 
 ## 回放生命周期事件
 
-按需诊断可使用 `tide-island-bridge diagnostics`，默认只报告版本；显式 inbox 才检查离线文件汇总，不生成实时会话或导出身份。私有新文件导出、错误码及回放边界见 [诊断与回放](docs/diagnostics.md)，当前共享实现待本轮 CI，原生菜单入口继续开发。
+按需诊断可使用 `tide-island-bridge diagnostics`，默认只报告版本；显式 inbox 才检查离线文件汇总，不生成实时会话或导出身份。应用「管理 → 导出诊断…」源码使用当前缓存，私有新文件导出、错误码及回放边界见 [诊断与回放](docs/diagnostics.md)。419 项共享测试和隔离 CLI 通过 CI，原生菜单交互待 27.3。
 
 ```bash
 swift run tide-island-bridge replay \

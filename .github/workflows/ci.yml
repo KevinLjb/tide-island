@@ -20,6 +20,7 @@ jobs:
         run: |
           swift --version
           python3 scripts/sync-version.py
+          python3 scripts/swift_test_summary.py --check-fixtures
       - name: Test shared logic
         env:
           TIDE_ISLAND_TEST_TMPDIR: ${{ runner.temp }}/tide-island-tests
@@ -32,15 +33,16 @@ jobs:
           import re
           import sys
           from pathlib import Path
+          sys.path.insert(0, str(Path("scripts").resolve()))
+          from swift_test_summary import verified_test_count
 
           tide_log = Path(os.environ["RUNNER_TEMP"]) / "tide-island-swift-test.log"
           lines = tide_log.read_text().splitlines()
           if sys.argv[1] == "0":
-              counts = [int(value) for value in re.findall(r"Test run with (\d+) tests? passed", "\n".join(lines))]
               declared = sum(len(re.findall(r"(?m)^\s*@Test\b", path.read_text()))
                              for path in Path("Tests/TideIslandCoreTests").rglob("*.swift"))
-              assert counts and declared > 0 and max(counts) >= declared, "Missing or incomplete Swift Testing summary"
-              print(f"::notice title=Shared logic tests::Tests executed: {max(counts)}; declared functions: {declared}.")
+              executed = verified_test_count("\n".join(lines), declared)
+              print(f"::notice title=Shared logic tests::Tests executed: {executed}; declared functions: {declared}.")
           else:
               excerpts = []
               seen = set()

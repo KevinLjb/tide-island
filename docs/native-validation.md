@@ -93,3 +93,5 @@ native-validation.json 只有在环境 / 版本门禁通过并开始编译后创
 native_runtime_verified 始终为 false，signing_requested 为 false。归档元数据不能验证 loader / 正式 API 语义；编译 / CLI version 成功也不能填上系统岛、触摸、VoiceOver 或性能结果。将实际报告及其 commit 关联回 [统一验收清单](development-progress.md#6-macos-273-正式环境统一验收)，再继续 V003—V012。
 
 `--check-request-only` 只核对来源，输出 scope: source-request-only，两个 native 标记均为 false。共享 CI 的 [入口检查](../scripts/check-native-entry.py)通过 Ruby 标准 YAML parser 核对手动 / 默认关闭 / runner / read-only 权限结构，并实际检查精确 SHA、无效 / 错误 SHA 和未确认时先阻止；另用 10 组隔离替身覆盖环境就绪、多项版本不足、许可、工具缺失、超时、未知版本 / build、超量输出、非 Mac 与其他工具错误，4 组独立声明检查覆盖 stable、prerelease、缺失与冲突，并验证环境被拒时仍保留渠道、未创建编译输出。CI 中这些检查不查询真实 SDK、不执行真实 xcodebuild，也不接受许可。
+
+Xcode 27.3 的 Swift 6.4 会输出带 `in 0 suites` 的成功摘要。本机首次实际运行已执行 419 项，但旧计数检查未识别新格式；现由 CI 与本机共用 [摘要校验工具](../scripts/swift_test_summary.py)，用 9 组 fixture 保留零测试、未完整执行和失败摘要的拒绝条件，不放松实际数量守卫。该兼容修复本身不证明原生应用已编译。

@@ -95,9 +95,12 @@ python3 scripts/check-replay.py
 python3 scripts/check-inbox.py
 python3 scripts/check-state.py
 python3 scripts/check-project.py
+python3 scripts/swift_test_summary.py --check-fixtures
 ```
 
 `check-project.py` 核对 plist、target、扩展嵌入、共享源码和版本约束，仅代表工程结构检查，不替代原生编译。GitHub Actions 使用标准 `macos-15-intel` runner 运行共享层及结构验证；Intel 共享检查不替代本机架构或 macOS 27.3 原生验证。
+
+共享测试保留 Swift 的原始退出码，并通过 `swift_test_summary.py` 核对正向实际执行数量与源码声明数量；兼容带 / 不带 suites 的 Swift Testing 摘要，XCTest 的零测试提示不能替代这项证据。
 
 隔离 CLI 验证使用 Python 3.11+；CI 固定 Python 3.13，以标准 tomllib 独立核对 notify 配置。应用与 bridge 本身不依赖 Python。
 

@@ -122,6 +122,8 @@ T026 从 VERSION.json 生成 Xcode / 共享 CLI 版本，应用与扩展记录�
 
 T027 提供默认不运行的 workflow_dispatch 原生流水线与明确正式环境的执行脚本，绑定完整 reviewed SHA / clean source、真实环境数字检查及逐配置结果。Debug / Release 编译前后复核源，artifact / CLI version 检查与运行验收分离；共享 CI 只检查入口和来源保护，不调用 native tools。实际 runner / 构建未调度，详见 [原生验证入口](native-validation.md)。
 
+T029 将平台目标、已审阅外部契约和实际测试环境集中在 [兼容清单](compatibility.md)。事件、位置、checkpoint、显示设置、配置 wrapper 与发布清单分开版本化；未知格式失败保留、只读加载不迁移、必要保存才更新及降级限制见 [迁移说明](migrations.md)。[许可清单](../THIRD_PARTY_NOTICES.md)区分当前无第三方 package 的源码与系统 / 外部 / CI 环境，实际二进制内含库留待归档验收。
+
 共享层测试覆盖协议、非法输入、隐私边界、重复 / 乱序事件、多会话隔离、URL 路由及损坏的 inbox 文件。工程结构检查核对文件成员、扩展嵌入和版本要求。
 
 原生目标必须另行完成：支持 SDK 的无签名编译、签名安装、启动 / 更新 / 结束 Activity、点击唤起 Wave、触摸、多屏、睡眠恢复和其他系统活动共存。这些项目在初始化阶段未通过实机验收。

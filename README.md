@@ -67,6 +67,8 @@ docs/diagnostics.md           按需元数据诊断、离线清单、私有导�
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
 
+版本、平台和外部契约范围见 [兼容清单](docs/compatibility.md)，升级及数据格式规则见 [迁移说明](docs/migrations.md)，源码 / 系统框架 / 外部应用与 CI 工具的分发关系见 [许可清单](THIRD_PARTY_NOTICES.md)。
+
 ## 验证共享层
 
 ```bash

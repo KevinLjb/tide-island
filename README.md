@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T025 的 [notify 共存](docs/notify-integration.md)与 [统一安装、升级及卸载](docs/installation.md)已通过 [严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43979840102)：实际 405 / 声明 405 项测试，七项检查成功，包括部分恢复与数据选择。下一步 T026 版本、构建产物和打包准备；原生编译、签名及真实接入仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T026 已准备 [单一版本、构建产物与打包](docs/packaging.md)：版本生成、归档检查、签名 / 可选公证和 ZIP 摘要入口。共享层仍声明 405 项测试，新增发布元数据 / CLI 版本检查待严格 CI。本地 11 项元数据检查通过；原生编译、签名及真实接入仍待 macOS 27.3 正式环境，当前没有可安装发布。
 
 ## 环境要求
 
@@ -60,6 +60,7 @@ docs/system-status.md         独立系统权限、上次错误与菜单栏恢�
 docs/bridge-delivery.md       应用包内 bridge、完整性与移动 / 升级路径修复
 docs/notify-integration.md    完成 notify 共存、argv 边界与可撤销局部编辑
 docs/installation.md          统一配置安装 / 升级 / 卸载、数据选择与回退
+docs/packaging.md             版本生成、归档 / 签名 / 公证与 ZIP 一致性
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -74,6 +75,8 @@ python3 scripts/check-hooks.py
 python3 scripts/check-delivery.py
 python3 scripts/check-notify.py
 python3 scripts/check-integration.py
+python3 scripts/sync-version.py
+python3 scripts/check-release.py
 python3 scripts/check-replay.py
 python3 scripts/check-inbox.py
 python3 scripts/check-state.py
@@ -104,6 +107,8 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland \
 ```
 
 原生构建使用 `MACOSX_DEPLOYMENT_TARGET=27.3`，不会回退为模拟刘海浮层。应用构建阶段会在独立 scratch 中构建目标架构的 bridge 并嵌入 `Contents/Helpers`，再由 Xcode 处理应用签名；流程及尚未验证范围见 [bridge 交付](docs/bridge-delivery.md)。
+
+版本从 VERSION.json 生成应用 / 扩展共享 xcconfig 和 CLI 常量。正式环境中的 Release archive、应用 / CLI ZIP、签名、公证及摘要记录使用 [打包入口](docs/packaging.md)，当前只准备源码，尚未执行原生交付。
 
 ## 发送一个事件
 

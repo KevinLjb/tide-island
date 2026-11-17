@@ -25,6 +25,15 @@ struct TideIslandBridge {
             return
         }
         let rest = Array(arguments.dropFirst())
+        if command == "version" || command == "--version" {
+            guard rest.isEmpty else { throw CLIError.invalidArguments }
+            if command == "--version" { print("tide-island-bridge \(TideIslandVersion.version) (\(TideIslandVersion.build))") }
+            else {
+                let record = ["version": TideIslandVersion.version, "build": TideIslandVersion.build]
+                FileHandle.standardOutput.write(try JSONEncoder().encode(record) + Data([10]))
+            }
+            return
+        }
         if command == "integration" { try IntegrationCommand.run(rest); return }
         if command == "notify-config" { try NotifyConfigurationCommand.run(rest); return }
         if command == "notify-dispatch" { try NotifyDispatchCommand.run(rest); return }
@@ -136,6 +145,7 @@ struct TideIslandBridge {
 
     static func printCapabilities() throws {
         let value: [String: Any] = [
+            "tide_island_version": ["version": TideIslandVersion.version, "build": TideIslandVersion.build],
             "event_protocol_versions": [1, AgentEvent.currentVersion],
             "output_protocol_version": AgentEvent.currentVersion,
             "contract_cli_version": CodexHookAdapter.contractCLIVersion,
@@ -261,6 +271,7 @@ struct TideIslandBridge {
                           [--scan-limit COUNT] [--read-budget-bytes BYTES]
                           [--apply --expect FINGERPRINT --backup-dir /DIRECTORY]
     capabilities
+    version | --version
 
     emit/notify write an event and print JSON. hook reads stdin and keeps stdout
     empty; observation failures return 0 and never decide Codex permissions.

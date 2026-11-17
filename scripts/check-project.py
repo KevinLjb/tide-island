@@ -50,6 +50,9 @@ def check():
         require(actual_sources == expected_sources[name] | shared, "Incorrect source membership: " + name)
         dependencies = [objects[key]["productName"] for key in target["packageProductDependencies"]]
         require(dependencies == ["TideIslandCore"], "Missing shared package: " + name)
+        for key in objects[target["buildConfigurationList"]]["buildConfigurations"]:
+            settings = objects[key]["buildSettings"]
+            require("MARKETING_VERSION" not in settings and "CURRENT_PROJECT_VERSION" not in settings, "Target must inherit the common version: " + name)
 
     app = targets["TideIsland"]
     dependency_targets = [objects[objects[key]["target"]]["name"] for key in app["dependencies"]]
@@ -74,6 +77,9 @@ def check():
     configurations = objects[root["buildConfigurationList"]]["buildConfigurations"]
     for key in configurations:
         settings = objects[key]["buildSettings"]
+        version_reference = objects[objects[key]["baseConfigurationReference"]]
+        require(version_reference["path"] == "Config/Version.xcconfig", "Missing common version configuration")
+        require("MARKETING_VERSION" not in settings and "CURRENT_PROJECT_VERSION" not in settings, "Version must come from VERSION.json")
         require(settings["MACOSX_DEPLOYMENT_TARGET"] == "27.3", "Native target must require macOS 27.3")
         require(settings["SWIFT_VERSION"] == "6.0", "Unexpected Swift language mode")
 
@@ -81,6 +87,9 @@ def check():
     extension_info = plistlib.loads((ROOT / "Native/ActivityExtension/Info.plist").read_bytes())
     entitlements = plistlib.loads((ROOT / "Native/ActivityExtension/TideIslandActivity.entitlements").read_bytes())
     require(app_info.get("NSSupportsLiveActivities") is True, "Live Activities not enabled")
+    for info in (app_info, extension_info):
+        require(info.get("CFBundleShortVersionString") == "$(MARKETING_VERSION)" and info.get("CFBundleVersion") == "$(CURRENT_PROJECT_VERSION)", "Bundle must inherit generated version metadata")
+        require(info.get("TideIslandSourceRevision") == "$(TIDE_ISLAND_SOURCE_REVISION)", "Missing release source revision metadata")
     require(extension_info["NSExtension"]["NSExtensionPointIdentifier"] == "com.apple.widgetkit-extension", "Wrong extension point")
     require(entitlements.get("com.apple.security.app-sandbox") is True, "Extension sandbox not enabled")
     scheme = ET.parse(ROOT / "TideIsland.xcodeproj/xcshareddata/xcschemes/TideIsland.xcscheme")

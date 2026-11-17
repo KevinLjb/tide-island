@@ -59,7 +59,9 @@ jobs:
       - name: Build event bridge
         run: swift build --product tide-island-bridge
       - name: Exercise event bridge
-        run: python3 scripts/check-bridge.py --temporary-root "${{ runner.temp }}"
+        run: |
+          python3 scripts/check-bridge.py --temporary-root "${{ runner.temp }}"
+          python3 scripts/check-diagnostics.py --temporary-root "${{ runner.temp }}"
       - name: Exercise hook configuration management
         run: |
           python3 scripts/check-hooks.py --temporary-root "${{ runner.temp }}"

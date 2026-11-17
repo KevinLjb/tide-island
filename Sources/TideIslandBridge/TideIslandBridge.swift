@@ -34,6 +34,7 @@ struct TideIslandBridge {
             }
             return
         }
+        if command == "diagnostics" { try DiagnosticsCommand.run(rest); return }
         if command == "integration" { try IntegrationCommand.run(rest); return }
         if command == "notify-config" { try NotifyConfigurationCommand.run(rest); return }
         if command == "notify-dispatch" { try NotifyDispatchCommand.run(rest); return }
@@ -148,6 +149,11 @@ struct TideIslandBridge {
             "tide_island_version": ["version": TideIslandVersion.version, "build": TideIslandVersion.build],
             "event_protocol_versions": [1, AgentEvent.currentVersion],
             "output_protocol_version": AgentEvent.currentVersion,
+            "diagnostics": [
+                "schema_version": 1, "maximum_bytes": DiagnosticReport.maximumBytes,
+                "default_scope": "versionsOnly", "explicit_inbox_scope": "offlineInventory",
+                "writes_source_data": false, "uploads": false, "contains_session_identifiers": false,
+            ],
             "contract_cli_version": CodexHookAdapter.contractCLIVersion,
             "upstream_revision": CodexHookAdapter.upstreamRevision,
             "forwarded_hook_events": CodexHookEvent.allCases.map(\.rawValue),
@@ -249,6 +255,8 @@ struct TideIslandBridge {
     Explicit Wave arguments never inherit environment IDs; tab/version require
     a full explicit block UUID. A legacy opaque --wave-block alone stays valid.
     replay --file SCENARIOS_JSON [--scenario NAME]
+    diagnostics [--inbox /DIRECTORY] [--output /NEW/REPORT.json]
+                [--scan-limit COUNT] [--read-budget-bytes BYTES]
     inbox cleanup [--inbox /DIRECTORY] [--max-files COUNT] [--max-bytes BYTES]
                   [--max-age-days DAYS] [--scan-limit COUNT] [--read-budget-bytes BYTES]
                   [--apply --expect FINGERPRINT]
@@ -278,6 +286,10 @@ struct TideIslandBridge {
     capabilities describes the pinned contract, not the installed Codex version.
     replay checks explicit fixture expectations in memory and prints a stable
     metadata report. Mismatches return 1; no inbox or Codex config is written.
+    diagnostics defaults to versions only. An explicit inbox is a read-only
+    offline inventory, never current sessions or live integration validation.
+    Reports contain aggregate metadata / fixed codes, no identifiers or paths.
+    --output creates a private new file outside inbox/state, never overwrites.
     hooks defaults to preview; apply requires its exact preview fingerprint and
     a backup directory. It never edits config.toml or Codex hook trust records.
     --app checks the embedded helper without executing it. Move/upgrade the app,

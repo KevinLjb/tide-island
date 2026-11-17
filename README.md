@@ -133,6 +133,8 @@ CLI 将事件原子写入 `~/Library/Application Support/TideIsland/Events/`，�
 
 ## 回放生命周期事件
 
+按需诊断可使用 `tide-island-bridge diagnostics`，默认只报告版本；显式 inbox 才检查离线文件汇总，不生成实时会话或导出身份。私有新文件导出、错误码及回放边界见 [诊断与回放](docs/diagnostics.md)，当前共享实现待本轮 CI，原生菜单入口继续开发。
+
 ```bash
 swift run tide-island-bridge replay \
   --file Tests/TideIslandCoreTests/Fixtures/Replay/lifecycle.json \

@@ -8,11 +8,11 @@
 
 - **T001—T030 首版开发与交付准备完成，T031 条件研究完成，现推进原生验收。** T031 已核对公开 blocking / final status 语义，暂不启用有会话管理与请求回放成本的 app-server 接入。beta 原生双配置已编译，签名安装及真实接入继续推进；主线仍为 V001—V012，E001—E006 继续后续可选。
 - **V001 当前 beta 环境及公开 API 初核已推进，正式接口仍待复验。** 本机 macOS 27.3（26C5047e），已安装并选中官方 Xcode 27.3 beta 2（27C5035i），实际 SDK 为 27.3，首次初始化检查通过，旧版已移除。初次发现的旧 Xcode / 许可缺项已有恢复实证；只读预检 ready 只代表数字前提，具体 API 与发行渠道边界见 [原生验收入口](native-validation.md)。
-- **V002 beta 原生双配置编译已通过。** `72fa654b092492357579077171db9c6756f44256` 的 clean 源码在本机实际完成 arm64 Debug / Release、产物及包内 bridge 校验；同源 419 / 声明 419 项共享测试、10 组 CLI 检查和[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/44152163319)七项通过。报告渠道为 prerelease，签名及运行标记仍为 false。
-- **V003 本机 beta 签名安装已推进。** `ef2f764` 的 arm64 archive、ad hoc 三组件签名和两个 ZIP 校验通过，应用已安装至 `/Applications/TideIsland.app`，启动持续观察 12 秒、系统扩展注册和正常退出均通过；[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44155875789)实际 420 项和七项通过。Developer ID、公证、外部分发及升级 / 卸载链路保留后续验证。
-- **许可交付已实际验包。** `083a1f0` 的应用 / 扩展 Debug 与 Release、ad hoc 三组件签名和两个 ZIP 通过，两包共四份许可文本与源码及清单摘要一致；[精确 CI](https://github.com/KevinLjb/tide-island/actions/runs/44162615005)实际 420 项和七项通过。该包已在本机安装、启动观察 12 秒、扩展注册及正常退出通过。
-- **V006 后台创建已有明确 SDK 结果。** 独立后台诊断实际返回 visibility / 7，未创建活动；新增 foregroundRequired 及“打开会话”恢复动作，开发态 423 项共享测试通过。完整生命周期 / 可见岛仍未通过，当前修复继续以 clean SHA 验证。
-- **验证记录更正：此前 CI 的 Swift 测试退出码被日志管道掩盖，旧的成功状态不能证明共享单测通过。** 本轮已修复管道和测试问题，以[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43859728100)的 98 项实际执行和七项检查作为当前依据；历史 CLI / 工程结构步骤独立保留证据，见 K017。
+- **V002 beta 原生双配置编译已通过。** 最新修复 `e7d84c46b0f7788f7d343d9af0a3bcf6be10d1fd` 的 clean 源码实际完成 arm64 Debug / Release、产物及包内 bridge 校验；同源 423 / 声明 423 项共享测试、10 组 CLI 检查和[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/44168068545)七项通过。编译报告渠道为 prerelease，不包含原生运行或签名结论。
+- **V003 本机 beta 签名安装已推进。** `e7d84c4` 的 arm64 archive、ad hoc 三组件签名和两个 ZIP 校验通过，应用已更新至 `/Applications/TideIsland.app`，包替换期间应用数据元数据不变；启动持续观察 12 秒、系统扩展注册、稳定路径 bridge 和正常退出均通过。Developer ID、公证、外部分发及真实配置卸载 / 回退保留后续验证。
+- **许可交付已实际验包。** `083a1f0` 补齐应用 / 独立 CLI 的 LICENSE 与许可清单；最新 `e7d84c4` 回归确认两个 ZIP 共四份文本与源码及 notices 摘要一致，安装包中的两份也一致。该检查不自动证明未来新增组件的许可已核对。
+- **V006 后台创建已有明确 SDK 结果，完整生命周期仍未通过。** clean `e7d84c4` 后台 request 返回 visibility / 7，正确分类为 foregroundRequired；四项 SDK 操作 false、cleanup true、正常退出且 inbox 元数据不变。前台诊断仍为 foreground-activation-timeout，尚未请求活动。“打开会话”恢复动作的共享投影、错误重试与原生编译通过，真实点击后成功创建和可见岛待验。
+- **历史验证记录更正：此前 CI 的 Swift 测试退出码被日志管道掩盖，旧的成功状态不能证明共享单测通过。** 管道和测试问题已修复，[首次严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43859728100)的 98 项及七项检查作为该修复证据；最新测试数量与来源以上述 423 项记录为准。历史 CLI / 工程结构步骤独立保留证据，见 K017。
 - **正式环境统一验收保留后续复验。** 按本轮新授权先做 27.3 beta 原生编译及可执行测试；正式 SDK、签名交付和真实交互分别记录，不用 beta 结果覆盖正式验收。
 - 开发期间继续执行可运行的纯逻辑测试、CLI 检查和 CI；这些结果单独登记，不代替最终原生验收。
 - T001—T003 的已核对转换范围已实现；尚未安装到用户的 Codex 配置，也未验证真实会话链路。普通问答等待与整轮失败的补充来源由 T031 跟踪。
@@ -198,7 +198,7 @@ T016—T018 的纯逻辑检查可先执行。T019—T023 继续完成源码，�
 | K015 | 已明确边界 | 已读 / 忽略 / 置顶和选择已由 T011 元数据 checkpoint 跨重启保存；忽略只覆盖当前展示记录，新状态被应用后自动恢复。选择 / 置顶不延长新鲜度或展示保留期限 | [注意力规则](session-attention.md)；[持久化与主动清除](session-persistence.md)共享逻辑已通过，原生待验证；T009 处理磁盘容量治理 |
 | K016 | 已明确边界 | 清理容量是软目标，活跃 / 不确定历史及无法识别文件不强删；默认最多索引 16,384 候选，超限不部分导入。批准清理有日志恢复但仍不是跨文件事务 / 断电保证，已保存终态 / 窗口可跨重启保护；升级前未保存或主动清除的历史仍受恢复边界限制 | [inbox 维护](inbox-maintenance.md)及[通道恢复](inbox-recovery.md)；T010 / T011 共享恢复及有界 checkpoint 通过，保存失败会阻止后续历史删除 |
 | K017 | 已修复 | 修复 Swift 测试管道误绿，实际编译 / 执行 98 项并核对 98 项声明；修正可变 / 抛错 / 嵌套宏、时间类型和不可用执行路径测试替身，保留原有预期 | [严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43859728100)通过；后续持续保留 pipefail、实际数量守卫及诊断，不沿用旧误绿记录作为单测证据 |
-| K018 | 已确认并提供恢复代码 | 当前 beta 后台标准 Activity.request 返回 visibility / 7，即使诊断保留菜单项仍被拒绝；普通自动后台新建活动不能据此承诺。已映射 foregroundRequired，保留会话与无自有 ID 状态，并提供“打开会话”动作 | [系统状态](system-status.md)与[后台诊断](native-validation.md#显式-debug-sdk-生命周期测试)；前台真实请求、用户动作及系统执行 LiveActivityIntent 路线继续验证 |
+| K018 | clean 复验，恢复交互待验 | 当前 beta 后台标准 Activity.request 返回 visibility / 7，即使诊断保留菜单项仍被拒绝；clean e7d84c4 正确映射 foregroundRequired，保留会话与无自有 ID 状态，并提供“打开会话”动作。普通自动后台新建活动不能据此承诺 | [系统状态](system-status.md)与[后台诊断](native-validation.md#显式-debug-sdk-生命周期测试)；前台真实请求与用户恢复动作待验；系统执行 LiveActivityIntent 路线尚未实现或验收 |
 
 ## 9. 更新与交付记录
 
@@ -360,5 +360,7 @@ T016—T018 的纯逻辑检查可先执行。T019—T023 继续完成源码，�
 | 2026-11-18 | V003 许可修复实际通过 | `083a1f0` 同源 arm64 Debug / Release、ad hoc 三组件、两 ZIP 四份许可文本及源码 / notices 摘要通过；本机已更新并启动观察、扩展注册、正常退出通过 | 本机实际 420 项共享与 10 组 CLI，[精确 CI](https://github.com/KevinLjb/tide-island/actions/runs/44162615005)实际 420 项和七项通过；13 项任务检查通过，经验维护及复盘完成。前台入口仍未确认 active，SDK 生命周期 false | 继续独立后台 SDK 诊断，确认标准后台创建的实际返回 |
 
 | 2026-11-18 | V006、T023 前台要求恢复 | 新增互斥后台 Debug 诊断及固定 SDK 枚举 / 代码；实际 request 返回 visibility / 7，原通用 requestFailed 已修复为 foregroundRequired。系统状态与菜单摘要明确提示，窗口 / 设置提供“打开会话”动作；保留来源、会话 phase 与原时间，未发明活动所有权 | 开发态后台 SDK 拒绝、清理 / 正常退出与 inbox 元数据不变已观察；423 项共享测试覆盖错误透传、无 ID 重试、其他类型错误仍归一化和恢复动作。完整原生创建 / 更新 / 结束未通过 | 提交修复并执行 clean SHA 的共享、双配置、前后台诊断和签名包检查 |
+
+| 2026-11-18 | V002、V003、V006 本轮 clean 回归 | `e7d84c4` 的 arm64 Debug / Release、ad hoc 三组件签名、两个 ZIP 与四份许可文本通过；已安装更新、数据保留、12 秒启动观察、扩展注册、bridge version 和正常退出通过 | 本机 423 / 423 项、10 组 CLI、[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44168068545)实际 423 项与七项通过。14 项任务检查验收通过，经验维护与复盘完成；前台仍未激活，后台实际 visibility / 7 已分类，清理及正常退出通过，SDK 生命周期与可见岛持续 false。证据 native-e7d84c46b0f7-863e7c22、release-e7d84c46b0f7-4068647a、sdk-e7d84c46b0f7-9f48e0f9 / 57feb647、final-installed-result.json 保留 | 前台真实 SDK 生命周期、恢复按钮、真实 Codex / Wave、触摸 / 无障碍、多屏 / 睡眠、权限 / 登录、持续负载 / 能耗及分发签名继续分别验收；后续可选增强不自动启用 |
 
 后续每轮在本节追加一条记录，并同步修改相应任务行；如果统一验收发现问题，把相关行改为未通过并关联修复任务，不覆盖原验收记录。

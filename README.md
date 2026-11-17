@@ -10,7 +10,9 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。`72fa654` 完成 beta 原生双配置；`ef2f764` 修复真实签名布局问题后，本机 archive / ad hoc 包、420 项共享测试及 10 组 CLI 通过，[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44155875789)七项通过。[原生验证入口](docs/native-validation.md)保留完整 SHA、发行渠道及逐配置报告；正式环境、签名分发和真实交互分别验收。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。最新原生修复 `e7d84c4` 的 beta arm64 Debug / Release、本机 ad hoc 包及许可内容、423 项共享测试和 10 组 CLI 通过，[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44168068545)七项通过。该版已安装，启动观察、扩展注册及正常退出通过；[原生验证入口](docs/native-validation.md)保留完整 SHA、发行渠道及逐项报告。
+
+后台 SDK 实测返回 `visibility / 7`，现保留前台要求并提供“打开会话”恢复动作；自动前台诊断仍未确认激活。完整 SDK 生命周期、可见岛、真实 Codex / Wave 交互及分发签名继续待验，不能由构建和安装结果推定通过。
 
 T029—T030 的兼容 / 迁移 / 许可和开始指南 / FAQ 已完成，[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/43991766217)实际执行 419 项测试与七项检查通过。T031 的 [公开 app-server 研究](docs/app-server-research.md)完成，暂不接入运行时；没有为观察状态连接或恢复用户现有会话。
 
@@ -219,7 +221,7 @@ CLI 提供两个独立入口：
 hooks 工具保持 `config.toml`、既有 notify 和内联 hooks 原样。独立 `notify-config` 工具只编辑明确指定 config.toml 的顶层 notify，保留并转发原命令参数，卸载恢复旧 notify，详见 [完成通知共存](docs/notify-integration.md)。完整接入使用 [统一配置流程](docs/installation.md)，默认预览、显式应用，总指纹覆盖两个文件：
 
 ```bash
-# 未来有实际应用包时，先检查预览。尚未修改当前用户配置。
+# 真实接入前先检查预览。尚未修改当前用户配置。
 "/Applications/TideIsland.app/Contents/Helpers/tide-island-bridge" integration install \
   --codex-directory /absolute/path/to/codex --app /Applications/TideIsland.app
 ```

@@ -68,4 +68,4 @@ swift run tide-island-bridge emit \
 
 合成测试覆盖事件兼容、隐私 allowlist、参数隔离、来源复核、独立期限、实际帧通知、列表异常、checkpoint v1 → v2 及确定性回放。新增 [位置回放 fixture](../Tests/TideIslandCoreTests/Fixtures/Replay/wave-location.json) 包含 3 个场景 / 7 步，保留原 24 场景 / 116 步生命周期基线。
 
-具体执行结果以 [开发进度](development-progress.md) 为准。T014 已加入 [共享能力选择与请求结果](wave-navigation.md)，默认没有真实 driver；T015 继续完善应用级返回。真实 Wave 查询 / 跳转、多窗口、原生编译与交互均未验证，继续待 macOS 27.3 正式环境。
+具体执行结果以 [开发进度](development-progress.md) 为准。T014 已加入 [共享能力选择与请求结果](wave-navigation.md)，默认没有真实精确定位 driver；T015 的应用级返回源码已实现。beta 原生 Debug / Release 已编译通过；真实 Wave 查询 / 跳转、多窗口与交互仍未验证，beta 实测和正式环境复验分别记录。

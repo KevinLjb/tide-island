@@ -1,14 +1,14 @@
 # 安装、升级与卸载流程
 
-T025 提供明确目录内的 hooks + notify 统一配置入口。源码及隔离检查不代表当前用户配置已启用；原生安装包、签名和真实 Codex 链路继续由 T026 / 27.3 验收。
+T025 提供明确目录内的 hooks + notify 统一配置入口。源码及隔离检查不代表当前用户配置已启用；最新 beta 本机包已完成 ad hoc 签名安装，真实 Codex 链路、分发签名及完整卸载继续分别验收，见 [当前进度](development-progress.md)。
 
 第一次了解使用顺序见 [首次使用](getting-started.md)；版本、格式迁移与常见问题分别见 [兼容清单](compatibility.md)、[升级 / 降级](migrations.md)和 [FAQ](faq.md)。本文命令用于后续明确启用，不会因为阅读说明自动执行。
 
 ## 使用前提
 
-- 后续使用已构建、验证的 TideIsland.app，保持在稳定路径；[交付说明](bridge-delivery.md)区分摘要完整性与系统签名。
+- 使用已构建、验证的 TideIsland.app，保持在稳定路径；本机测试包位于 `/Applications/TideIsland.app`，[交付说明](bridge-delivery.md)区分摘要完整性与系统签名。
 - 确认要修改的 Codex 配置目录。工具只处理该目录的 hooks.json 和 config.toml，不搜索其他配置层、项目目录、用户正文或信任记录。
-- 原生应用仍需 27.3；当前持续开发阶段不要求升级 beta、运行安装命令或接受 Xcode 许可。
+- 原生应用要求 macOS / Xcode 27.3+；当前本机验证使用已安装的 27.3 beta 工具链，beta 结果与正式环境复验分别记录。以下接入命令仍需明确启用后才执行。
 
 先停止对目标文件的并发编辑；真实接入时需核对 Codex 使用的是哪个配置层，并在重启 / 重载后按 `/hooks` 完成信任审查。文件写入不表示 Codex 已采纳或信任。
 
@@ -79,4 +79,4 @@ T025 提供明确目录内的 hooks + notify 统一配置入口。源码及隔�
 
 共享测试核对跨文件 scope、操作、bundle / inbox 一致性，以及配置和状态变更对总指纹的影响。[隔离 CLI 检查](../scripts/check-integration.py)执行安装 / no-op / 移动 / 升级 / notify 锁造成的部分成功及重试，再验证默认数据保留、事件变化使预览失效、接收锁忙先失败和显式清除状态。
 
-所有检查只在合成应用、Codex 目录和 inbox 中运行。原生构建、签名、真实 hooks / notify、Codex 信任 / 重载以及应用卸载仍须 V003 / V004 / V010 验收。
+上述配置检查只在合成应用、Codex 目录和 inbox 中运行。另行完成的 beta 原生构建、本机 ad hoc 安装、应用包更新 / 移除重装不证明真实 hooks / notify、Codex 信任 / 重载或完整配置卸载；这些链路仍须 V003 / V004 / V010 验收。

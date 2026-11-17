@@ -90,7 +90,7 @@ self-hosted, macOS, ARM64, tide-island-native-27.3
 
 独立的 `--native-sdk-smoke-background` 测试菜单栏后台请求：保留一个诊断菜单项，不主动激活窗口，并核对应用确实不在前台。它与前台参数互斥，仍隔离正常模型、只管理内存合成会话及 ownedOnly 活动。报告新增 validation_mode；SDK request 失败仅附带 ActivityAuthorizationError 的固定枚举名和数字代码，不输出 localizedDescription、userInfo、任意错误域或活动 ID。两个参数在 Release 都不读取。
 
-开发态后台测试已实际调用 SDK，返回 visibility / 7；共享错误现保留为 foregroundRequired，操作结果 false、cleanup true，正常退出且 inbox 元数据不变。这确认了本次后台创建被系统拒绝，完整创建 / 更新 / 结束仍未通过。Apple 的 [LiveActivityIntent](https://developer.apple.com/documentation/appintents/liveactivityintent)说明由系统执行 intent 的后台启动路线；该路线需要独立实现与真实系统执行验收，本轮未接入。
+开发态及 clean `e7d84c46b0f7788f7d343d9af0a3bcf6be10d1fd` 后台测试均实际调用 SDK，返回 visibility / 7；共享错误保留为 foregroundRequired，四项操作 false、cleanup true，正常退出且 inbox 元数据不变。这确认了本次后台创建被系统拒绝，完整创建 / 更新 / 结束仍未通过。Apple 的 [LiveActivityIntent](https://developer.apple.com/documentation/appintents/liveactivityintent)说明由系统执行 intent 的后台启动路线；该路线需要独立实现与真实系统执行验收，本轮未接入。
 
 在已经授权启动本机原生活动的测试环境中，可对本次 Debug 产物启用 `--native-sdk-smoke`。先退出其他 TideIsland 实例，以 clean reviewed SHA 构建并完成本机签名，再从包内执行文件启动并保存 stdout / stderr。使用 ad hoc 时，为这次构建设置 `ENABLE_DEBUG_DYLIB=NO`，生成单体 Debug 代码；否则默认的预览动态库可能被 hardened runtime 的 Team ID 检查拒绝。该选项只作用本次测试构建，未修改项目默认值；含义见 [Apple 构建设置](https://developer.apple.com/documentation/xcode/build-settings-reference)。
 
@@ -117,6 +117,8 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland -configuration Debug
 
 本机开发态及 clean SHA `e9ce743386d38942cd2a97bf084d2bf11319637f` 重跑均确认：ad hoc 单体 Debug 能加载并正常退出，inbox 文件元数据未改变；当前自动启动未能在五秒内确认应用进入前台，报告 foreground-activation-timeout、cleanup_verified 为 true、四项 SDK 操作为 false，尚未请求活动。clean 报告 sdk-e9ce743386d3-a4120918/native-smoke-validation.json 保留实际 SDK status failed；验收只将这次前置条件报告与正常退出记为已观察，SDK 生命周期持续 blocked。没有确认前台不可用的系统原因，不能把这项门禁检查通过写成生命周期通过。
 
+2026-11-18 最新 clean 修复 `e7d84c46b0f7788f7d343d9af0a3bcf6be10d1fd` 的前后台测试按顺序执行，均为单独签名的单体 Debug，未同时启动普通应用。前台报告 sdk-e7d84c46b0f7-9f48e0f9/native-smoke-validation.json 仍为上述前台超时且未请求；后台报告 sdk-e7d84c46b0f7-57feb647/native-smoke-validation.json 为实际 visibility / 7 拒绝及 delivery-foregroundRequired。两次均 cleanup true、退出 0、inbox 元数据不变。检查通过的范围是条件报告、错误分类、隔离和退出，SDK 生命周期仍未通过，恢复按钮的真实交互也未完成。
+
 ## 报告与验收
 
 native-validation.json 只有在环境 / 版本门禁通过并开始编译后创建。它记录精确 revision、版本、系统 / SDK / Xcode、validation_channel、操作者互斥的正式 / prerelease 声明、架构和逐配置结果。失败保留已完成范围，native_compile_verified 仅在所有请求配置检查成功后为 true；both_configurations_verified 单独表明双配置完整性。
@@ -130,3 +132,5 @@ Xcode 27.3 的 Swift 6.4 会输出带 `in 0 suites` 的成功摘要。本机首�
 首次真实 Debug 编译在 `NativeActivityController` 的 update / end 处因发送主 actor 隔离句柄失败，Release 尚未执行。已对照安装 SDK 的 ActivityKit swiftinterface：Activity 没有 Sendable 声明，并发方法需在调用域中持有句柄。修复通过非隔离辅助方法仅接收 Sendable 的 ID / 展示值、按 ID 重新取得句柄并复核状态；保留主 actor 的归属与监听、共享串行和取消规则，不降低 Swift 并发检查。SDK 的 pending 状态显式映射为共享 unknown。该改动继续以新的同源双配置编译报告及后续运行验收为准。
 
 2026-11-18，修复提交 `72fa654b092492357579077171db9c6756f44256` 的 clean 源码在上述 beta 系统 / Xcode / SDK 上完成 arm64 Debug 和 Release。`native-72fa654b0924-3869e4f2/native-validation.json` 记录两项 build_completed、产物与包内 bridge 校验通过，渠道为 prerelease；signing_requested 和 native_runtime_verified 均为 false。同源本机实际执行 419 / 声明 419 项共享测试及 10 组 CLI 检查，[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/44152163319)同样实际 419 项和七项检查通过。完整日志与 xcresult 保留在本机验证证据目录；此后源变更需重新执行受影响检查。
+
+最新 `e7d84c4` 已重新完成同源 arm64 Debug / Release（native-e7d84c46b0f7-863e7c22/native-validation.json）、实际 archive 与 ad hoc 三组件签名、两个 ZIP 及四份许可文本校验（release-e7d84c46b0f7-4068647a/Package）。本机 423 / 声明 423 项共享及 10 组 CLI、[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/44168068545)七项通过；已更新本机应用并观察 12 秒、扩展注册、稳定 bridge version 和正常退出通过，更新期间应用数据元数据不变。final-installed-result.json 记录安装范围；Developer ID / 公证、完整 SDK 生命周期、可见岛和真实接入均未由这些结果覆盖。

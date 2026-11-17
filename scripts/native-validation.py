@@ -8,17 +8,23 @@ import re
 import subprocess
 import sys
 from release_metadata import inspect_application, version_record
+from native_environment import inspect_environment
 
 
 ROOT = Path(__file__).resolve().parent.parent
 
 
 class GateFailure(Exception):
-    pass
+    def __init__(self, code, environment=None):
+        super().__init__(code)
+        self.environment = environment
 
 
 def read_command(words):
-    result = subprocess.run(words, cwd=ROOT, capture_output=True, text=True, timeout=30)
+    try:
+        result = subprocess.run(words, cwd=ROOT, capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise GateFailure("toolchain-or-source-unavailable") from error
     if result.returncode:
         raise GateFailure("toolchain-or-source-unavailable")
     return result.stdout.strip()
@@ -33,12 +39,6 @@ def source_request(revision):
         raise GateFailure("uncommitted-source")
     return {"status": "request-verified", "scope": "source-request-only", "source_revision": revision,
             "native_compile_verified": False, "native_runtime_verified": False}
-
-
-def numeric_version(value):
-    if not re.fullmatch(r"[0-9]+\.[0-9]+(?:\.[0-9]+)?", value):
-        raise GateFailure("unknown-environment-version")
-    return tuple(map(int, value.split(".")[:2]))
 
 
 def main():
@@ -62,14 +62,11 @@ def main():
         ignored = subprocess.run(["git", "check-ignore", "--quiet", str(args.output)], cwd=ROOT, capture_output=True)
         if ignored.returncode:
             raise GateFailure("output-must-be-outside-source-or-ignored")
-    if platform.system() != "Darwin":
-        raise GateFailure("unsupported-host-system")
-    system = read_command(["/usr/bin/sw_vers", "-productVersion"])
-    sdk = read_command(["/usr/bin/xcrun", "--sdk", "macosx", "--show-sdk-version"])
-    xcode = read_command(["/usr/bin/xcodebuild", "-version"])
-    xcode_number = re.search(r"(?m)^Xcode ([0-9]+\.[0-9]+(?:\.[0-9]+)?)$", xcode)
-    if numeric_version(system) < (27, 3) or numeric_version(sdk) < (27, 3) or not xcode_number or numeric_version(xcode_number.group(1)) < (27, 3):
-        raise GateFailure("unsupported-native-environment")
+    environment = inspect_environment()
+    if environment["status"] != "ready":
+        raise GateFailure("native-environment-blocked", environment)
+    system, sdk = environment["host_version"], environment["sdk_version"]
+    xcode = "Xcode " + environment["xcode_version"] + "\nBuild version " + environment["xcode_build"]
     # The numeric checks do not identify beta vs stable; the operator assertion
     # is recorded separately and never presented as an automatic proof.
     read_command([sys.executable, str(ROOT / "scripts/sync-version.py")])
@@ -78,7 +75,7 @@ def main():
     configurations = ["Debug", "Release"] if args.configuration == "both" else [args.configuration]
     report = {"schema_version": 1, "status": "running", "source_revision": args.expected_revision,
               "version": record["version"], "build": str(record["build"]), "host_system": system, "sdk_version": sdk,
-              "xcode": xcode, "operator_attested_stable_environment": True, "architectures": architectures,
+              "xcode": xcode, "environment": environment, "operator_attested_stable_environment": True, "architectures": architectures,
               "configurations": {}, "signing_requested": False, "native_compile_verified": False, "native_runtime_verified": False}
     args.output.mkdir(parents=True, exist_ok=False)
     report_path = args.output / "native-validation.json"
@@ -133,5 +130,8 @@ if __name__ == "__main__":
     try:
         sys.exit(main() or 0)
     except GateFailure as error:
-        print(json.dumps({"status": "blocked", "failure_code": str(error), "native_compile_verified": False, "native_runtime_verified": False}))
+        report = {"status": "blocked", "failure_code": str(error), "native_compile_verified": False, "native_runtime_verified": False}
+        if error.environment is not None:
+            report["environment"] = error.environment
+        print(json.dumps(report))
         sys.exit(2)

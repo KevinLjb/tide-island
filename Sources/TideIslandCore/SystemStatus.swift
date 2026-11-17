@@ -17,7 +17,7 @@ public enum LoginItemState: Equatable, Sendable {
 }
 
 public enum SystemStatusLevel: Equatable, Sendable { case information, attention }
-public enum SystemStatusAction: Equatable, Sendable { case none, checkAgain, reminderSettings, loginSettings }
+public enum SystemStatusAction: Equatable, Sendable { case none, checkAgain, openSessions, reminderSettings, loginSettings }
 
 public struct SystemStatusNotice: Identifiable, Equatable, Sendable {
     public let id: String
@@ -103,6 +103,8 @@ public struct SystemStatusProjection: Equatable, Sendable {
             title = "上次系统活动读取失败"; detail = "请重新检查；读取失败时不会创建重复活动。"
         case .requestFailed:
             title = "上次活动创建失败"; detail = "菜单栏与会话列表仍可使用，可重新检查。"
+        case .foregroundRequired:
+            title = "实时活动需要应用进入前台"; detail = "请打开会话窗口，激活潮汐岛后重新检查；会话状态已保留。"
         case .updateFailed:
             title = "上次活动更新失败"; detail = "系统中可能保留较早状态，可重新检查。"
         case .endFailed:
@@ -112,7 +114,8 @@ public struct SystemStatusProjection: Equatable, Sendable {
         case .cancelled, .stopped:
             title = "上次活动操作已停止"; detail = "可重新检查当前状态；停止不代表会话已结束。"
         }
-        return .init(id: "activity.error.\(problem.rawValue)", title: title, detail: detail, level: .attention, action: .checkAgain)
+        return .init(id: "activity.error.\(problem.rawValue)", title: title, detail: detail, level: .attention,
+                     action: problem == .foregroundRequired ? .openSessions : .checkAgain)
     }
 
     private static func reminderFailure(_ problem: SessionReminderProblem) -> SystemStatusNotice {

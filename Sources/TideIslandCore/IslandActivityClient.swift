@@ -74,6 +74,7 @@ public actor IslandActivityController {
             catch is CancellationError { throw CancellationError() }
             catch {
                 try Task.checkCancellation()
+                if let problem = error as? IslandActivityError, problem == .foregroundRequired { throw problem }
                 throw IslandActivityError.requestFailed
             }
             guard IslandActivityRecord.validIdentifier(created) else {

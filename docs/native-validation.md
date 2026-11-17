@@ -88,6 +88,10 @@ self-hosted, macOS, ARM64, tide-island-native-27.3
 
 ## 显式 Debug SDK 生命周期测试
 
+独立的 `--native-sdk-smoke-background` 测试菜单栏后台请求：保留一个诊断菜单项，不主动激活窗口，并核对应用确实不在前台。它与前台参数互斥，仍隔离正常模型、只管理内存合成会话及 ownedOnly 活动。报告新增 validation_mode；SDK request 失败仅附带 ActivityAuthorizationError 的固定枚举名和数字代码，不输出 localizedDescription、userInfo、任意错误域或活动 ID。两个参数在 Release 都不读取。
+
+开发态后台测试已实际调用 SDK，返回 visibility / 7；共享错误现保留为 foregroundRequired，操作结果 false、cleanup true，正常退出且 inbox 元数据不变。这确认了本次后台创建被系统拒绝，完整创建 / 更新 / 结束仍未通过。Apple 的 [LiveActivityIntent](https://developer.apple.com/documentation/appintents/liveactivityintent)说明由系统执行 intent 的后台启动路线；该路线需要独立实现与真实系统执行验收，本轮未接入。
+
 在已经授权启动本机原生活动的测试环境中，可对本次 Debug 产物启用 `--native-sdk-smoke`。先退出其他 TideIsland 实例，以 clean reviewed SHA 构建并完成本机签名，再从包内执行文件启动并保存 stdout / stderr。使用 ad hoc 时，为这次构建设置 `ENABLE_DEBUG_DYLIB=NO`，生成单体 Debug 代码；否则默认的预览动态库可能被 hardened runtime 的 Team ID 检查拒绝。该选项只作用本次测试构建，未修改项目默认值；含义见 [Apple 构建设置](https://developer.apple.com/documentation/xcode/build-settings-reference)。
 
 ```bash
@@ -103,7 +107,7 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland -configuration Debug
 /absolute/path/TideIsland.app/Contents/MacOS/TideIsland --native-sdk-smoke
 ```
 
-该参数仅在 Debug 读取。测试界面替代正常列表，菜单栏内容和设置不加载，SessionModel 延迟构造且此模式不访问它；不创建正常 inbox 接收器、读取或保存应用显示偏好、安装 Codex 配置、操作 Wave、申请通知或注册登录项。Release 不包含测试驱动，也不读取此开关。SwiftUI 自身的窗口状态由系统管理。
+该参数仅在 Debug 读取。测试界面替代正常列表，普通菜单栏内容和设置不加载，SessionModel 延迟构造且此模式不访问它；不创建正常 inbox 接收器、读取或保存应用显示偏好、安装 Codex 配置、操作 Wave、申请通知或注册登录项。Release 不包含测试驱动，也不读取此开关。SwiftUI 自身的窗口状态由系统管理。
 
 测试用随机的内存合成会话，经真实 NativeActivityController、共享投影及串行调度创建活动，将工作更新为待处理，再以终态结束；另建一次活动验证 shutdown 清理。范围始终 ownedOnly，不导入其他实例或应用遗留。仅此模式将自身 activation policy 设为 regular 并激活，以满足前台 SDK 条件；前台观察与授权失败分别给出固定原因。普通菜单栏及后台自动创建仍由真实集成验证。
 

@@ -20,8 +20,9 @@ struct TideIslandApp: App {
             if !NativeSDKValidation.isRequested { PreferencesView(model: delegate.model) }
         }
 
-        MenuBarExtra("TideIsland", systemImage: "water.waves", isInserted: .constant(!NativeSDKValidation.isRequested)) {
-            if !NativeSDKValidation.isRequested { MenuContent(model: delegate.model) }
+        MenuBarExtra("TideIsland", systemImage: "water.waves", isInserted: .constant(NativeSDKValidation.showsMenuItem)) {
+            if NativeSDKValidation.isRequested { Text("正在验证本机原生 SDK…") }
+            else { MenuContent(model: delegate.model) }
         }
     }
 }

@@ -156,6 +156,26 @@ private let islandEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     #expect(calls == ["authorize", "request", "authorize", "update:owned", "authorize", "update:owned"])
 }
 
+@Test func islandControllerPreservesForegroundRequirementAndRetriesWithoutInventingOwnership() async throws {
+    let client = IslandTestClient(failure: .foreground), controller = IslandActivityController(client: client, now: { islandEpoch })
+    let snapshot = try islandSnapshot([islandEvent("session", .working)])
+    let problem = await islandFailure { try await controller.update(snapshot: snapshot) }
+    #expect(problem == .foregroundRequired)
+    let failedCalls = await client.calls
+    #expect(failedCalls == ["authorize", "request"])
+    try await controller.update(snapshot: snapshot)
+    try await controller.update(snapshot: islandSnapshot([]))
+    let calls = await client.calls
+    #expect(calls == ["authorize", "request", "authorize", "request", "end:owned"])
+}
+
+@Test func islandControllerDoesNotForwardUnrelatedTypedRequestErrors() async throws {
+    let client = IslandTestClient(failure: .unexpectedTypedRequest), controller = IslandActivityController(client: client, now: { islandEpoch })
+    let snapshot = try islandSnapshot([islandEvent("session", .working)])
+    let problem = await islandFailure { try await controller.update(snapshot: snapshot) }
+    #expect(problem == .requestFailed)
+}
+
 @Test func islandControllerEndFailureRetainsOwnershipUntilTheEndSucceeds() async throws {
     let client = IslandTestClient(failure: .end), controller = IslandActivityController(client: client, now: { islandEpoch })
     try await controller.update(snapshot: islandSnapshot([islandEvent("session", .working)]))
@@ -224,7 +244,7 @@ private func islandFailure(_ operation: @Sendable () async throws -> Void) async
     catch { return error as? IslandActivityError }
 }
 
-private enum IslandTestFailure: Sendable { case none, request, update, end }
+private enum IslandTestFailure: Sendable { case none, request, foreground, unexpectedTypedRequest, update, end }
 private enum IslandTestError: Error { case privateClientFailure }
 
 private actor IslandTestClient: IslandActivityClient {
@@ -249,6 +269,8 @@ private actor IslandTestClient: IslandActivityClient {
     func request(_ presentation: IslandActivityPresentation) async throws -> String {
         calls.append("request")
         if failure == .request { failure = .none; throw IslandTestError.privateClientFailure }
+        if failure == .foreground { failure = .none; throw IslandActivityError.foregroundRequired }
+        if failure == .unexpectedTypedRequest { failure = .none; throw IslandActivityError.invalidInventory }
         await requestGate?.hold()
         presentations.append(presentation)
         return "owned"

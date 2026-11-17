@@ -3,6 +3,13 @@ import AppKit
 import Foundation
 import TideIslandCore
 
+#if DEBUG
+struct NativeSDKRequestFailure: Sendable {
+    let kind: String
+    let code: Int?
+}
+#endif
+
 @MainActor
 final class NativeActivityController {
     private let client: NativeActivityKitClient
@@ -29,6 +36,8 @@ final class NativeActivityController {
     }
 
     #if DEBUG
+    var validationRequestFailure: NativeSDKRequestFailure? { client.validationRequestFailure }
+
     /// Settle queued work for the explicit SDK smoke mode. This never submits
     /// another snapshot or creates an acknowledgement on its own.
     func validationDelivery() async -> IslandActivityDelivery {
@@ -55,6 +64,9 @@ private final class NativeActivityKitClient: IslandActivityClient {
     private var authorizationTask: Task<Void, Never>?
     private var discoveryTask: Task<Void, Never>?
     private var monitoring = false
+    #if DEBUG
+    private(set) var validationRequestFailure: NativeSDKRequestFailure?
+    #endif
 
     init() {
         let stream = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
@@ -123,7 +135,18 @@ private final class NativeActivityKitClient: IslandActivityClient {
     func request(_ presentation: IslandActivityPresentation) async throws -> String {
         try Task.checkCancellation()
         let content = ActivityContent(state: presentation.state, staleDate: presentation.staleAt)
-        let activity = try Activity.request(attributes: TideIslandAttributes(), content: content, pushType: nil)
+        let activity: Activity<TideIslandAttributes>
+        do {
+            activity = try Activity.request(attributes: TideIslandAttributes(), content: content, pushType: nil)
+        } catch {
+            #if DEBUG
+            validationRequestFailure = requestFailure(error)
+            #endif
+            if let authorization = error as? ActivityAuthorizationError, authorization == .visibility {
+                throw IslandActivityError.foregroundRequired
+            }
+            throw error
+        }
         owned[activity.id] = activity
         if monitoring { watch(activity) }
         return activity.id
@@ -190,6 +213,31 @@ private final class NativeActivityKitClient: IslandActivityClient {
         @unknown default: .unknown
         }
     }
+
+    #if DEBUG
+    /// SDK enum cases and its numeric code only; never localized error text,
+    /// userInfo, activity identifiers, or arbitrary error domains.
+    private func requestFailure(_ error: any Error) -> NativeSDKRequestFailure {
+        guard let error = error as? ActivityAuthorizationError else { return .init(kind: "other", code: nil) }
+        let kind: String
+        switch error {
+        case .attributesTooLarge: kind = "attributes-too-large"
+        case .unsupported: kind = "unsupported"
+        case .denied: kind = "denied"
+        case .globalMaximumExceeded: kind = "global-maximum-exceeded"
+        case .targetMaximumExceeded: kind = "target-maximum-exceeded"
+        case .unsupportedTarget: kind = "unsupported-target"
+        case .visibility: kind = "visibility"
+        case .persistenceFailure: kind = "persistence-failure"
+        case .missingProcessIdentifier: kind = "missing-process-identifier"
+        case .unentitled: kind = "unentitled"
+        case .malformedActivityIdentifier: kind = "malformed-activity-identifier"
+        case .reconnectNotPermitted: kind = "reconnect-not-permitted"
+        @unknown default: kind = "unknown-authorization-error"
+        }
+        return .init(kind: kind, code: error.errorCode)
+    }
+    #endif
 
     deinit {
         authorizationTask?.cancel(); discoveryTask?.cancel()

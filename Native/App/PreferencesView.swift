@@ -79,6 +79,7 @@ struct PreferencesView: View {
 /// when a damaged preference record makes the editable form read-only.
 struct SystemStatusView: View {
     @ObservedObject var model: SessionModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         let status = model.systemStatus
@@ -97,6 +98,11 @@ struct SystemStatusView: View {
                             .accessibilityElement(children: .combine)
                             switch notice.action {
                             case .none, .checkAgain: EmptyView()
+                            case .openSessions:
+                                Button("打开会话") {
+                                    openWindow(id: "sessions")
+                                    NSApplication.shared.activate(ignoringOtherApps: true)
+                                }
                             case .reminderSettings: SettingsLink { Text("查看提醒设置") }
                             case .loginSettings: Button("前往登录项设置") { model.openLoginItemSettings() }
                             }

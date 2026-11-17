@@ -44,7 +44,7 @@ public struct IslandActivityPresentation: Equatable, Sendable {
 
 public enum IslandActivityError: String, Error, Sendable {
     case invalidClock, invalidContent, contentBudgetExceeded, disabled, busy, invalidActivityID
-    case requestFailed, updateFailed, endFailed
+    case requestFailed, foregroundRequired, updateFailed, endFailed
     case schedulingFailed, cancelled, inventoryFailed, invalidInventory, stopped
 }
 

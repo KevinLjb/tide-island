@@ -57,6 +57,15 @@ import Testing
     #expect(recovered.activitySummary == "系统允许实时活动" && recovered.attentionCount == 0)
 }
 
+@Test func systemStatusForegroundRequirementOffersActivationWithoutChangingAuthorization() throws {
+    let status = SystemStatusProjection(activity: .allowed, hasConfirmedSource: true, activityProblem: .foregroundRequired)
+    let notice = try #require(status.notices.first { $0.id == "activity.error.foregroundRequired" })
+    #expect(notice.action == .openSessions && notice.level == .attention)
+    #expect(notice.detail.contains("打开会话窗口") && status.activitySummary == notice.title)
+    #expect(status.notices.contains { $0.id == "activity.allowed" })
+    #expect(!status.notices.contains { $0.id == "activity.disabled" })
+}
+
 @Test func systemStatusNotificationNotRequestedAndDeniedHaveDistinctRecoveryStates() {
     let missing = SystemStatusProjection(remindersEnabled: true, notificationAuthorization: .notRequested, reminderProblem: .authorizationNotRequested)
     let denied = SystemStatusProjection(remindersEnabled: true, notificationAuthorization: .denied, reminderProblem: .permissionDenied)
@@ -96,10 +105,11 @@ import Testing
 
 @Test func systemStatusAllActivityFailuresKeepTheirCodeAndRecoveryWithoutRawErrors() {
     let problems: [IslandActivityError] = [.invalidClock, .invalidContent, .contentBudgetExceeded, .disabled, .busy, .invalidActivityID,
-        .requestFailed, .updateFailed, .endFailed, .schedulingFailed, .cancelled, .inventoryFailed, .invalidInventory, .stopped]
+        .requestFailed, .foregroundRequired, .updateFailed, .endFailed, .schedulingFailed, .cancelled, .inventoryFailed, .invalidInventory, .stopped]
     for problem in problems {
         let status = SystemStatusProjection(activity: .allowed, hasConfirmedSource: true, activityProblem: problem)
-        #expect(status.notices.contains { $0.id == "activity.error.\(problem.rawValue)" && $0.action == .checkAgain })
+        let expectedAction: SystemStatusAction = problem == .foregroundRequired ? .openSessions : .checkAgain
+        #expect(status.notices.contains { $0.id == "activity.error.\(problem.rawValue)" && $0.action == expectedAction })
         #expect(status.attentionCount == 1)
     }
 }

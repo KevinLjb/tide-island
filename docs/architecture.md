@@ -50,7 +50,7 @@ flowchart LR
 
 ## Debug 原生验证模式
 
-Debug 的 `--native-sdk-smoke` 显式模式通过真实 NativeActivityController 验证前台合成会话的 request / update / end / shutdown。应用委托延迟构造正常 SessionModel，三个 scene 的内容分支及退出分支均在此模式隔离正常接收器、显示偏好和提醒。测试始终 ownedOnly，按合成会话核对 SDK 清单，不接管遗留；输出固定字段和问题码，失败也清理。Release 不读取参数或包含驱动。SDK 响应与可见系统岛、真实接入分别验收，见 [生命周期测试范围](native-validation.md#显式-debug-sdk-生命周期测试)。
+Debug 的 `--native-sdk-smoke` 与互斥的 `--native-sdk-smoke-background` 分别测试前台及菜单栏后台的合成 request / update / end / shutdown。应用委托延迟构造正常 SessionModel，三个 scene 的内容分支及退出分支均隔离正常接收器、显示偏好和提醒；后台模式保留诊断菜单项。测试始终 ownedOnly，按合成会话核对 SDK 清单，不接管遗留；输出模式、固定问题码及 SDK 授权错误的枚举 / 数字，失败也清理。Release 不读取参数或包含驱动。后台实测 visibility / 7 映射为共享 foregroundRequired，系统状态提供明确的窗口激活恢复动作；实际显示及用户点击仍分别验收，见 [生命周期测试范围](native-validation.md#显式-debug-sdk-生命周期测试)。
 
 ## hooks 配置管理
 

@@ -4,9 +4,13 @@ import Foundation
 @MainActor
 enum NativeSDKValidation {
     #if DEBUG
-    static let isRequested = ProcessInfo.processInfo.arguments.contains("--native-sdk-smoke")
+    static let backgroundRequested = ProcessInfo.processInfo.arguments.contains("--native-sdk-smoke-background")
+    static let foregroundRequested = ProcessInfo.processInfo.arguments.contains("--native-sdk-smoke")
+    static let isRequested = foregroundRequested || backgroundRequested
+    static let showsMenuItem = !isRequested || backgroundRequested
     #else
     static let isRequested = false
+    static let showsMenuItem = true
     #endif
 }
 
@@ -26,18 +30,25 @@ final class NativeSDKSmoke {
 
     func run() async {
         var report = Report(sourceRevision: Bundle.main.object(forInfoDictionaryKey: "TideIslandSourceRevision") as? String ?? "development")
+        report.validationMode = NativeSDKValidation.backgroundRequested ? "background" : "foreground"
         do {
+            guard !(NativeSDKValidation.foregroundRequested && NativeSDKValidation.backgroundRequested) else {
+                throw Failure(code: "conflicting-sdk-smoke-options")
+            }
             guard !NSWorkspace.shared.runningApplications.contains(where: {
                 $0.bundleIdentifier == Bundle.main.bundleIdentifier &&
                     $0.processIdentifier != ProcessInfo.processInfo.processIdentifier && !$0.isTerminated
             }) else { throw Failure(code: "another-app-instance-running") }
-            // This is a foreground SDK exercise. Normal menu-bar activation
-            // and background creation remain separate integration checks.
-            NSApplication.shared.setActivationPolicy(.regular)
-            NSApplication.shared.windows.first(where: { $0.canBecomeKey })?.makeKeyAndOrderFront(nil)
-            NSApplication.shared.activate(ignoringOtherApps: true)
-            try await waitUntil("foreground-activation-timeout") { NSApplication.shared.isActive }
-            report.foregroundObserved = true
+            if NativeSDKValidation.backgroundRequested {
+                report.foregroundObserved = NSApplication.shared.isActive
+                guard !report.foregroundObserved else { throw Failure(code: "background-precondition-not-met") }
+            } else {
+                NSApplication.shared.setActivationPolicy(.regular)
+                NSApplication.shared.windows.first(where: { $0.canBecomeKey })?.makeKeyAndOrderFront(nil)
+                NSApplication.shared.activate(ignoringOtherApps: true)
+                try await waitUntil("foreground-activation-timeout") { NSApplication.shared.isActive }
+                report.foregroundObserved = true
+            }
             guard controller.availability() == .allowed else { throw Failure(code: "activities-not-authorized") }
 
             try await submit(.working)
@@ -69,6 +80,10 @@ final class NativeSDKSmoke {
         }
         let cleaned = await shutdown()
         report.cleanupVerified = cleaned && !hasLiveActivity()
+        if let failure = controller.validationRequestFailure {
+            report.sdkRequestFailureKind = failure.kind
+            report.sdkRequestFailureCode = failure.code
+        }
         report.status = report.problem == nil && report.cleanupVerified && report.requestVerified &&
             report.updateVerified && report.endVerified && report.shutdownVerified ? "passed" : "failed"
         emit(report)
@@ -129,6 +144,7 @@ final class NativeSDKSmoke {
         let kind = "tide-island-native-sdk-smoke"
         let sourceRevision: String
         var status = "failed"
+        var validationMode = "foreground"
         var foregroundObserved = false
         var requestVerified = false
         var updateVerified = false
@@ -136,6 +152,8 @@ final class NativeSDKSmoke {
         var shutdownVerified = false
         var cleanupVerified = false
         var problem: String?
+        var sdkRequestFailureKind: String?
+        var sdkRequestFailureCode: Int?
         let syntheticSource = true
         let visibleIslandVerified = false
         let realSessionIntegrationVerified = false

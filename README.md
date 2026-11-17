@@ -4,7 +4,9 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 让 AI 的工作状态，在岛上一目了然。面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。
 
-> 当前阶段：原生展示逻辑开发。已提供 v1 / v2 事件协议、轮次状态、新鲜度投影、会话注意力、增量 inbox、可预览清理、通道恢复与会话持久化、观察型 hook / notify CLI、hooks 配置管理、确定性回放、菜单栏及原生扩展源码。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
+> 当前阶段：首版开发与交付准备。共享状态、观察型 hooks / notify 统一接入、诊断与合成回放已经通过共享 CI；菜单栏、设置、导出与原生扩展源码已准备。本机真实接入和原生运行尚未验证，暂未发布可安装版本。
+
+第一次使用请看 [开始指南](docs/getting-started.md)。[常见问题](docs/faq.md)说明状态、提醒、Wave 返回、诊断和卸载的实际边界；完整接入命令见 [安装、升级与卸载](docs/installation.md)。
 
 ## 开发进度
 
@@ -63,6 +65,10 @@ docs/installation.md          统一配置安装 / 升级 / 卸载、数据选�
 docs/packaging.md             版本生成、归档 / 签名 / 公证与 ZIP 一致性
 docs/native-validation.md     独立手动原生编译、来源保护和实际报告范围
 docs/diagnostics.md           按需元数据诊断、离线清单、私有导出与合成回放
+docs/compatibility.md         平台、固定外部契约与各项数据格式版本
+docs/migrations.md            升级、未知格式保留、清除边界与降级限制
+docs/getting-started.md       当前共享开发与后续正式环境的首次使用顺序
+docs/faq.md                   状态、集成、提醒、Wave、诊断和卸载常见问题
 ```
 
 Swift Package 没有第三方依赖。Xcode 工程通过本地 package 依赖共享数据层，无需安装工程生成器。
@@ -116,7 +122,7 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland \
 
 版本从 VERSION.json 生成应用 / 扩展共享 xcconfig 和 CLI 常量。正式环境中的 Release archive、应用 / CLI ZIP、签名、公证及摘要记录使用 [打包入口](docs/packaging.md)，当前只准备源码，尚未执行原生交付。
 
-独立 [Native compile 手动工作流](docs/native-validation.md)需要专用正式环境 runner、审阅后的完整 SHA 与操作者确认；当前未注册 / 调度。共享 CI 只检查来源和默认保护，不能据此宣称原生 Debug / Release 编译通过。
+独立 [Native compile 手动工作流](docs/native-validation.md)需要专用正式环境 runner、审阅后的完整 SHA 与操作者确认；workflow 已注册，专用 runner 未注册且未调度原生任务。共享 CI 只检查来源和默认保护，不能据此宣称原生 Debug / Release 编译通过。
 
 ## 发送一个事件
 

@@ -2,6 +2,8 @@
 
 T025 提供明确目录内的 hooks + notify 统一配置入口。源码及隔离检查不代表当前用户配置已启用；原生安装包、签名和真实 Codex 链路继续由 T026 / 27.3 验收。
 
+第一次了解使用顺序见 [首次使用](getting-started.md)；版本、格式迁移与常见问题分别见 [兼容清单](compatibility.md)、[升级 / 降级](migrations.md)和 [FAQ](faq.md)。本文命令用于后续明确启用，不会因为阅读说明自动执行。
+
 ## 使用前提
 
 - 后续使用已构建、验证的 TideIsland.app，保持在稳定路径；[交付说明](bridge-delivery.md)区分摘要完整性与系统签名。

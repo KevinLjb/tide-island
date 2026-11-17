@@ -28,6 +28,15 @@ final class NativeActivityController {
         return await scheduler.shutdown()
     }
 
+    #if DEBUG
+    /// Settle queued work for the explicit SDK smoke mode. This never submits
+    /// another snapshot or creates an acknowledgement on its own.
+    func validationDelivery() async -> IslandActivityDelivery {
+        await scheduler.flush()
+        return await scheduler.current()
+    }
+    #endif
+
     /// Authorization is not hardware discovery or evidence of visible UI.
     func availability() -> NativeActivityAvailability {
         if #available(macOS 27.3, *) {

@@ -2,6 +2,8 @@
 
 T018 在共享控制器中协调公开活动清单、授权、用户关闭及退出；原生适配使用公开 ActivityKit 监听信号，再向接收器重新取得来源确认。共享替身验证与 macOS 27.3 原生验收分别记录。
 
+显式 Debug [SDK 生命周期测试](native-validation.md#显式-debug-sdk-生命周期测试)使用随机内存合成会话和 ownedOnly 范围，经此控制器与调度器验证真实 request / update / end / shutdown。测试分支不构造正常 SessionModel，不导入其他活动；SDK 观察结果与可见灵动岛、菜单栏后台行为及真实来源分别验收。
+
 ## 清单与所有权
 
 `IslandActivityClient.activities(scope:)` 返回可由当前实例管理的完整清单；nil 表示客户端没有清单能力，空数组才表示该范围确实为空。共享层只处理不透明 ID、六字段状态、staleAt 和 active / stale / ended / dismissed 状态，不保存 SDK 对象、聊天内容或认证信息。

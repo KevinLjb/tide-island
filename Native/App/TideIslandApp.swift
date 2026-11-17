@@ -6,31 +6,63 @@ struct TideIslandApp: App {
 
     var body: some Scene {
         Window("TideIsland · 潮汐岛", id: "sessions") {
-            SessionListView(model: delegate.model)
-                .onOpenURL { delegate.model.openSession(url: $0) }
+            if NativeSDKValidation.isRequested {
+                Text("正在验证本机原生 SDK…\n结果将写入本次测试日志。")
+                    .padding()
+            } else {
+                SessionListView(model: delegate.model)
+                    .onOpenURL { delegate.model.openSession(url: $0) }
+            }
         }
         .defaultSize(width: 480, height: 420)
 
-        Settings { PreferencesView(model: delegate.model) }
+        Settings {
+            if !NativeSDKValidation.isRequested { PreferencesView(model: delegate.model) }
+        }
 
-        MenuBarExtra("TideIsland", systemImage: "water.waves") {
-            MenuContent(model: delegate.model)
+        MenuBarExtra("TideIsland", systemImage: "water.waves", isInserted: .constant(!NativeSDKValidation.isRequested)) {
+            if !NativeSDKValidation.isRequested { MenuContent(model: delegate.model) }
         }
     }
 }
 
 @MainActor
 private final class TideIslandApplicationDelegate: NSObject, NSApplicationDelegate {
-    let model = SessionModel()
+    lazy var model = SessionModel()
+    #if DEBUG
+    private var sdkSmoke: NativeSDKSmoke?
+    #endif
     private var terminating = false
     private var replied = false
     private var timeout: Task<Void, Never>?
 
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        guard NativeSDKValidation.isRequested else { return }
+        let smoke = NativeSDKSmoke()
+        sdkSmoke = smoke
+        Task {
+            await smoke.run()
+            // Cleanup has completed before returning to AppKit. The delegate
+            // can finish this explicit test without another async quit cycle.
+            DispatchQueue.main.async { NSApplication.shared.terminate(nil) }
+        }
+        #endif
+    }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        #if DEBUG
+        if NativeSDKValidation.isRequested, sdkSmoke?.finished == true { return .terminateNow }
+        #endif
         guard !terminating else { return .terminateLater }
         terminating = true
         Task {
+            #if DEBUG
+            if NativeSDKValidation.isRequested { _ = await sdkSmoke?.shutdown() }
+            else { await model.shutdown() }
+            #else
             await model.shutdown()
+            #endif
             finishTermination(sender)
         }
         timeout = Task {

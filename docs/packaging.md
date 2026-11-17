@@ -1,6 +1,6 @@
 # 版本、构建产物与打包
 
-T026 提供可追溯的原生归档与应用 / CLI ZIP。已在用户授权的 macOS / Xcode 27.3 beta 环境执行首次 arm64 Release archive；后续 ad hoc 签名暴露 Helpers 中 JSON 的布局问题，已修正为 Resources 清单，签名安装继续验证。尚未执行 Developer ID、公证或发布 release；正式分发仍需正式环境复验。
+T026 提供可追溯的原生归档与应用 / CLI ZIP。`ef2f764` 已在用户授权的 macOS / Xcode 27.3 beta 环境完成 arm64 Release archive、helper / extension / app 的 ad hoc 签名及两个 ZIP 校验；本机安装、首次启动和扩展注册通过。首次签名暴露的 Helpers JSON 问题已修正为 Resources 清单。尚未执行 Developer ID、公证或发布 release；正式分发仍需正式环境复验。
 
 ## 单一版本来源
 
@@ -69,4 +69,4 @@ python3 scripts/verify-artifacts.py --manifest /absolute/path/release-manifest.j
 
 本地执行 `check-release.py --metadata-only` 的 11 项检查，覆盖版本生成漂移、错误 / 重复元数据、合成 Mach-O header、架构 / 提交 / 扩展版本不一致、helper 损坏 / 链接、ZIP 摘要和范围；没有执行任何合成二进制。
 
-共享 CI 另外用实际编译的 bridge 核对 version / --version 和代码架构，合计 12 项发布元数据检查。原生 archive、签名、公证、安装与完整包运行继续待 [统一验收](development-progress.md#6-macos-273-正式环境统一验收)；T027 已准备 [独立手动原生编译入口](native-validation.md)，当前仍未调度或执行。
+共享 CI 另外用实际编译的 bridge 核对 version / --version 和代码架构，合计 12 项发布元数据检查。本机 beta arm64 的 archive / ad hoc 签名、两个 ZIP 与安装启动已有独立实测；公证、外部分发和完整交互仍见 [统一验收](development-progress.md#6-macos-273-正式环境统一验收)。T027 的 [手动正式工作流](native-validation.md)仍未调度，本机已通过独立 beta 双配置编译。

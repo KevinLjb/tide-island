@@ -48,6 +48,10 @@ flowchart LR
 
 `hook` 入口只观察，stdout 为空，可捕获错误返回 0，许可决定继续留给 Codex。`Stop` 可能续跑、`SessionStart` 可能只是压缩恢复，因此当前忽略；带子代理标记的输入也不覆盖主会话。固定版本语义与待接入范围见 [Codex 事件契约](codex-events.md)。
 
+## Debug 原生验证模式
+
+Debug 的 `--native-sdk-smoke` 显式模式通过真实 NativeActivityController 验证前台合成会话的 request / update / end / shutdown。应用委托延迟构造正常 SessionModel，三个 scene 的内容分支及退出分支均在此模式隔离正常接收器、显示偏好和提醒。测试始终 ownedOnly，按合成会话核对 SDK 清单，不接管遗留；输出固定字段和问题码，失败也清理。Release 不读取参数或包含驱动。SDK 响应与可见系统岛、真实接入分别验收，见 [生命周期测试范围](native-validation.md#显式-debug-sdk-生命周期测试)。
+
 ## hooks 配置管理
 
 `CodexHookConfiguration` 对有界 JSON 生成只包含 TideIsland 条目变更的计划；保留未知字段、数值字面量和其他命令，拒绝重复键。`HookConfigurationFile` 负责预览、指纹复核、文件锁、受限权限备份和原子发布。CLI 默认预览，显式应用才写文件。

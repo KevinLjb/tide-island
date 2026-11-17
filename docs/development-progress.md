@@ -9,7 +9,7 @@
 - **T001—T030 首版开发与交付准备完成，T031 条件研究完成，现推进原生验收。** T031 已核对公开 blocking / final status 语义，暂不启用有会话管理与请求回放成本的 app-server 接入。beta 原生双配置已编译，签名安装及真实接入继续推进；主线仍为 V001—V012，E001—E006 继续后续可选。
 - **V001 当前 beta 环境及公开 API 初核已推进，正式接口仍待复验。** 本机 macOS 27.3（26C5047e），已安装并选中官方 Xcode 27.3 beta 2（27C5035i），实际 SDK 为 27.3，首次初始化检查通过，旧版已移除。初次发现的旧 Xcode / 许可缺项已有恢复实证；只读预检 ready 只代表数字前提，具体 API 与发行渠道边界见 [原生验收入口](native-validation.md)。
 - **V002 beta 原生双配置编译已通过。** `72fa654b092492357579077171db9c6756f44256` 的 clean 源码在本机实际完成 arm64 Debug / Release、产物及包内 bridge 校验；同源 419 / 声明 419 项共享测试、10 组 CLI 检查和[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/44152163319)七项通过。报告渠道为 prerelease，签名及运行标记仍为 false。
-- **V003 本地签名安装进行中。** 首次 beta arm64 Release archive 成功，随后签名因 Helpers 中摘要 JSON 被视为未签代码失败。清单已迁至 Resources，正在验证修复；未生成成功包、安装或启用真实 Codex 接入。
+- **V003 本机 beta 签名安装已推进。** `ef2f764` 的 arm64 archive、ad hoc 三组件签名和两个 ZIP 校验通过，应用已安装至 `/Applications/TideIsland.app`，启动持续观察 12 秒、系统扩展注册和正常退出均通过；[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44155875789)实际 420 项和七项通过。Developer ID、公证、外部分发及升级 / 卸载链路保留后续验证。
 - **验证记录更正：此前 CI 的 Swift 测试退出码被日志管道掩盖，旧的成功状态不能证明共享单测通过。** 本轮已修复管道和测试问题，以[严格 CI](https://github.com/KevinLjb/tide-island/actions/runs/43859728100)的 98 项实际执行和七项检查作为当前依据；历史 CLI / 工程结构步骤独立保留证据，见 K017。
 - **正式环境统一验收保留后续复验。** 按本轮新授权先做 27.3 beta 原生编译及可执行测试；正式 SDK、签名交付和真实交互分别记录，不用 beta 结果覆盖正式验收。
 - 开发期间继续执行可运行的纯逻辑测试、CLI 检查和 CI；这些结果单独登记，不代替最终原生验收。
@@ -129,8 +129,8 @@ T016—T018 的纯逻辑检查可先执行。T019—T023 继续完成源码，�
 | --- | --- | --- | --- | --- | --- |
 | T024 | P0 | 已实现 | 共享 CI 通过；原生待 27.3 | [应用内 bridge](bridge-delivery.md)按架构 / 配置构建、签名后摘要嵌入；`--app` 检查固定 Helpers 路径、有界普通文件和清单，预览指纹绑定版本 / 摘要，升级 / 移动后重验并修复受管 hooks；真实构建与调用待验收 | T004、T003 |
 | T025 | P0 | 已实现 | 共享 CI 通过；原生 / live 待 27.3 | [统一安装 / 升级 / 卸载](installation.md)总指纹、逐步备份及部分恢复；[notify 共存](notify-integration.md)只编辑顶层 TOML 并按原 argv 转发；默认保留数据，显式会话清除保留事件及显示设置，回退有明确范围 | T004、T011、T024 |
-| T026 | P0 | 代码就绪 | 共享 / 元数据 CI 通过；原生待 27.3 | [版本与打包](packaging.md)：VERSION.json 生成 app / extension / CLI 版本，归档提交标记 / 架构 / helper 完整性；原生 archive、签名模式 / 可选公证、应用 / CLI ZIP 与摘要入口准备；实际包 / 证书 / 安装未执行 | T024 |
-| T027 | P0 | 代码就绪 | 入口 / 来源与共享 CI 通过；原生待 27.3 | [独立原生验证](native-validation.md)：workflow_dispatch / 默认确认关闭、reviewed SHA / clean source、专用正式 runner 与 Debug / Release 结果；来源 / 构建前后复核、报告区分编译 / runtime；本轮不注册机器或执行 native | T016、T024 |
+| T026 | P0 | 已实现 | beta arm64 archive / ad hoc 包通过；正式分发待验 | [版本与打包](packaging.md)：VERSION.json 生成 app / extension / CLI 版本，归档提交标记 / 架构 / helper 完整性；原生 archive、签名模式 / 可选公证、应用 / CLI ZIP 与摘要入口准备；beta 本机包与安装已通过，Developer ID / 公证未执行 | T024 |
+| T027 | P0 | 已实现 | 本机 beta 双配置通过；正式 runner 未调度 | [独立原生验证](native-validation.md)：workflow_dispatch / 默认确认关闭、reviewed SHA / clean source、专用正式 runner 与 Debug / Release 结果；来源 / 构建前后复核、报告区分编译 / runtime；本机已执行 beta 编译，未注册或调度正式 runner | T016、T024 |
 | T028 | P0 | 已实现 | 共享诊断 / CLI CI 通过；原生待 27.3 | [诊断与回放](diagnostics.md)的版本 / 来源 / 时间 / 实际路由与固定码 allowlist 投影；离线完整清单不重建实时会话，私有新文件不覆盖源数据；应用缓存帧 / 单次真实返回并接入管理菜单保存入口，原生交互未验证 | T005、T010、T012 |
 | T029 | P0 | 已实现 | 源码 / 文档核对通过；正式 SDK / 分发待验收 | [支持版本](compatibility.md)、[格式迁移 / 降级](migrations.md)与 [许可清单](../THIRD_PARTY_NOTICES.md)已维护；事件 / checkpoint / 偏好 / wrapper 各自版本化，固定外部契约与当前无第三方 package 分开记录；正式 SDK / 最终包依赖由 V001 / V003 复核 | T002、T004、T026 |
 | T030 | P0 | 已实现 | 源码 / 文档核对通过；真实操作待统一验收 | [首次使用](getting-started.md)、[FAQ](faq.md)与统一接入 / 兼容 / 迁移 / 诊断互链，区分当前共享开发和后续正式安装；状态 / 演示 / 权限 / Wave 返回与清除范围按现有源码说明，不把未验收能力写成可安装可用 | T025、T028、T029 |
@@ -143,10 +143,10 @@ T016—T018 的纯逻辑检查可先执行。T019—T023 继续完成源码，�
 | --- | --- | --- | --- |
 | V001 | beta 环境初核通过；正式待复验 | 已核对公开 API，当前系统 / Xcode / SDK 均为 27.3，初始化通过，见 [初核记录](native-validation.md#v001-公开-api-初核)；正式 ActivityKit / WidgetKit SDK、系统可用性、扩展配置与版本要求仍待复验 | T018、T019、T029 |
 | V002 | beta 双配置通过；正式待复验 | `72fa654` 的应用 / 扩展 arm64 Debug / Release、本机共享 419 项与 10 组 CLI、同源 CI 已通过；报告及日志见 [V002 记录](native-validation.md#报告与验收)；beta 结果不填作正式验收通过 | T016—T019、T027 |
-| V003 | beta archive 通过；签名修复验证中 | 首次 archive 后发现 Helpers 的 JSON 阻止签名，清单迁至 Resources；继续本地签名、安装、首次启动、扩展发现、稳定 bridge 路径及升级 / 卸载 / 回退 | T024—T026 |
+| V003 | beta 本机签名安装通过；分发与升级待验 | `ef2f764` arm64 archive、ad hoc helper / extension / app 签名、两个 ZIP 与稳定包内 bridge version 通过；本机安装、启动观察、系统扩展注册和正常退出通过。Developer ID / 公证、外部分发、升级 / 卸载 / 回退仍待验 | T024—T026 |
 | V004 | 待 27.3 统一验证 | 真实 Codex → 开始工作 → 工具活动 → 待处理 → 恢复 → 本轮结束的完整链路；中断、失败与可恢复命令错误分别覆盖 | T001—T007、T018 |
 | V005 | 待 27.3 统一验证 | 多个项目、多个 Wave 窗口 / 标签 / 分屏并行；点击、关闭目标、过期映射和应用级返回，不发生串会话或错误定位 | T008、T012—T015、T022 |
-| V006 | 待 27.3 统一验证 | 原生活动创建、更新、结束、过期、计数、聚合、突发事件、应用重启与睡眠唤醒恢复 | T007、T017、T018 |
+| V006 | Debug 前台条件未满足；生命周期待验 | 显式测试驱动已编译，开发态前台确认超时且未请求活动，清理与正常退出通过；clean SHA 复核后继续创建、更新、结束、过期、计数、聚合、突发事件、应用重启与睡眠唤醒恢复 | T007、T017、T018 |
 | V007 | 待 27.3 统一验证 | 鼠标、键盘、触摸、无障碍、长项目名 / 编号、显示缩放与窄布局；关键信息和操作可见且可达 | T019、T021、T022 |
 | V008 | 待 27.3 统一验证 | 内外屏、多显示器切换、全屏、菜单栏设置，以及与其他系统实时活动共存；按系统实际规则确定展示行为 | T018、T019、T023 |
 | V009 | 待 27.3 统一验证 | 授权开启 / 关闭、声音 / 安静时段、当前会话前台抑制、Wave 未安装或未启动、开机启动偏好 | T015、T020、T021、T023 |
@@ -343,5 +343,9 @@ T016—T018 的纯逻辑检查可先执行。T019—T023 继续完成源码，�
 | 2026-11-18 | V002 完成本轮 beta 编译 | `72fa654` 同源 arm64 Debug / Release 均编译成功，app / extension / bridge 的版本、架构、提交与完整性通过；修复首轮 ActivityKit 并发错误 | native-72fa654b0924-3869e4f2 的逐配置日志 / xcresult / JSON 保留；本机 419 / 419 项共享和 10 组 CLI、[精确 CI](https://github.com/KevinLjb/tide-island/actions/runs/44152163319)七项通过；10 项任务验收通过，经验维护与复盘完成。signing / runtime false，正式环境待复验 | 继续 V003 本地签名安装及原生运行 |
 
 | 2026-11-18 | V003、T024—T026 | 首次真实 Release archive 成功，外层签名明确报 Helpers/bridge-manifest.json 未签；按 Apple 规则迁入 Resources，同步 Swift 检查、Python 打包、工程输出及 fixture；增量嵌入清理旧普通清单，拒绝资源链接 | 首次失败产物保留于 release-72fa654b0924；本轮修复继续执行共享 / CLI / 元数据及实际签名，不以 archive 成功替代签名或运行 | 提交修复后重新生成同源本机包，继续安装与启动 |
+
+| 2026-11-18 | V003 本机 beta 打包与安装 | `ef2f764` 清单布局修复完成实际 arm64 Release archive、ad hoc 三组件签名 / deep strict、两 ZIP 摘要、包内 bridge version；安装、启动持续观察、扩展注册与正常退出通过 | [精确 CI](https://github.com/KevinLjb/tide-island/actions/runs/44155875789)实际 420 / 声明 420 项及七项通过；本机 420 项及 10 组 CLI、10 项任务验收通过，经验维护与复盘完成。证据 release-ef2f76449e3d-f7c9d0a7 / release-ef2f76449e3d-40fda8a8 与 first-launch-result.json 保留。可见岛 / Developer ID / 公证 / 公开发布 false | 转 V006 的前台合成 SDK 生命周期，后续复验真实接入与交互 |
+
+| 2026-11-18 | V006 Debug SDK 测试入口 | 增加仅显式 Debug 启用的内存合成模式，隔离正常 SessionModel，ownedOnly 验证 request / 同 ID update / end / shutdown 并输出固定结果；前台测试 policy 单独记录。首次临时包发现预览 dylib 被 Team ID 检查拒绝，测试改用 ENABLE_DEBUG_DYLIB=NO；随后发现 Swift actor job 中直接 terminate 让异步退出回复无法运行，已改为 job 完成后的主队列回调 | 开发态原生编译通过，尚未作为 clean SHA 验收；失败记录与本机 sample 保留，未把程序进程或扩展注册当作 SDK 生命周期通过。继续实际重跑并记录结果 | 完成 clean SHA 编译、SDK 测试及共享 CI 后继续后续可执行验收 |
 
 后续每轮在本节追加一条记录，并同步修改相应任务行；如果统一验收发现问题，把相关行改为未通过并关联修复任务，不覆盖原验收记录。

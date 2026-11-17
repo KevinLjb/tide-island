@@ -86,6 +86,33 @@ self-hosted, macOS, ARM64, tide-island-native-27.3
 
 手动工作流继续只用于正式环境，不添加 beta 开关；共享检查核对编译步骤不使用 prerelease 参数。未勾选正式环境确认时 native job 会跳过，这不是验证通过。没有匹配 runner 时任务可能排队，同样没有原生执行证据。若要保存失败，工作流尽力保留已生成的 JSON、日志和 xcresult，保留期 7 天；前置门禁尚未创建输出时，只有固定阻止原因和未验证状态。
 
+## 显式 Debug SDK 生命周期测试
+
+在已经授权启动本机原生活动的测试环境中，可对本次 Debug 产物启用 `--native-sdk-smoke`。先退出其他 TideIsland 实例，以 clean reviewed SHA 构建并完成本机签名，再从包内执行文件启动并保存 stdout / stderr。使用 ad hoc 时，为这次构建设置 `ENABLE_DEBUG_DYLIB=NO`，生成单体 Debug 代码；否则默认的预览动态库可能被 hardened runtime 的 Team ID 检查拒绝。该选项只作用本次测试构建，未修改项目默认值；含义见 [Apple 构建设置](https://developer.apple.com/documentation/xcode/build-settings-reference)。
+
+```bash
+xcodebuild -project TideIsland.xcodeproj -scheme TideIsland -configuration Debug \
+  -derivedDataPath /absolute/path/NEW-derived-data ARCHS=arm64 \
+  ENABLE_DEBUG_DYLIB=NO CODE_SIGNING_ALLOWED=NO \
+  TIDE_ISLAND_SOURCE_REVISION=REVIEWED_FULL_40_CHARACTER_SHA build
+```
+
+将产物复制至本次测试目录，依 [签名顺序](packaging.md#签名方式)签署 helper、重建 Resources 清单、携带现有 sandbox entitlements 签署 extension，再签署 app，完成 deep / strict 验证；然后执行：
+
+```bash
+/absolute/path/TideIsland.app/Contents/MacOS/TideIsland --native-sdk-smoke
+```
+
+该参数仅在 Debug 读取。测试界面替代正常列表，菜单栏内容和设置不加载，SessionModel 延迟构造且此模式不访问它；不创建正常 inbox 接收器、读取或保存应用显示偏好、安装 Codex 配置、操作 Wave、申请通知或注册登录项。Release 不包含测试驱动，也不读取此开关。SwiftUI 自身的窗口状态由系统管理。
+
+测试用随机的内存合成会话，经真实 NativeActivityController、共享投影及串行调度创建活动，将工作更新为待处理，再以终态结束；另建一次活动验证 shutdown 清理。范围始终 ownedOnly，不导入其他实例或应用遗留。仅此模式将自身 activation policy 设为 regular 并激活，以满足前台 SDK 条件；前台观察与授权失败分别给出固定原因。普通菜单栏及后台自动创建仍由真实集成验证。
+
+各次提交等待真实调度工作完成，并读取 SDK 活动 ID、phase、计数与状态核对请求和同 ID 更新。观察等待使用单调时钟，单步最多五秒；这只是测试驱动的有界 SDK 查询，不会刷新来源时间。stdout 的单行 JSON 包含 source_revision、逐项结果、cleanup_verified 和固定问题码，不包含会话 ID、项目路径或原始 SDK 错误。测试正常结束及失败都会尝试清理自己创建的活动，标记测试结束后再请求退出；这个已清理的 Debug 分支同步返回 terminateNow，避免 AppKit 的嵌套退出循环再次等待被阻塞的 Swift 主 actor 任务。普通应用仍沿用正常异步退出清理。外部执行器需对 SDK 调用不返回设置超时，并把被强制终止的清理记为未知。
+
+只有 JSON 的 status 为 passed 且五项验证均为 true 才表示这个前台合成生命周期已通过。visible_island_verified 和 real_session_integration_verified 持续为 false；扩展实际渲染、点击 / 触摸、真实 Codex 链路、背景创建、睡眠 / 重启和能耗仍分别执行 V004—V011。
+
+本机开发态重跑已验证：ad hoc 单体 Debug 能加载并正常退出，inbox 文件元数据未改变；当前自动启动未能在五秒内确认应用进入前台，报告 foreground-activation-timeout、cleanup_verified 为 true、四项 SDK 操作为 false，尚未请求活动。此结果只证明前置条件失败时正确报告并退出；不能算作 SDK 生命周期通过，也未确认前台不可用的系统原因。后续以 clean SHA 的独立报告复核。
+
 ## 报告与验收
 
 native-validation.json 只有在环境 / 版本门禁通过并开始编译后创建。它记录精确 revision、版本、系统 / SDK / Xcode、validation_channel、操作者互斥的正式 / prerelease 声明、架构和逐配置结果。失败保留已完成范围，native_compile_verified 仅在所有请求配置检查成功后为 true；both_configurations_verified 单独表明双配置完整性。

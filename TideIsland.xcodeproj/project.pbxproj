@@ -5,6 +5,16 @@
     };
     "objectVersion" = "56";
     "objects" = {
+        "B3F77FDC46854D82A3F39B9C" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Native/App/NativeSDKSmoke.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "D784FC2A4D494993AF87AD56" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "B3F77FDC46854D82A3F39B9C";
+        };
         "74A711FF3157BD6E9CD0639E" = {
             "isa" = "PBXFileReference";
             "lastKnownFileType" = "text.xcconfig";
@@ -162,6 +172,7 @@
                 "90E37B46699C451211E516C1",
                 "46C3E37B99F98D891C0F97E9",
                 "FC916CBE8F261521E786BA29",
+                "B3F77FDC46854D82A3F39B9C",
             );
         };
         "D45CB4A487390B4D06F7B760" = {
@@ -419,6 +430,7 @@
                 "4E2867761D21E72CA338905B",
                 "E31E2B28AD4632B9FAF396D7",
                 "7EB68809C8DA5652D257273E",
+                "D784FC2A4D494993AF87AD56",
             );
             "runOnlyForDeploymentPostprocessing" = 0;
         };

@@ -8,7 +8,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T027 已准备 [独立手动原生验证入口](docs/native-validation.md)，完整 SHA、正式环境声明、专用 runner 和逐配置报告分开记录。本地只检查入口默认保护；405 项共享测试和入口 / 来源检查待本轮 CI。当前未调度原生机器、编译 / 签名 / 公证或安装，仍待 macOS 27.3 正式环境。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T027 已准备 [独立手动原生验证入口](docs/native-validation.md)，完整 SHA、正式环境声明、专用 runner 和逐配置报告分开记录。[共享 CI](https://github.com/KevinLjb/tide-island/actions/runs/43987268949) 实际执行 405 项测试，入口 / 来源检查通过。当前未调度原生机器、编译 / 签名 / 公证或安装，仍待 macOS 27.3 正式环境。
 
 ## 环境要求
 

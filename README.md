@@ -12,6 +12,8 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。T028 的必要元数据诊断与 CLI 离线清单已通过 [共享 CI](https://github.com/KevinLjb/tide-island/actions/runs/43989656395)，实际执行 419 项测试；应用导出菜单源码接入。T027 的 [独立手动原生验证入口](docs/native-validation.md)保留完整 SHA、正式环境声明与逐配置报告。当前未调度原生机器、编译 / 签名 / 公证或安装，仍待 macOS 27.3 正式环境。
 
+T029—T030 的兼容 / 迁移 / 许可和开始指南 / FAQ 已完成，[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/43991766217)实际执行 419 项测试与七项检查通过。T031 的 [公开 app-server 研究](docs/app-server-research.md)完成，暂不接入运行时；没有为观察状态连接或恢复用户现有会话。
+
 ## 环境要求
 
 | 范围 | 要求 |

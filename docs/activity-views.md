@@ -20,14 +20,14 @@ T019 使用共享 `IslandActivityViewState` 为系统活动视图、expanded、c
 
 - minimal：状态图标，读屏包含项目、完整状态与全部计数。
 - compactLeading：同一状态图标，读屏包含项目与状态；compactTrailing：有界总数或 ?，读屏读取完整计数含义。
-- expanded：顶部 leading 显示状态 Label，trailing 为弱化的应用名称；bottom 独立显示项目主行及计数 / “打开会话”原生 Link。
+- expanded：顶部 leading 显示状态 Label，trailing 为弱化的应用名称；bottom 使用单行内容块，左侧状态细线，中间项目主行 / 次级计数，右侧为“打开会话”原生 Link。
 - 系统活动主视图：复用相同状态、项目和操作组件，不单独拼接另一套 stale 分支。
 
-计数区使用弱背景分类标签，零待处理保持次要层次；有待处理时配合橙色强调。工作状态为青色，stale 为灰色，不可用仍保留警示符号和文字。compact / minimal 同步使用状态色与系统 keylineTint；主视图通过公开 activityBackgroundTint / activitySystemActionForegroundColor 保持黑底和可读的系统操作色，不自行重绘原生岛外框。
+计数区采用轻量等宽文字，不再逐项套背景标签；正常宽度隐藏数量为零的类别，完整计数仍保留在共享投影及读屏文案中。窄宽退为最多两行的分类计数，超过 99 的视觉数字显示 99+。工作为柔和蓝色、待处理为橙色、stale 为灰色，不可用保留警示符号和文字。compact / minimal 同步使用状态色与系统 keylineTint；活动主视图通过公开 activityBackgroundTint / activitySystemActionForegroundColor 保持黑底，不自行重绘系统岛外框。
 
-展开态将会话入口保持在计数旁，以 44 点圆形箭头表示，不允许 footer 回退成独立按钮行；宽度不足时只把分类标签退为可换行的完整计数文案。其他系统活动摘要保留文字胶囊，并可使用 ViewThatFits 分行。完整大数字仍可显示，不通过无限缩小字号容纳。不增加持续动画，状态也不只依靠颜色区分。设计参考 [Apple Live Activities 指南](https://developer.apple.com/design/human-interface-guidelines/live-activities)，[ActivityKit 展示说明](https://developer.apple.com/documentation/ActivityKit/displaying-live-data-with-live-activities)也提示系统可能截断过高的内容；组件预览不能替代宿主实际尺寸核对。
+项目名与计数组成同一信息块，会话入口始终在右侧，不另起按钮行。共享投影和读屏始终保留完整数字，不通过无限缩小字号容纳。不增加持续动画，状态也不只依靠颜色区分。设计参考 [Apple Live Activities 指南](https://developer.apple.com/design/human-interface-guidelines/live-activities)，[ActivityKit 展示说明](https://developer.apple.com/documentation/ActivityKit/displaying-live-data-with-live-activities)也提示系统可能截断过高的内容；组件预览不能替代宿主实际尺寸核对。
 
-根 widgetURL 与显式 Link 共用模型中的同一 sessionURL，始终指向显示中的会话，不改成项目名称或聚合总数。Link 使用 plain 样式，展开态为 44 × 44 圆形箭头，其他摘要为较轻的文字胶囊；两者保留至少 44 点命中区域及原生控件语义，没有自定义点击手势。图标入口仍有含完整项目名的“打开会话”读屏标签。系统是否允许某个尺寸独立焦点、可用空间及真实触摸命中仍由 V007 核对。
+根 widgetURL 与显式 Link 共用模型中的同一 sessionURL，始终指向显示中的会话，不改成项目名称或聚合总数。Link 使用 plain 样式，活动主视图与展开态均为 32 点可见圆形箭头，外围保留至少 44 × 44 点命中区域及原生控件语义，没有自定义点击手势。图标入口仍有含完整项目名的“打开会话”读屏标签。系统是否允许某个尺寸独立焦点、可用空间及真实触摸命中仍由 V007 核对。
 
 “打开会话”进入 TideIsland 的既有 [会话链接 / 返回](wave-return.md)流程，重新核对当前唯一观察，再请求返回 Wave。旧活动链接可以显示明确失效提示；点击响应不代表精确窗口 / 分屏已可见。无障碍操作名含完整项目名，提示说明进入潮汐岛并请求返回 Wave；图标 / 数字也提供明确含义，不让读屏只读 ? 或 99+。
 

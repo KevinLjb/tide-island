@@ -26,41 +26,70 @@ struct SessionListView: View {
     private func content(at now: Date) -> some View {
         let browser = model.browser(projectID: projectID, showsIgnored: showsIgnored, at: now)
         return VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Label("潮汐岛", systemImage: "water.waves").font(.title2.bold())
+            HStack(spacing: 10) {
+                Image(systemName: "water.waves")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(.cyan)
+                    .frame(width: 36, height: 36)
+                    .background(.cyan.opacity(0.09), in: RoundedRectangle(cornerRadius: 11))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("潮汐岛").font(.system(size: 17, weight: .semibold))
+                    Text("开发会话").font(.system(size: 10)).foregroundStyle(.secondary)
+                }
                 Spacer()
                 managementMenu
             }
             SystemStatusView(model: model)
-            Picker("项目", selection: $projectID) {
-                Text("所有项目").tag(nil as String?)
-                ForEach(browser.projects) { project in
-                    Text("\(project.title)（\(project.sessionCount + (showsIgnored ? project.ignoredCount : 0))）")
-                        .tag(Optional(project.id))
+                .padding(10)
+                .background(.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 10))
+            HStack(spacing: 16) {
+                Picker("项目", selection: $projectID) {
+                    Text("所有项目").tag(nil as String?)
+                    ForEach(browser.projects) { project in
+                        Text("\(project.title)（\(project.sessionCount + (showsIgnored ? project.ignoredCount : 0))）")
+                            .tag(Optional(project.id))
+                    }
+                    if let projectID, !browser.projectIsAvailable {
+                        Text("当前项目已不可用").tag(Optional(projectID))
+                    }
                 }
-                if let projectID, !browser.projectIsAvailable {
-                    Text("当前项目已不可用").tag(Optional(projectID))
-                }
+                .labelsHidden()
+                .accessibilityLabel("筛选项目")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Text("未读 \(browser.unreadCount)")
+                    .monospacedDigit().foregroundStyle(.secondary)
+                Text("待处理 \(browser.waitingCount)")
+                    .monospacedDigit()
+                    .foregroundStyle(browser.waitingCount > 0 ? Color.orange : Color.secondary)
             }
-            Text("未读 \(browser.unreadCount) · 待处理 \(browser.waitingCount)")
-                .font(.callout).foregroundStyle(.secondary)
-            SessionSelectionSummary(
-                selectedName: model.displayedSessions(at: now).first(where: { $0.attention.isSelected })
-                    .map { model.displayName(for: $0) },
-                hasPreferredSession: model.snapshot?.preferredSessionID != nil,
-                clearSelection: { model.clearSelection() })
-            SessionActivitySummary(
-                projectName: model.snapshot?.activitySession.map { model.displayName(for: $0) },
-                reason: model.snapshot?.activitySelectionReason?.title)
-            Toggle("显示已忽略（\(browser.ignoredSessions.count)）", isOn: $showsIgnored).toggleStyle(.checkbox)
+            .font(.system(size: 11))
+            VStack(alignment: .leading, spacing: 5) {
+                SessionSelectionSummary(
+                    selectedName: model.displayedSessions(at: now).first(where: { $0.attention.isSelected })
+                        .map { model.displayName(for: $0) },
+                    hasPreferredSession: model.snapshot?.preferredSessionID != nil,
+                    clearSelection: { model.clearSelection() })
+                SessionActivitySummary(
+                    projectName: model.snapshot?.activitySession.map { model.displayName(for: $0) },
+                    reason: model.snapshot?.activitySelectionReason?.title)
+            }
+            HStack {
+                Text("会话").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+                Spacer()
+                Toggle("显示已忽略（\(browser.ignoredSessions.count)）", isOn: $showsIgnored)
+                    .toggleStyle(.checkbox).font(.system(size: 10))
+            }
             Group {
                 if browser.emptyReason == .none {
                     List {
-                        ForEach(browser.sessions) { sessionRow($0) }
+                        ForEach(browser.sessions) { session in sessionRow(session) }
                         if showsIgnored && !browser.ignoredSessions.isEmpty {
                             Section("已忽略") { ForEach(browser.ignoredSessions) { sessionRow($0) } }
                         }
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 } else { emptyView(browser.emptyReason) }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -71,8 +100,11 @@ struct SessionListView: View {
             SessionWindowFooter(statusMessage: model.statusMessage, diagnosticMessage: model.diagnosticMessage,
                                 needsRecovery: model.channelNeedsRecovery, reconnect: { model.reloadInbox() })
         }
-        .padding(20)
+        .controlSize(.small)
+        .padding(16)
         .frame(minWidth: 420, minHeight: 480)
+        .background(Color(red: 0.065, green: 0.07, blue: 0.08))
+        .preferredColorScheme(.dark)
     }
 
     @ViewBuilder private func emptyView(_ reason: SessionBrowserEmptyReason) -> some View {
@@ -116,44 +148,115 @@ struct SessionListView: View {
     }
 
     private func sessionRow(_ session: SessionStatus) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: session.symbolName).accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(model.displayName(for: session)).font(.headline).lineLimit(2).truncationMode(.middle)
-                Text(SessionBrowserProjection.sessionLabel(for: session.id)).font(.caption).foregroundStyle(.secondary)
-                Text(session.title).foregroundStyle(.secondary)
-                if let detail = session.detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
-                HStack(spacing: 10) {
-                    if session.hasAttentionItem { Text(session.attention.isUnread ? "未读" : "已读") }
-                    if session.attention.isPinned { Label("置顶", systemImage: "pin.fill") }
-                    if session.attention.isSelected { Label("已选择", systemImage: "checkmark.circle") }
-                }.font(.caption)
-                Text(session.attentionReason.title).font(.caption).foregroundStyle(.secondary)
-                Text(session.session.updatedAt, style: .relative).font(.caption).foregroundStyle(.secondary)
-                HStack {
-                    Button("详情") { inspection = SessionInspection(reference: session.reference) }
-                    if session.attention.isIgnored {
-                        Button("恢复当前状态") { model.perform(.restore, on: session) }
-                    } else {
-                        Button("选择") { model.perform(.select, on: session) }
-                        Button("打开 Wave") { model.openWave(for: session) }
-                        Spacer()
-                        Menu {
-                            if session.hasAttentionItem {
-                                Button(session.attention.isUnread ? "标为已读" : "标为未读") {
-                                    model.perform(session.attention.isUnread ? .markRead : .markUnread, on: session)
-                                }
-                            }
-                            Button(session.attention.isPinned ? "取消置顶" : "置顶") {
-                                model.perform(session.attention.isPinned ? .unpin : .pin, on: session)
-                            }
-                            Button("忽略当前状态") { model.perform(.ignore, on: session) }
-                        } label: { Image(systemName: "ellipsis") }
-                        .accessibilityLabel("会话操作")
+        SessionCardView(session: session, projectName: model.displayName(for: session),
+                        open: { model.openWave(for: session) }) {
+            Button("详情") { inspection = SessionInspection(reference: session.reference) }
+            if session.attention.isIgnored {
+                Button("恢复当前状态") { model.perform(.restore, on: session) }
+            } else {
+                Button("选择此会话") { model.perform(.select, on: session) }
+                Divider()
+                if session.hasAttentionItem {
+                    Button(session.attention.isUnread ? "标为已读" : "标为未读") {
+                        model.perform(session.attention.isUnread ? .markRead : .markUnread, on: session)
                     }
                 }
+                Button(session.attention.isPinned ? "取消置顶" : "置顶") {
+                    model.perform(session.attention.isPinned ? .unpin : .pin, on: session)
+                }
+                Button("忽略当前状态") { model.perform(.ignore, on: session) }
             }
-        }.padding(.vertical, 6)
+        }
+        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+}
+
+private struct SessionCardView<Actions: View>: View {
+    let session: SessionStatus
+    let projectName: String
+    let open: () -> Void
+    @ViewBuilder var actions: () -> Actions
+
+    private var accent: Color {
+        if session.activity == .unknown { return .secondary }
+        if session.activity == .needsInput || session.session.phase == .failed { return .orange }
+        if session.activity == .working { return .cyan }
+        return .secondary
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: session.symbolName)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(accent)
+                .frame(width: 32, height: 32)
+                .background(accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 10))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Text(projectName).font(.system(size: 14, weight: .semibold))
+                        .lineLimit(1).truncationMode(.middle)
+                        .help(projectName).privacySensitive()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(session.title).font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(accent).lineLimit(1)
+                }
+                Text(session.detail ?? session.attentionReason.title)
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .lineLimit(1, reservesSpace: true)
+                    .help(session.detail ?? session.attentionReason.title)
+                HStack(spacing: 6) {
+                    Text(SessionBrowserProjection.sessionLabel(for: session.id))
+                        .font(.system(size: 10, design: .monospaced))
+                        .lineLimit(1).truncationMode(.middle)
+                    if session.hasAttentionItem && session.attention.isUnread {
+                        Circle().fill(accent).frame(width: 4, height: 4)
+                            .accessibilityLabel("未读")
+                    }
+                    if session.attention.isPinned {
+                        Image(systemName: "pin.fill").accessibilityLabel("已置顶")
+                    }
+                    if session.attention.isSelected {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.cyan)
+                            .accessibilityLabel("已选择")
+                    }
+                    Spacer(minLength: 0)
+                    Text(session.session.updatedAt, style: .relative).lineLimit(1).monospacedDigit()
+                }
+                .font(.system(size: 10)).foregroundStyle(.white.opacity(0.45))
+            }
+            if !session.attention.isIgnored {
+                Button(action: open) {
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .frame(width: 30, height: 30)
+                        .background(.white.opacity(0.05), in: Circle())
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("返回 Wave")
+                .accessibilityLabel("打开\(projectName)的 Wave 会话")
+            }
+            Menu(content: actions) {
+                Image(systemName: "ellipsis").font(.system(size: 13))
+                    .frame(width: 24, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .accessibilityLabel("\(projectName)的会话操作")
+        }
+        .padding(12)
+        .background(session.attention.isSelected ? Color.cyan.opacity(0.045) : .white.opacity(0.035),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(session.attention.isSelected ? Color.cyan.opacity(0.23) : .white.opacity(0.055), lineWidth: 1)
+        }
     }
 }
 

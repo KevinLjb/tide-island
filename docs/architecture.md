@@ -91,7 +91,7 @@ T018 通过有界完整清单接管唯一活动、清理重复、响应授权及
 
 27.3 beta SDK 的 Activity 句柄没有 Sendable 声明，异步 update / end 属于并发调用边界。原生客户端在 MainActor 保留归属及监听，只将 ID 与共享展示值传入非隔离的异步辅助方法，在调用域内重新取得 SDK 句柄并复核状态；不把 actor 字典中的句柄发送到该边界。缺失目标继续明确失败，shared scheduler 的串行、取消及重新协调规则保持。SDK 新增 pending 显式映射为共享 unknown，保留保守处理。前台合成 SDK 创建 / 同 ID 更新 / 结束 / shutdown 已实测通过，后台新建仍受 visibility 限制；真实来源与其他系统场景另验。
 
-T019 的 IslandActivityViewState 为系统活动 / expanded / compact / minimal 统一生成状态、符号、分类计数、会话链接和完整读屏文案；stale 隐去实时计数，compact 只在视觉上将大总数缩为 99+。原生状态行与独立全宽项目名分层，expanded 项目名放在 bottom 区域以避开 leading 的窄宽度；分类计数和较轻的标准 Link 优先同行，宽度不足再分行。颜色只作状态辅助，不增加 wire 字段或改变会话优先级；无障碍及实际 WidgetKit 宿主的输入 / 尺寸效果单独验收，详见 [活动视图](activity-views.md)。
+T019 的 IslandActivityViewState 为系统活动 / expanded / compact / minimal 统一生成状态、符号、分类计数、会话链接和完整读屏文案；stale 隐去实时计数，compact 只在视觉上将大总数缩为 99+。原生状态行与项目主行分层，expanded 内容位于 bottom 区域以避开 leading 的窄宽度；项目名 / 轻量计数与标准 Link 组成同一行。视觉上隐藏零计数类别，窄宽使用有界短计数而完整读屏含义不变。颜色只作状态辅助，不增加 wire 字段或改变会话优先级；无障碍及实际 WidgetKit 宿主的输入 / 尺寸效果单独验收，详见 [活动视图](activity-views.md)。
 
 原生列表源码已加入已读、忽略、置顶和选择。Activity 候选始终优先新鲜待处理，随后才使用选择或置顶的新鲜工作；忽略及历史记录不参与实时聚合。相同注意力策略供共享层测试和原生接入使用，详细操作一致性、稳定排序与恢复语义见 [会话注意力规则](session-attention.md)。beta 原生已编译，实际交互仍待验证。
 

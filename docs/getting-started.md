@@ -44,6 +44,8 @@ CLI 默认 `diagnostics` 只打印版本，不读取事件或 Codex 配置。`re
 
 应用默认事件目录为 `~/Library/Application Support/TideIsland/Events/`，会话 checkpoint 位于同级 `State/`；显示 / 提醒设置在应用 UserDefaults 中。自定义 `--inbox` 用于 CLI 开发，应用目前没有目录选择器。目录、格式和清除语义见 [持久化](session-persistence.md)与 [迁移](migrations.md)。
 
+关闭会话窗口后，潮汐岛继续在菜单栏接收事件。再次选择「打开会话」可返回窗口。退出应用使用菜单栏的「退出 TideIsland」。
+
 「加载演示会话」会向默认 inbox 写入一条演示元数据，不是纯视觉预览，也不证明真实 Codex 已接入；不要用演示结果代替端到端验收。
 
 ## 阅读状态与返回终端

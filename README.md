@@ -8,6 +8,8 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 第一次使用请看 [开始指南](docs/getting-started.md)。[常见问题](docs/faq.md)说明状态、提醒、Wave 返回、诊断和卸载的实际边界；完整接入命令见 [安装、升级与卸载](docs/installation.md)。
 
+点击会话窗口左上角的红色按钮即可关闭窗口，潮汐岛继续在菜单栏运行。通过「打开会话」可重新打开窗口，使用「退出 TideIsland」停止应用。
+
 ## 开发进度
 
 当前本机已安装 `6808f20` 的 0.1.0（9），并开启展开态 Codex 额度。实际读取到含重置时间的 7 天窗口。beta arm64 Debug / Release、本机签名安装、432 项共享测试和 10 组 CLI 已通过。额度面板完成 20 组 SwiftUI 组件渲染，含窄宽、受限高度和过期状态。系统宿主的最终布局和输入效果继续实机核对。完整进度见 [开发计划与进度](docs/development-progress.md)和[原生验证入口](docs/native-validation.md)。

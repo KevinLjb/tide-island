@@ -51,6 +51,8 @@ private final class TideIslandApplicationDelegate: NSObject, NSApplicationDelega
         #endif
     }
 
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         #if DEBUG
         if NativeSDKValidation.isRequested, sdkSmoke?.finished == true { return .terminateNow }
@@ -90,16 +92,16 @@ private struct MenuContent: View {
 
     var body: some View {
         Text("潮汐岛")
-        Button("打开会话") {
+        Button("打开会话", systemImage: "macwindow") {
             openWindow(id: "sessions")
             NSApplication.shared.activate(ignoringOtherApps: true)
         }
-        Button("加载演示会话") { model.loadDemo() }
+        Button("加载演示会话", systemImage: "play.circle") { model.loadDemo() }
         SettingsLink { Label("设置…", systemImage: "gearshape") }
             .keyboardShortcut(",")
-        Button("重新检查系统状态") { model.recheckSystemStatus() }
+        Button("重新检查系统状态", systemImage: "arrow.clockwise") { model.recheckSystemStatus() }
         Divider()
-        Button("退出 TideIsland") { NSApplication.shared.terminate(nil) }
+        Button("退出 TideIsland", systemImage: "power") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }
 }

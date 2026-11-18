@@ -93,6 +93,8 @@ T018 通过有界完整清单接管唯一活动、清理重复、响应授权及
 
 T019 的 IslandActivityViewState 为系统活动、expanded、compact 和 minimal 统一生成状态、符号、分类计数、会话链接和读屏文案。stale 隐去实时计数，compact 显示有界总数。expanded 将整个面板置于 bottom 区域，与系统活动主视图共享布局。图标、项目名和状态在上排，计数与标准 Link 在下排。可用宽度或高度收紧时，SwiftUI 选择合适的排法，保留完整读屏文案。详见 [活动视图](activity-views.md)。
 
+会话窗口由单个 SwiftUI Window 场景提供，菜单栏负责重开。应用委托让关闭最后一个窗口后继续接收事件和维护活动。主动退出进入同一个异步清理流程。见 [活动生命周期](activity-lifecycle.md#正常退出)。
+
 启用额度后，应用短时连接同一用户的本机 Codex App Server 控制 socket，调用只读 `account/rateLimits/read`，从 Codex 额度桶提取有界的窗口、剩余量和重置时间。认证由已有进程处理，应用只传递必要的额度元数据。额度随来源序号提交并独立计算有效期。会话原观察时间、聚合及 stale 截止继续由事件决定。见 [Codex App Server](https://learn.chatgpt.com/docs/app-server#6-rate-limits-chatgpt)和[额度设置](preferences.md#codex-额度)。
 
 原生列表源码已加入已读、忽略、置顶和选择。Activity 候选始终优先新鲜待处理，随后才使用选择或置顶的新鲜工作；忽略及历史记录不参与实时聚合。相同注意力策略供共享层测试和原生接入使用，详细操作一致性、稳定排序与恢复语义见 [会话注意力规则](session-attention.md)。beta 原生已编译，实际交互仍待验证。

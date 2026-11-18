@@ -4,6 +4,8 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。并行会话可在展开岛查看，待处理优先，每行可打开对应会话。在设置中开启「Codex 额度」后，展开岛在空间足够时显示剩余百分比、进度条和重置时间。见 [多会话总览](docs/activity-views.md#多会话总览)和[额度设置](docs/preferences.md#codex-额度)。
 
+展开的会话卡使用小海獭封面，工作时划水、待处理时探头。空间充足的单会话卡显示最近活动时间与「回到会话」入口。见 [活动视图](docs/activity-views.md#布局与操作)。
+
 > 当前阶段：原生验证与交付准备。macOS / Xcode 27.3 beta 的原生 Debug / Release、本机 ad hoc 签名安装及前台合成 SDK 生命周期已通过，build 3 布局已由用户实机截图确认。真实 Codex 接入已审查启用，开始 / 工具 / 完成回调已观察到；其他交互继续分项验证，暂未发布可下载版本。
 
 第一次使用请看 [开始指南](docs/getting-started.md)。[常见问题](docs/faq.md)说明状态、提醒、Wave 返回、诊断和卸载的实际边界；完整接入命令见 [安装、升级与卸载](docs/installation.md)。

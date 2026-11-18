@@ -95,6 +95,8 @@ T019 的 IslandActivityViewState 为系统活动、expanded、compact 和 minima
 
 多会话面板按现有注意力顺序显示近期确认的会话，每条记录有独立 Link。一个活动承载有界的预览与完整计数。单会话与多会话复用完整额度视图，空间收紧时先调整会话排法，再使用额度文字。详见 [多会话总览](activity-views.md#多会话总览)。
 
+会话卡的两种海獭封面随 WidgetKit 扩展的资源目录编译。扩展依据已校验的工作或待处理状态选图，并使用活动内容的观测时间显示最近活动。相关布局见 [活动视图](activity-views.md#布局与操作)。
+
 会话窗口由单个 SwiftUI Window 场景提供，菜单栏负责重开。菜单操作使用固定 Label，并以 `.titleAndIcon` 请求显示普通菜单图标。应用委托让关闭最后一个窗口后继续接收事件和维护活动，主动退出进入同一个异步清理流程。见 [活动生命周期](activity-lifecycle.md#正常退出)。
 
 启用额度后，应用短时连接同一用户的本机 Codex App Server 控制 socket，调用只读 `account/rateLimits/read`，从 Codex 额度桶提取有界的窗口、剩余量和重置时间。认证由已有进程处理，应用只传递必要的额度元数据。额度随来源序号提交并独立计算有效期。会话原观察时间、聚合及 stale 截止继续由事件决定。见 [Codex App Server](https://learn.chatgpt.com/docs/app-server#6-rate-limits-chatgpt)和[额度设置](preferences.md#codex-额度)。

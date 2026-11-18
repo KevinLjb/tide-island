@@ -115,6 +115,12 @@
             "path" = "Native/ActivityExtension/TideIslandActivityWidget.swift";
             "sourceTree" = "SOURCE_ROOT";
         };
+        "56EE84A97E7C4A55849F7311" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "folder.assetcatalog";
+            "path" = "Native/ActivityExtension/Assets.xcassets";
+            "sourceTree" = "SOURCE_ROOT";
+        };
         "25798108BA7B06F9C96FEDB8" = {
             "isa" = "PBXFileReference";
             "lastKnownFileType" = "sourcecode.swift";
@@ -197,6 +203,7 @@
             "sourceTree" = "<group>";
             "children" = (
                 "BEB612B781BA658CA3B57094",
+                "56EE84A97E7C4A55849F7311",
                 "C1E8227CC3C77FDFB9CD10F5",
                 "52284B221142A68387C7C924",
             );
@@ -324,6 +331,18 @@
             );
             "runOnlyForDeploymentPostprocessing" = 0;
         };
+        "C80A9648CCC84B1B8D365F30" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "56EE84A97E7C4A55849F7311";
+        };
+        "D5F4297228284C75AB3F7C42" = {
+            "isa" = "PBXResourcesBuildPhase";
+            "buildActionMask" = 2147483647;
+            "files" = (
+                "C80A9648CCC84B1B8D365F30",
+            );
+            "runOnlyForDeploymentPostprocessing" = 0;
+        };
         "A5A0AA9F4FB5BC8D9254438A" = {
             "isa" = "PBXNativeTarget";
             "name" = "TideIslandActivity";
@@ -331,6 +350,7 @@
             "buildPhases" = (
                 "340B44853D0D58738451C8F7",
                 "40D79F40A8593FA508DC545F",
+                "D5F4297228284C75AB3F7C42",
             );
             "buildRules" = (
             );

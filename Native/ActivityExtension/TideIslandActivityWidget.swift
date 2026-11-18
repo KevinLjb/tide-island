@@ -58,8 +58,11 @@ private struct ActivityAppearance {
     let accent: Color
     let workingCount: Int?
     let waitingCount: Int?
+    let phase: AgentPhase?
+    let observedAt: Date?
 
     init(display: IslandActivityViewState, content: IslandActivityContent) {
+        let showsLiveState = display.isValid && !display.isStale
         if !display.isValid {
             accent = Self.waiting
         } else if display.isStale {
@@ -67,8 +70,10 @@ private struct ActivityAppearance {
         } else {
             accent = content.phase == .needsInput ? Self.waiting : Self.working
         }
-        workingCount = display.isValid && !display.isStale ? content.workingCount : nil
-        waitingCount = display.isValid && !display.isStale ? content.waitingCount : nil
+        workingCount = showsLiveState ? content.workingCount : nil
+        waitingCount = showsLiveState ? content.waitingCount : nil
+        phase = showsLiveState ? content.phase : nil
+        observedAt = showsLiveState ? content.updatedAt : nil
     }
 }
 
@@ -123,6 +128,11 @@ private struct ActivityPanelView: View {
                     ActivityIdentityView(display: display, appearance: appearance)
                     ActivityCodexQuotaView(windows: windows)
                     footer(windows: [])
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 6) {
+                    compactPanel(windows: [])
+                    ActivityCodexQuotaView(windows: windows)
                 }
                 .fixedSize(horizontal: false, vertical: true)
             }
@@ -213,10 +223,22 @@ private struct ActivityPanelView: View {
 
     private func footer(windows: [CodexQuotaWindow]) -> some View {
         HStack(spacing: 8) {
-            if windows.isEmpty {
-                ActivityCountsView(display: display, appearance: appearance)
-            } else {
+            if !windows.isEmpty {
                 ActivityCodexQuotaView(windows: windows, condensed: true)
+            } else if display.liveCount == 1, let observedAt = appearance.observedAt {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("最近活动")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.62))
+                    Text(observedAt, format: .dateTime.hour().minute())
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.88))
+                        .monospacedDigit()
+                }
+                .lineLimit(1)
+                .accessibilityElement(children: .combine)
+            } else {
+                ActivityCountsView(display: display, appearance: appearance)
             }
             Spacer(minLength: 0)
             ActivitySessionLink(display: display)
@@ -256,9 +278,8 @@ private struct ActivityOverviewLink: View {
                         .padding(.horizontal, 7)
                     } else {
                         HStack(spacing: 9) {
-                            symbol
-                                .frame(width: 30, height: 30)
-                                .background(accent.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
+                            ActivityArtwork(phase: session.phase, symbolName: session.phase.symbolName,
+                                            accent: accent, size: 30)
                             VStack(alignment: .leading, spacing: 2) {
                                 name
                                 HStack(spacing: 5) {
@@ -314,6 +335,43 @@ private struct ActivityOverviewLink: View {
             .font(.system(size: isTile ? 9 : 15, weight: .medium))
             .symbolRenderingMode(.hierarchical).foregroundStyle(accent)
             .accessibilityHidden(true)
+    }
+}
+
+private struct ActivityArtwork: View {
+    let phase: AgentPhase?
+    let symbolName: String
+    let accent: Color
+    let size: CGFloat
+
+    private var assetName: String? {
+        switch phase {
+        case .working: "OtterWorking"
+        case .needsInput: "OtterWaiting"
+        default: nil
+        }
+    }
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)
+        Group {
+            if let assetName {
+                Image(assetName, bundle: .main)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: symbolName)
+                    .font(.system(size: size * 0.42, weight: .medium))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(accent)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(accent.opacity(0.14))
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(shape)
+        .overlay(shape.strokeBorder(.white.opacity(0.08), lineWidth: 1))
+        .accessibilityHidden(true)
     }
 }
 
@@ -392,21 +450,12 @@ private struct ActivityIdentityView: View {
     let appearance: ActivityAppearance
     var condensed = false
     var codexQuota: CodexQuotaWindow? = nil
-    @ScaledMetric(relativeTo: .headline) private var projectFontSize = 17
+    @ScaledMetric(relativeTo: .headline) private var projectFontSize = 18
 
     var body: some View {
         HStack(spacing: condensed ? 8 : 12) {
-            Image(systemName: display.symbolName)
-                .font(.system(size: condensed ? 14 : 21, weight: .medium))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(appearance.accent)
-                .frame(width: condensed ? 26 : 46, height: condensed ? 26 : 46)
-                .background {
-                    RoundedRectangle(cornerRadius: condensed ? 8 : 13, style: .continuous)
-                        .fill(LinearGradient(colors: [appearance.accent.opacity(0.24), appearance.accent.opacity(0.09)],
-                                             startPoint: .topLeading, endPoint: .bottomTrailing))
-                }
-                .accessibilityHidden(true)
+            ActivityArtwork(phase: appearance.phase, symbolName: display.symbolName,
+                            accent: appearance.accent, size: condensed ? 36 : 54)
             VStack(alignment: .leading, spacing: 4) {
                 Text(display.projectName)
                     .font(.system(size: projectFontSize, weight: .semibold))
@@ -516,7 +565,7 @@ private struct ActivitySessionLink: View {
                 ViewThatFits(in: .horizontal) {
                     if !iconOnly {
                         HStack(spacing: 5) {
-                            Text("打开会话")
+                            Text("回到会话")
                             arrow
                         }
                         .padding(.horizontal, 10)

@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parent.parent
+ACTIVITY_ASSETS = "Native/ActivityExtension/Assets.xcassets"
 
 
 def require(condition, message):
@@ -29,7 +30,9 @@ def check():
 
     for item in objects.values():
         if item["isa"] == "PBXFileReference" and item.get("sourceTree") == "SOURCE_ROOT":
-            require((ROOT / item["path"]).is_file(), "Missing project file: " + item["path"])
+            path = ROOT / item["path"]
+            exists = path.is_dir() if item.get("lastKnownFileType") == "folder.assetcatalog" else path.is_file()
+            require(exists, "Missing project file: " + item["path"])
 
     targets = {objects[key]["name"]: objects[key] for key in root["targets"]}
     require(set(targets) == {"TideIsland", "TideIslandActivity"}, "Missing native target")
@@ -53,6 +56,21 @@ def check():
         for key in objects[target["buildConfigurationList"]]["buildConfigurations"]:
             settings = objects[key]["buildSettings"]
             require("MARKETING_VERSION" not in settings and "CURRENT_PROJECT_VERSION" not in settings, "Target must inherit the common version: " + name)
+
+    activity = targets["TideIslandActivity"]
+    resources = [
+        objects[objects[key]["fileRef"]]["path"]
+        for phase in (objects[key] for key in activity["buildPhases"])
+        if phase["isa"] == "PBXResourcesBuildPhase"
+        for key in phase["files"]
+    ]
+    require(ACTIVITY_ASSETS in resources, "Missing activity asset catalog in extension resources")
+    artwork = {"OtterWorking": "otter-working.png", "OtterWaiting": "otter-waiting.png"}
+    for name, filename in artwork.items():
+        imageset = ROOT / ACTIVITY_ASSETS / f"{name}.imageset"
+        metadata = json.loads((imageset / "Contents.json").read_text())
+        require(any(image.get("filename") == filename for image in metadata["images"])
+                and (imageset / filename).is_file(), "Missing activity artwork: " + name)
 
     app = targets["TideIsland"]
     dependency_targets = [objects[objects[key]["target"]]["name"] for key in app["dependencies"]]

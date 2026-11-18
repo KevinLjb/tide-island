@@ -395,9 +395,9 @@ private struct ActivityCodexQuotaView: View {
                 ForEach(windows) { window in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            Text("Codex \(window.title)")
+                            Text(windows.count == 1 ? "Codex \(window.title)" : window.title)
                                 .font(.caption2).foregroundStyle(.white.opacity(0.62))
-                                .lineLimit(1)
+                                .lineLimit(1).minimumScaleFactor(0.85)
                             Spacer(minLength: 0)
                             Text("余 \(window.remainingPercent)%")
                                 .font(.caption.weight(.semibold)).monospacedDigit().lineLimit(1)
@@ -406,8 +406,10 @@ private struct ActivityCodexQuotaView: View {
                         }
                         quotaBar(window.remainingPercent)
                         if let reset = window.resetsAt {
-                            Text("\(reset, format: .dateTime.month().day().hour().minute()) 重置")
-                                .font(.caption2).foregroundStyle(.white.opacity(0.58)).lineLimit(1)
+                            let resetTime = reset.formatted(.dateTime.month().day().hour().minute())
+                            Text(windows.count == 1 ? "\(resetTime) 重置" : resetTime)
+                                .font(.caption2).foregroundStyle(.white.opacity(0.58))
+                                .lineLimit(1).minimumScaleFactor(0.8)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -458,7 +460,7 @@ private struct ActivityIdentityView: View {
                             accent: appearance.accent, size: condensed ? 36 : 54)
             VStack(alignment: .leading, spacing: 4) {
                 Text(display.projectName)
-                    .font(.system(size: projectFontSize, weight: .semibold))
+                    .font(.system(size: condensed ? projectFontSize * 0.9 : projectFontSize, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.94))
                     .lineLimit(1)
                     .truncationMode(.middle)

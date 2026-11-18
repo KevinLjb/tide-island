@@ -14,7 +14,7 @@ struct TideIslandApp: App {
                     .onOpenURL { delegate.model.openSession(url: $0) }
             }
         }
-        .defaultSize(width: 480, height: 420)
+        .defaultSize(width: 480, height: 560)
 
         Settings {
             if !NativeSDKValidation.isRequested { PreferencesView(model: delegate.model) }

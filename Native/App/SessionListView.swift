@@ -44,38 +44,35 @@ struct SessionListView: View {
             }
             Text("未读 \(browser.unreadCount) · 待处理 \(browser.waitingCount)")
                 .font(.callout).foregroundStyle(.secondary)
-            if let selected = model.displayedSessions(at: now).first(where: { $0.attention.isSelected }) {
-                HStack {
-                    Text("已选择：\(model.displayName(for: selected))").lineLimit(1).truncationMode(.middle)
-                    Spacer()
-                    Button("自动选择") { model.clearSelection() }
-                }.font(.caption)
-            } else if model.snapshot?.preferredSessionID != nil {
-                Text("选择的会话暂不可用，已按优先级回退。").font(.caption).foregroundStyle(.secondary)
-            }
-            if let highlighted = model.snapshot?.activitySession, let reason = model.snapshot?.activitySelectionReason {
-                Text("活动候选：\(model.displayName(for: highlighted)) · \(reason.title)")
-                    .font(.caption).foregroundStyle(.secondary).lineLimit(2)
-            }
+            SessionSelectionSummary(
+                selectedName: model.displayedSessions(at: now).first(where: { $0.attention.isSelected })
+                    .map { model.displayName(for: $0) },
+                hasPreferredSession: model.snapshot?.preferredSessionID != nil,
+                clearSelection: { model.clearSelection() })
+            SessionActivitySummary(
+                projectName: model.snapshot?.activitySession.map { model.displayName(for: $0) },
+                reason: model.snapshot?.activitySelectionReason?.title)
             Toggle("显示已忽略（\(browser.ignoredSessions.count)）", isOn: $showsIgnored).toggleStyle(.checkbox)
-            if browser.emptyReason == .none {
-                List {
-                    ForEach(browser.sessions) { sessionRow($0) }
-                    if showsIgnored && !browser.ignoredSessions.isEmpty {
-                        Section("已忽略") { ForEach(browser.ignoredSessions) { sessionRow($0) } }
+            Group {
+                if browser.emptyReason == .none {
+                    List {
+                        ForEach(browser.sessions) { sessionRow($0) }
+                        if showsIgnored && !browser.ignoredSessions.isEmpty {
+                            Section("已忽略") { ForEach(browser.ignoredSessions) { sessionRow($0) } }
+                        }
                     }
-                }
-            } else { emptyView(browser.emptyReason) }
-            if model.channelNeedsRecovery { Button("重新连接") { model.reloadInbox() } }
-            if let message = model.statusMessage {
-                Text(message).font(.callout).foregroundStyle(.secondary).accessibilityLabel(message)
+                } else { emptyView(browser.emptyReason) }
             }
-            if let message = model.diagnosticMessage {
-                Text(message).font(.callout).foregroundStyle(.secondary).accessibilityLabel(message)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .transaction { transaction in
+                transaction.animation = nil
+                transaction.disablesAnimations = true
             }
+            SessionWindowFooter(statusMessage: model.statusMessage, diagnosticMessage: model.diagnosticMessage,
+                                needsRecovery: model.channelNeedsRecovery, reconnect: { model.reloadInbox() })
         }
         .padding(20)
-        .frame(minWidth: 420, minHeight: 340)
+        .frame(minWidth: 420, minHeight: 480)
     }
 
     @ViewBuilder private func emptyView(_ reason: SessionBrowserEmptyReason) -> some View {
@@ -157,6 +154,75 @@ struct SessionListView: View {
                 }
             }
         }.padding(.vertical, 6)
+    }
+}
+
+// Live metadata changes content, not the space reserved around the list.
+private struct SessionSelectionSummary: View {
+    let selectedName: String?
+    let hasPreferredSession: Bool
+    let clearSelection: () -> Void
+
+    private var title: String {
+        if let selectedName { return "已选择：\(selectedName)" }
+        return hasPreferredSession ? "选择的会话暂不可用，已按优先级回退。" : "按优先级自动选择会话"
+    }
+
+    var body: some View {
+        HStack {
+            Text(title).lineLimit(1).truncationMode(.middle).help(title)
+            Spacer(minLength: 8)
+            Button("自动选择", action: clearSelection)
+                .opacity(hasPreferredSession ? 1 : 0)
+                .disabled(!hasPreferredSession)
+                .accessibilityHidden(!hasPreferredSession)
+        }
+        .font(.caption)
+    }
+}
+
+private struct SessionActivitySummary: View {
+    let projectName: String?
+    let reason: String?
+
+    private var title: String {
+        if let projectName, let reason { return "活动候选：\(projectName) · \(reason)" }
+        return "活动候选：暂无已确认的工作状态"
+    }
+
+    var body: some View {
+        Text(title)
+            .font(.caption).foregroundStyle(.secondary)
+            .lineLimit(1).truncationMode(.middle).help(title)
+    }
+}
+
+private struct SessionWindowFooter: View {
+    let statusMessage: String?
+    let diagnosticMessage: String?
+    let needsRecovery: Bool
+    let reconnect: () -> Void
+
+    private var message: String {
+        [statusMessage, diagnosticMessage].compactMap { $0 }.joined(separator: "\n")
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(message.isEmpty ? " " : message)
+                .font(.callout).foregroundStyle(.secondary)
+                .lineLimit(2, reservesSpace: true)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .help(message)
+                .accessibilityLabel(message)
+                .accessibilityHidden(message.isEmpty)
+            Button("重新连接", action: reconnect)
+                .fixedSize()
+                .opacity(needsRecovery ? 1 : 0)
+                .disabled(!needsRecovery)
+                .accessibilityHidden(!needsRecovery)
+        }
     }
 }
 

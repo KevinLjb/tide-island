@@ -362,11 +362,12 @@ final class SessionModel: ObservableObject {
         diagnosticFrameReceivedAt = Date()
         channelMessage = frame.persistence.message ?? frame.health.message ?? frame.notice
         refreshStatusMessage()
-        channelNeedsRecovery = frame.health.state != .healthy || frame.persistence.phase == .unavailable
+        let needsRecovery = frame.health.state != .healthy || frame.persistence.phase == .unavailable
+        if channelNeedsRecovery != needsRecovery { channelNeedsRecovery = needsRecovery }
         cleanupPlan = frame.cleanupPlan
         let scope: IslandActivityScope = frame.health.state == .healthy ? .application : .ownedOnly
         guard frame.snapshot != snapshot || scope != activityScope || requiresActivityReconciliation else { return }
-        snapshot = frame.snapshot
+        if snapshot != frame.snapshot { snapshot = frame.snapshot }
         activityScope = scope
         let force = requiresActivityReconciliation
         requiresActivityReconciliation = false
@@ -436,7 +437,8 @@ final class SessionModel: ObservableObject {
     }
 
     private func refreshStatusMessage() {
-        statusMessage = channelMessage ?? preferencesMessage ?? returnMessage
+        let message = channelMessage ?? preferencesMessage ?? returnMessage
+        if statusMessage != message { statusMessage = message }
     }
 
     deinit {

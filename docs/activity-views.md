@@ -18,7 +18,7 @@ ContentState 提供六个会话字段、可选 Codex 额度与最多两条补充
 
 ## 多会话总览
 
-有多条已确认的近期会话时，展开面板优先展示待处理项，随后按现有候选和注意力顺序显示工作项。空间足够时列三条。高度收紧时依次使用两行或两张并排卡片，更窄的空间使用单会话排法。面板下方有空间时显示其余会话数量和可用额度。活动为 stale 时显示待确认。
+有多条已确认的近期会话时，展开面板优先展示待处理项，随后按现有候选和注意力顺序显示工作项。空间足够时列三条。高度收紧时可使用两行或两张并排卡片，让完整额度优先保留。在更小的展开区，额度可以缩为文字，极窄布局使用单会话入口。面板有余量时显示其余会话数量。活动为 stale 时显示待确认。
 
 每行链接包含自己的会话 ID，经过潮汐岛现有入口选择对应会话并请求返回 Wave。同名项目用与会话窗口一致的短标签区分。隐藏项目名时，仍可用短标签区分。读屏包含完整显示标题和会话标签。点击区域至少为 44 点高。见 [Apple 实时活动深链](https://developer.apple.com/documentation/widgetkit/linking-to-specific-app-scenes-from-your-widget-or-live-activity)和[会话链接](wave-return.md#会话链接)。
 
@@ -32,7 +32,7 @@ ContentState 提供六个会话字段、可选 Codex 额度与最多两条补充
 
 系统决定外框的最终宽高和位置。expanded 通过 WidgetKit 的 `contentMargins` 设置四边内容边距。活动主视图使用 `activityBackgroundTint` 设置黑底，并使用 `activitySystemActionForegroundColor` 设置系统操作色。见 [Apple Live Activities 指南](https://developer.apple.com/design/human-interface-guidelines/live-activities)和 [自定义实时活动视图](https://developer.apple.com/documentation/activitykit/creating-custom-views-for-live-activities)。
 
-开启额度后，单会话展开在身份和入口之间显示实际返回的窗口、剩余百分比、进度条与重置时间。两种窗口并排，宽度或高度受限时优先保留剩余百分比和会话链接。多会话总览在行下方放置简要额度。读屏保留完整额度标签。SDK stale、额度到期或额度不可用时恢复会话布局。额度由 `privacySensitive` 标记，compact 和 minimal 保留会话状态。详见 [额度设置](preferences.md#codex-额度)。
+开启额度后，展开显示实际返回的窗口、剩余百分比、进度条与重置时间。单会话将额度放在身份和入口之间，多会话放在行或卡片下方。两种窗口并排，限高时可采用额度文字版。读屏保留完整额度标签。SDK stale、额度到期或额度不可用时恢复会话布局。额度由 `privacySensitive` 标记。详见 [额度设置](preferences.md#codex-额度)。
 
 根 widgetURL 指向主会话，显式 Link 指向该行的会话。Link 使用原生控件语义，文字与箭头两种排法都保留至少 44 × 44 点命中区域。读屏标签包含完整项目名。V007 继续核对真实宿主尺寸、焦点和鼠标 / 触摸命中。
 

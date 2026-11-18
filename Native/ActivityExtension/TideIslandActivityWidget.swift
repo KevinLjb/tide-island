@@ -73,6 +73,8 @@ private struct ActivityAppearance {
 }
 
 private struct ActivityPanelView: View {
+    private enum OverviewFooterStyle { case detailed, condensed, hidden }
+
     static let inset: Double = 16
 
     let display: IslandActivityViewState
@@ -94,24 +96,27 @@ private struct ActivityPanelView: View {
     }
 
     private func panel(windows: [CodexQuotaWindow]) -> some View {
-        ViewThatFits(in: .vertical) {
-            if display.overviewSessions.count == 3 {
-                overview(limit: 3, windows: windows, showsFooter: true)
-                overview(limit: 3, windows: [], showsFooter: false)
-            }
-            if !display.overviewSessions.isEmpty {
-                overview(limit: 2, windows: windows, showsFooter: true)
-                overview(limit: 2, windows: [], showsFooter: false)
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 6) {
-                        ForEach(display.overviewSessions.prefix(2)) { session in
-                            overviewLink(session, isTile: true)
-                        }
-                    }
-                    .frame(minWidth: 120, idealWidth: 120, maxWidth: .infinity)
-                    compactPanel(windows: windows)
+        let showsOverview = !display.overviewSessions.isEmpty
+        let showsThreeSessions = display.overviewSessions.count == 3
+        return ViewThatFits(in: .vertical) {
+            if showsOverview, !windows.isEmpty {
+                if showsThreeSessions {
+                    overview(limit: 3, windows: windows, footerStyle: .detailed)
                 }
-                .fixedSize(horizontal: false, vertical: true)
+                overview(limit: 2, windows: windows, footerStyle: .detailed)
+                overviewTiles(windows: windows, footerStyle: .detailed)
+            }
+            if showsThreeSessions {
+                overview(limit: 3, windows: windows, footerStyle: .condensed)
+                overview(limit: 3, windows: [], footerStyle: .hidden)
+            }
+            if showsOverview {
+                overview(limit: 2, windows: windows, footerStyle: .condensed)
+                overview(limit: 2, windows: [], footerStyle: .hidden)
+                if !windows.isEmpty {
+                    overviewTiles(windows: windows, footerStyle: .condensed)
+                }
+                overviewTiles(windows: windows, footerStyle: .hidden)
             }
             if !windows.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
@@ -140,30 +145,57 @@ private struct ActivityPanelView: View {
         }
     }
 
-    private func overview(limit: Int, windows: [CodexQuotaWindow], showsFooter: Bool) -> some View {
+    private func overviewTiles(windows: [CodexQuotaWindow], footerStyle: OverviewFooterStyle) -> some View {
+        ViewThatFits(in: .horizontal) {
+            overview(limit: 2, windows: windows, footerStyle: footerStyle, usesTiles: true)
+                .frame(minWidth: 120, idealWidth: 120, maxWidth: .infinity)
+            if footerStyle == .detailed {
+                overview(limit: 2, windows: windows, footerStyle: .condensed)
+            } else {
+                compactPanel(windows: windows)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func overview(limit: Int, windows: [CodexQuotaWindow], footerStyle: OverviewFooterStyle,
+                          usesTiles: Bool = false) -> some View {
         let visible = display.overviewSessions.prefix(limit)
         let more = display.liveCount - visible.count
         return VStack(alignment: .leading, spacing: 4) {
-            ForEach(visible) { session in
-                overviewLink(session)
+            if usesTiles {
+                HStack(spacing: 6) {
+                    ForEach(visible) { session in overviewLink(session, isTile: true) }
+                }
+            } else {
+                ForEach(visible) { session in overviewLink(session) }
             }
-            if showsFooter, more > 0 || !windows.isEmpty {
+            if footerStyle != .hidden, more > 0 || !windows.isEmpty {
                 Rectangle().fill(.white.opacity(0.10)).frame(height: 1)
                     .accessibilityHidden(true)
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) {
-                        otherSessionsCount(more)
-                        if !windows.isEmpty { ActivityCodexQuotaView(windows: windows, condensed: true) }
-                    }
-                    .fixedSize(horizontal: true, vertical: false)
-                    VStack(alignment: .leading, spacing: 3) {
-                        otherSessionsCount(more)
-                        if !windows.isEmpty { ActivityCodexQuotaView(windows: windows, condensed: true) }
-                    }
+                if footerStyle == .detailed {
+                    ActivityCodexQuotaView(windows: windows)
+                    if !usesTiles { otherSessionsCount(more) }
+                } else {
+                    overviewSummary(more: more, windows: windows)
                 }
             }
         }
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func overviewSummary(more: Int, windows: [CodexQuotaWindow]) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                otherSessionsCount(more)
+                if !windows.isEmpty { ActivityCodexQuotaView(windows: windows, condensed: true) }
+            }
+            .fixedSize(horizontal: true, vertical: false)
+            VStack(alignment: .leading, spacing: 3) {
+                otherSessionsCount(more)
+                if !windows.isEmpty { ActivityCodexQuotaView(windows: windows, condensed: true) }
+            }
+        }
     }
 
     private func overviewLink(_ session: IslandActivitySession, isTile: Bool = false) -> some View {

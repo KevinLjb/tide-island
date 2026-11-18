@@ -1,4 +1,4 @@
 // Generated from VERSION.json by scripts/sync-version.py.
 MARKETING_VERSION = 0.1.0
-CURRENT_PROJECT_VERSION = 4
+CURRENT_PROJECT_VERSION = 5
 TIDE_ISLAND_SOURCE_REVISION = development

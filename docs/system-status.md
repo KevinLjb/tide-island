@@ -1,6 +1,8 @@
 # 系统能力、授权与错误
 
-T023 的 `SystemStatusProjection` 将实时活动、通知和登录启动分开呈现，原生会话窗口、设置及菜单栏使用同一投影。状态仅消费公开 API 的结果和已有交付错误，不从机型、进程存在或请求成功推断岛上已经显示。
+T023 的 `SystemStatusProjection` 将实时活动、通知和登录启动分开呈现，原生会话窗口和设置使用同一投影。状态仅消费公开 API 的结果和已有交付错误，不从机型、进程存在或请求成功推断岛上已经显示。
+
+菜单栏弹出菜单使用固定的应用标题与操作入口，不订阅 SessionModel 的实时发布，也不在菜单打开时切换摘要或忙碌禁用状态。打开会话、设置、演示、重查和退出的既有动作保留；重查通过模型现有的取消 / 请求代次与来源同步执行，重复请求不会被当作新的授权。详细状态和检查进度继续在窗口更新，避免后台刷新重建正在跟踪的菜单。
 
 ## 能力与来源
 
@@ -33,7 +35,7 @@ T023 的 `SystemStatusProjection` 将实时活动、通知和登录启动分开�
 
 启动、激活、唤醒、活动授权 / 状态信号及主动授权结束后查询系统状态；没有轮询硬件或高频查询权限。通知权限读取使用请求代次与取消 / 退出检查，迟到结果不能覆盖新查询。恢复入口放在只读偏好表单之外，损坏配置时仍可使用。
 
-本机 beta 后台请求实际返回 ActivityAuthorizationError.visibility（代码 7），见 [Apple 错误说明](https://developer.apple.com/documentation/activitykit/activityauthorizationerror/visibility)。原生适配把该特定错误转为共享 foregroundRequired，控制器仅透传这个已分类的前台要求；其余 request 异常继续转为 requestFailed。该错误没有产生自有活动 ID，不改会话 phase 或观察时间；后续明确的新提交可以重试。系统状态与菜单摘要显示前台要求，恢复按钮打开并激活会话窗口，现有激活回调复核来源再协调。
+本机 beta 后台请求实际返回 ActivityAuthorizationError.visibility（代码 7），见 [Apple 错误说明](https://developer.apple.com/documentation/activitykit/activityauthorizationerror/visibility)。原生适配把该特定错误转为共享 foregroundRequired，控制器仅透传这个已分类的前台要求；其余 request 异常继续转为 requestFailed。该错误没有产生自有活动 ID，不改会话 phase 或观察时间；后续明确的新提交可以重试。窗口系统状态显示前台要求，恢复按钮打开并激活会话窗口，现有激活回调复核来源再协调。
 
 ## 验证范围
 

@@ -83,11 +83,13 @@ private final class TideIslandApplicationDelegate: NSObject, NSApplicationDelega
 }
 
 private struct MenuContent: View {
-    @ObservedObject var model: SessionModel
+    // Menu entries stay fixed while AppKit is tracking an open menu. Actions
+    // still use the live model; detailed status belongs in the session window.
+    let model: SessionModel
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Text(model.systemStatus.activitySummary)
+        Text("潮汐岛")
         Button("打开会话") {
             openWindow(id: "sessions")
             NSApplication.shared.activate(ignoringOtherApps: true)
@@ -96,7 +98,6 @@ private struct MenuContent: View {
         SettingsLink { Label("设置…", systemImage: "gearshape") }
             .keyboardShortcut(",")
         Button("重新检查系统状态") { model.recheckSystemStatus() }
-            .disabled(model.systemStatusBusy)
         Divider()
         Button("退出 TideIsland") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")

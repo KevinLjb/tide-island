@@ -28,7 +28,7 @@ struct TideIslandActivityWidget: Widget {
                     ActivityBrandLabel()
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    ActivityContentView(display: display, appearance: appearance)
+                    ActivityContentView(display: display, appearance: appearance, compactAction: true)
                         .padding(.top, 6)
                 }
             } compactLeading: {
@@ -122,6 +122,7 @@ private struct ActivityBrandLabel: View {
 private struct ActivityContentView: View {
     let display: IslandActivityViewState
     let appearance: ActivityAppearance
+    var compactAction = false
     @ScaledMetric(relativeTo: .headline) private var projectFontSize = 16
 
     var body: some View {
@@ -132,7 +133,7 @@ private struct ActivityContentView: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .privacySensitive()
-            ActivityFooterView(display: display, appearance: appearance)
+            ActivityFooterView(display: display, appearance: appearance, compactAction: compactAction)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -141,21 +142,43 @@ private struct ActivityContentView: View {
 private struct ActivityFooterView: View {
     let display: IslandActivityViewState
     let appearance: ActivityAppearance
+    var compactAction = false
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) {
-                ActivityCountsView(display: display, appearance: appearance)
-                    .fixedSize(horizontal: true, vertical: false)
+        if compactAction {
+            // The expanded island has a bounded height. Keep the action beside
+            // the counts instead of falling back to another button row.
+            HStack(spacing: 8) {
+                ViewThatFits(in: .horizontal) {
+                    ActivityCountsView(display: display, appearance: appearance)
+                        .fixedSize(horizontal: true, vertical: false)
+                    Text(display.countsText)
+                        .font(.caption2)
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.7))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(display.countsText)
                 Spacer(minLength: 0)
-                ActivitySessionLink(display: display)
+                ActivitySessionLink(display: display, iconOnly: true)
                     .fixedSize()
             }
-            VStack(alignment: .leading, spacing: 4) {
-                ActivityCountsView(display: display, appearance: appearance)
-                HStack {
+        } else {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    ActivityCountsView(display: display, appearance: appearance)
+                        .fixedSize(horizontal: true, vertical: false)
                     Spacer(minLength: 0)
                     ActivitySessionLink(display: display)
+                        .fixedSize()
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    ActivityCountsView(display: display, appearance: appearance)
+                    HStack {
+                        Spacer(minLength: 0)
+                        ActivitySessionLink(display: display)
+                    }
                 }
             }
         }
@@ -212,23 +235,32 @@ private struct ActivityMetric: View {
 
 private struct ActivitySessionLink: View {
     let display: IslandActivityViewState
+    var iconOnly = false
     @ScaledMetric(relativeTo: .caption) private var fontSize = 12
 
     var body: some View {
         if let url = display.sessionURL {
             Link(destination: url) {
-                HStack(spacing: 5) {
-                    Text("打开会话")
-                    Image(systemName: "arrow.up.right")
-                        .font(.caption2.weight(.semibold))
+                Group {
+                    if iconOnly {
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: fontSize, weight: .semibold))
+                            .frame(width: 44, height: 44)
+                            .background(.white.opacity(0.09), in: Circle())
+                    } else {
+                        HStack(spacing: 5) {
+                            Text("打开会话")
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption2.weight(.semibold))
+                        }
+                        .font(.system(size: fontSize, weight: .semibold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(.white.opacity(0.09), in: Capsule())
+                    }
                 }
-                .font(.system(size: fontSize, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.9))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(.white.opacity(0.09), in: Capsule())
-                // The visual capsule stays light; the native Link still has
-                // a 44-point target for touch and keyboard interaction.
+                // Both presentations retain a native 44-point Link target.
                 .frame(minWidth: 44, minHeight: 44)
                 .contentShape(Rectangle())
             }

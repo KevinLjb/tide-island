@@ -25,9 +25,9 @@ T019 使用共享 `IslandActivityViewState` 为系统活动视图、expanded、c
 
 计数区使用弱背景分类标签，零待处理保持次要层次；有待处理时配合橙色强调。工作状态为青色，stale 为灰色，不可用仍保留警示符号和文字。compact / minimal 同步使用状态色与系统 keylineTint；主视图通过公开 activityBackgroundTint / activitySystemActionForegroundColor 保持黑底和可读的系统操作色，不自行重绘原生岛外框。
 
-计数与会话入口优先同行，footer 和计数各自使用 ViewThatFits，宽度不足时回退到分行。完整大数字仍可显示，不通过无限缩小字号容纳。不增加持续动画，状态也不只依靠颜色区分。设计参考 [Apple Live Activities 指南](https://developer.apple.com/design/human-interface-guidelines/live-activities)，实际边界仍由系统原生布局决定。
+展开态将会话入口保持在计数旁，以 44 点圆形箭头表示，不允许 footer 回退成独立按钮行；宽度不足时只把分类标签退为可换行的完整计数文案。其他系统活动摘要保留文字胶囊，并可使用 ViewThatFits 分行。完整大数字仍可显示，不通过无限缩小字号容纳。不增加持续动画，状态也不只依靠颜色区分。设计参考 [Apple Live Activities 指南](https://developer.apple.com/design/human-interface-guidelines/live-activities)，[ActivityKit 展示说明](https://developer.apple.com/documentation/ActivityKit/displaying-live-data-with-live-activities)也提示系统可能截断过高的内容；组件预览不能替代宿主实际尺寸核对。
 
-根 widgetURL 与显式 Link 共用模型中的同一 sessionURL，始终指向显示中的会话，不改成项目名称或聚合总数。Link 改用 plain 样式和较轻的胶囊外观，视觉背景先布局，再以 minWidth / minHeight 44 保留透明命中区域及原生控件语义；没有自定义点击手势。系统是否允许某个尺寸独立焦点、可用空间及真实触摸命中仍由 V007 核对。
+根 widgetURL 与显式 Link 共用模型中的同一 sessionURL，始终指向显示中的会话，不改成项目名称或聚合总数。Link 使用 plain 样式，展开态为 44 × 44 圆形箭头，其他摘要为较轻的文字胶囊；两者保留至少 44 点命中区域及原生控件语义，没有自定义点击手势。图标入口仍有含完整项目名的“打开会话”读屏标签。系统是否允许某个尺寸独立焦点、可用空间及真实触摸命中仍由 V007 核对。
 
 “打开会话”进入 TideIsland 的既有 [会话链接 / 返回](wave-return.md)流程，重新核对当前唯一观察，再请求返回 Wave。旧活动链接可以显示明确失效提示；点击响应不代表精确窗口 / 分屏已可见。无障碍操作名含完整项目名，提示说明进入潮汐岛并请求返回 Wave；图标 / 数字也提供明确含义，不让读屏只读 ? 或 99+。
 
@@ -36,5 +36,7 @@ T019 使用共享 `IslandActivityViewState` 为系统活动视图、expanded、c
 新增 8 项共享测试覆盖工作 / 等待目标、分类计数与链接、过期后的全部标题 / 计数降级、99 / 100 / Int.max 边界、非法直接构造和溢出、长中文名称与特殊 ID、相同项目不同会话目标，以及 stale 切换不修改 wire 内容。测试不依赖 SwiftUI / ActivityKit。
 
 视觉辅助组件保留在既有扩展文件内，没有新增 target 成员；当前工程共有 10 个原生 Swift 文件。开发态已从实际 SwiftUI 组件直接渲染工作、待处理、stale、240 点窄宽 / Int.max 和非法内容五种预览，模型只在内存构造，没有向真实 inbox 写入合成事件。该预览核对组件布局，不等于 WidgetKit 宿主 / 原生岛区域的最终尺寸或实际输入已通过。
+
+用户随后报告仍显示旧版；本机发现旧扩展进程的 executable inode 与已安装文件不同。仅重启本应用及自身扩展后，用户截图已确认新配色 / 项目名 / 标签生效，同时暴露文字按钮换行后被系统下沿裁切。build 3 针对此实际问题保持展开态按钮同行，实际安装后的结果继续单独核对。
 
 工程结构检查只验证 target / 文件归属；原生编译、实际字体 / 对比度、VoiceOver、键盘顺序、鼠标 / 触摸、显示缩放和多屏分别保留验收。实际共享 CI、构建与安装结果见 [开发进度](development-progress.md)。

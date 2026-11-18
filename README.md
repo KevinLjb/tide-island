@@ -141,7 +141,7 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland \
 
 显式 Debug 的 `--native-sdk-smoke` 与 `--native-sdk-smoke-background` 分别测试前台 / 菜单栏后台的 SDK 生命周期，隔离正常接收器与显示偏好。前台合成生命周期已通过；后台实测被系统 visibility 拒绝时，应用显示前台要求并提供“打开会话”恢复动作。签名、条件和结果边界见 [SDK 测试说明](docs/native-validation.md#显式-debug-sdk-生命周期测试)；Release 不包含测试驱动。
 
-原生活动布局采用状态栏、独立全宽项目名及分类计数 / 会话入口；工作状态用青色，待处理用橙色，文字和符号保留含义。长名称单行中间省略，读屏保留全名；较轻的会话控件仍保留至少 44 点点击区域，窄布局可改为分行，见 [活动视图](docs/activity-views.md)。
+原生活动布局采用状态栏、独立全宽项目名及分类计数 / 会话入口；工作状态用青色，待处理用橙色，文字和符号保留含义。长名称单行中间省略，读屏保留全名；展开态以计数旁的圆形箭头打开会话，至少保留 44 点点击区域，不把按钮换到额外一行。其他活动摘要仍可分行，见 [活动视图](docs/activity-views.md)。
 
 ## 发送一个事件
 

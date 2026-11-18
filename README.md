@@ -12,7 +12,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-本机已安装 `5405a51` 的 0.1.0（11）。在 macOS 27.3 隔离应用中弹开同源原生菜单，核对到 build 10 只有「设置」的图标被设为显示，build 11 五项都显式设为显示。关窗驻留、重开及菜单退出回归通过。见 [系统状态与菜单](docs/system-status.md)及[开发计划与进度](docs/development-progress.md)。
+本机已安装 `f176d3e` 的 0.1.0（12）。展开态新增多会话总览，待处理优先。原生双配置、签名安装、437 项共享测试和 10 组 CLI 已通过。完成 48 组同源 SwiftUI 布局渲染和两种排法的 AppKit 链接点击检查。系统宿主上的最终显示与点击继续实机核对。见 [活动视图](docs/activity-views.md)和[开发计划与进度](docs/development-progress.md)。
 
 后台 SDK 实测仍返回 `visibility / 7`，保留前台要求并提供“打开会话”恢复动作。用户前台操作后的独立诊断已通过创建、同 ID 更新、结束及退出清理；可见截图与 SDK 结果分别取证。真实开始、工具和完成回调已有观察，许可等待 / 中断、Wave 返回、其他系统场景及分发签名继续待验。
 

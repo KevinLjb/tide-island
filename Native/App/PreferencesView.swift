@@ -80,13 +80,18 @@ struct PreferencesView: View {
 struct SystemStatusView: View {
     @ObservedObject var model: SessionModel
     @Environment(\.openWindow) private var openWindow
+    @State private var isExpanded = false
 
     var body: some View {
         let status = model.systemStatus
         VStack(alignment: .leading, spacing: 6) {
             Label(status.activitySummary, systemImage: status.attentionCount > 0 ? "exclamationmark.circle" : "info.circle")
                 .font(.callout)
-            DisclosureGroup(status.attentionCount > 0 ? "系统状态 · \(status.attentionCount) 项需关注" : "系统状态") {
+                .lineLimit(1).truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .help(status.activitySummary)
+                .accessibilityLabel(status.activitySummary)
+            DisclosureGroup(isExpanded: $isExpanded) {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(status.notices) { notice in
                         VStack(alignment: .leading, spacing: 4) {
@@ -108,9 +113,21 @@ struct SystemStatusView: View {
                             }
                         }
                     }
-                    Button(model.systemStatusBusy ? "正在检查…" : "重新检查系统状态") { model.recheckSystemStatus() }
-                        .disabled(model.systemStatusBusy)
+                    HStack(spacing: 8) {
+                        Button("重新检查系统状态") { model.recheckSystemStatus() }
+                            .disabled(model.systemStatusBusy)
+                        ZStack {
+                            if model.systemStatusBusy {
+                                ProgressView("正在检查系统状态")
+                                    .labelsHidden().controlSize(.small)
+                            }
+                        }
+                        .frame(width: 14, height: 14)
+                    }
                 }.padding(.top, 8)
+            } label: {
+                Text(status.attentionCount > 0 ? "系统状态 · \(status.attentionCount) 项需关注" : "系统状态")
+                    .lineLimit(1).monospacedDigit()
             }.font(.caption)
         }
     }

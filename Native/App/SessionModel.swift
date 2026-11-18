@@ -108,15 +108,17 @@ final class SessionModel: ObservableObject {
         systemStatusRevision &+= 1
         let revision = systemStatusRevision
         systemStatusTask?.cancel()
-        activityAvailability = activities.availability()
+        let availability = activities.availability()
+        if activityAvailability != availability { activityAvailability = availability }
         refreshLoginItemState()
-        notificationAuthorization = nil
-        systemStatusBusy = true
+        // Keep the last observation while checking. Unknown is the initial
+        // state, not an intermediate permission change on every SDK signal.
+        if !systemStatusBusy { systemStatusBusy = true }
         systemStatusTask = Task { [weak self] in
             guard let self else { return }
             let authorization = await reminders.authorization()
             guard !Task.isCancelled, !stopping, systemStatusRevision == revision else { return }
-            notificationAuthorization = authorization
+            if notificationAuthorization != authorization { notificationAuthorization = authorization }
             systemStatusBusy = false; systemStatusTask = nil
         }
     }
@@ -207,7 +209,11 @@ final class SessionModel: ObservableObject {
         } catch { preferencesMessage = "开始时间和结束时间需要不同。"; refreshStatusMessage() }
     }
 
-    func refreshLoginItemState() { if !stopping { loginItemState = loginItems.state() } }
+    func refreshLoginItemState() {
+        guard !stopping else { return }
+        let state = loginItems.state()
+        if loginItemState != state { loginItemState = state }
+    }
     func openLoginItemSettings() { loginItems.openSettings() }
 
     func setLaunchAtLogin(_ enabled: Bool) {

@@ -109,6 +109,7 @@ public actor InboxReceiver {
     @discardableResult
     public func reconnect() -> InboxFrame {
         guard started else { return start() }
+        let announcesRecovery = health.state != .healthy
         if stateFile != nil, persistence.phase == .unavailable, !needsSave { loadedState = false }
         cancelScheduledReads()
         retryAttempt = 0
@@ -119,7 +120,12 @@ public actor InboxReceiver {
         health.retryAttempt = 0
         cleanupPlan = nil
         resetPreview = nil
-        emit()
+        // Verification below is synchronous on this actor. A routine check of
+        // a healthy source publishes its verified result once, rather than a
+        // provisional loss that can end an activity and trigger another check.
+        // Startup / existing failures and real watcher invalidations still
+        // publish recovery; reload failures still publish an unavailable frame.
+        if announcesRecovery { emit() }
         return reload()
     }
 

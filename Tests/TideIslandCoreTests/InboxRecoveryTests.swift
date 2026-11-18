@@ -6,6 +6,69 @@ import Testing
 
 private let recoveryEpoch = Date(timeIntervalSince1970: 1_800_000_000)
 
+@Test func routineReconfirmationDoesNotPublishAnUnconfirmedSourceBetweenHealthyFrames() async throws {
+    let fixture = try RecoveryFixture()
+    defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let event = recoveryEvent(.working)
+    try fixture.inbox.write(event)
+    let receiver = InboxReceiver(inbox: fixture.inbox, now: {
+        // Give the real frame consumer time to observe intermediate emissions.
+        // The logical event clock remains fixed and never renews freshness.
+        Thread.sleep(forTimeInterval: 0.002)
+        return recoveryEpoch
+    })
+    let first = await receiver.start()
+    #expect(first.health.state == .healthy)
+    let ready = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
+    let frames = receiver.frames
+    let observer = Task {
+        var observed = [InboxFrame]()
+        for await frame in frames {
+            if frame.health.state == .stopped { break }
+            observed.append(frame)
+            if observed.count == 1 { ready.continuation.yield(()) }
+        }
+        return observed
+    }
+    var iterator = ready.stream.makeAsyncIterator()
+    _ = await iterator.next()
+    for _ in 0..<12 { _ = await receiver.reconnect() }
+    _ = await receiver.stop()
+    let observed = await observer.value
+    #expect(!observed.isEmpty)
+    #expect(observed.allSatisfy { $0.health.state == .healthy && $0.snapshot.workingCount == 1 })
+    #expect(observed.allSatisfy { $0.snapshot.sessions.first?.session.updatedAt == event.occurredAt })
+    let notices = observed.map {
+        SystemStatusProjection(activity: .allowed, hasConfirmedSource: $0.health.state == .healthy).notices.first?.id
+    }
+    #expect(notices.allSatisfy { $0 == "activity.allowed" })
+}
+
+@Test func reconfirmationStillReportsARealMarkerFailureAndRecoversWithoutNewObservation() async throws {
+    let fixture = try RecoveryFixture()
+    defer { try? FileManager.default.removeItem(at: fixture.root) }
+    let event = recoveryEvent(.needsInput)
+    try fixture.inbox.write(event)
+    let receiver = InboxReceiver(inbox: fixture.inbox, now: { recoveryEpoch })
+    let started = await receiver.start()
+    #expect(started.health.state == .healthy && started.snapshot.waitingCount == 1)
+    let marker = fixture.inbox.directory.appendingPathComponent(InboxDirectory.markerName)
+    let original = try Data(contentsOf: marker)
+    try Data("invalid-marker".utf8).write(to: marker)
+    let failed = await receiver.reconnect()
+    #expect(failed.health.state != .healthy && failed.snapshot.waitingCount == 0)
+    #expect(failed.snapshot.sessions.first?.sourceIssue == .channelUnavailable)
+    #expect(failed.snapshot.sessions.first?.session.updatedAt == event.occurredAt)
+    let status = SystemStatusProjection(activity: .allowed, hasConfirmedSource: failed.health.state == .healthy)
+    #expect(status.notices.first?.id == "activity.source" && status.attentionCount > 0)
+    try original.write(to: marker)
+    let recovered = await receiver.reconnect()
+    #expect(recovered.health.state == .healthy && recovered.snapshot.waitingCount == 1)
+    #expect(recovered.snapshot.sessions.first?.session.lastEventID == event.id)
+    #expect(recovered.snapshot.sessions.first?.session.updatedAt == event.occurredAt)
+    _ = await receiver.stop()
+}
+
 @Test func channelConfirmationPreservesObservationAndAttentionWithoutLiveCounts() throws {
     let event = recoveryEvent(.needsInput)
     var store = SessionStore()

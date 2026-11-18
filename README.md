@@ -10,7 +10,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。当前已安装 `b615969` 的 0.1.0（4）：beta arm64 Debug / Release、ad hoc 包及许可内容、423 项共享测试和 10 组 CLI 通过，[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44239324798)七项通过。build 4 修复会话窗口动态提示挤压列表的布局，20 组隔离组件测量通过，用户窗口持续更新的实际效果另行核对。岛上分类计数和圆形入口的实机截图来自 build 3，本轮沿用其视图；前台合成 SDK 生命周期的独立历史来源与逐项报告见 [原生验证入口](docs/native-validation.md)。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。当前已安装 `a9097b4` 的 0.1.0（5）：beta arm64 Debug / Release、ad hoc 包及许可内容、423 项共享测试和 10 组 CLI 通过，[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44249567526)七项通过。build 5 固定菜单入口，隔离 NSHostingMenu 连续 80 次状态更新下条目保持不变，两个替身动作仍能送达；用户实际菜单跟踪另验。窗口沿用 build 4 的稳定布局，已核对其源文件、模型和场景未变并保留 20 组历史组件测量；岛布局实机截图来自 build 3。独立 SDK 生命周期与逐项范围见 [原生验证入口](docs/native-validation.md)。
 
 后台 SDK 实测仍返回 `visibility / 7`，保留前台要求并提供“打开会话”恢复动作。用户前台操作后的独立诊断已通过创建、同 ID 更新、结束及退出清理；可见截图与 SDK 结果分别取证。真实开始、工具和完成回调已有观察，许可等待 / 中断、Wave 返回、其他系统场景及分发签名继续待验。
 

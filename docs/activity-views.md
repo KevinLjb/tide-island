@@ -32,7 +32,7 @@ ContentState 提供六个会话字段、可选 Codex 额度与最多两条补充
 
 系统决定外框的最终宽高和位置。expanded 通过 WidgetKit 的 `contentMargins` 设置四边内容边距。活动主视图使用 `activityBackgroundTint` 设置黑底，并使用 `activitySystemActionForegroundColor` 设置系统操作色。见 [Apple Live Activities 指南](https://developer.apple.com/design/human-interface-guidelines/live-activities)和 [自定义实时活动视图](https://developer.apple.com/documentation/activitykit/creating-custom-views-for-live-activities)。
 
-开启额度后，展开显示实际返回的窗口、剩余百分比、进度条与重置时间。单会话把额度放在项目下方，多会话放在行或卡片下方。两种窗口并排，更小的区域可采用额度文字版。读屏保留完整额度标签。SDK stale、额度到期或额度不可用时恢复会话布局。额度由 `privacySensitive` 标记。详见 [额度设置](preferences.md#codex-额度)。
+开启额度后，展开显示实际返回的窗口、剩余百分比、进度条与重置时间。单会话把额度放在项目下方，多会话放在行或卡片下方。两种窗口并排时使用简短的窗口名和各自的重置日期与时间。更小的区域可采用额度文字版。读屏保留完整额度标签。SDK stale、额度到期或额度不可用时恢复会话布局。额度由 `privacySensitive` 标记。详见 [额度设置](preferences.md#codex-额度)。
 
 根 widgetURL 指向主会话，显式 Link 指向该行的会话。Link 使用原生控件语义，文字与箭头两种排法都保留至少 44 × 44 点命中区域。读屏标签包含完整项目名。V007 继续核对真实宿主尺寸、焦点和鼠标 / 触摸命中。
 
@@ -57,3 +57,5 @@ build 9 使用同源原生模块渲染 20 组额度面板，包括单窗口、�
 build 12 使用同源 Release Core 和实际 SwiftUI 面板检查 48 组布局，包含混合状态、同名项目、隐藏名称、单会话、过期状态和极窄回退。隔离 AppKit 宿主的三行和两卡布局分别收到三个和两个正确的会话深链。系统灵动岛宿主的尺寸和点击继续单独核对。
 
 build 13 使用同源 Release Core 和生产 SwiftUI 面板渲染 76 组布局。覆盖 180 至 300 点宽度、自然高度及五个限高、单窗口、双窗口、匿名、关闭额度与过期状态。三行和两卡配完整额度的布局通过五次对应会话的 AppKit 链接检查。原生灵动岛宿主的最终排版与输入待实机核对。
+
+build 15 用同源 Release Core 与签名包内的封面资源渲染 146 组布局。工作和待处理封面均可加载，未确认状态显示时钟。窄卡实测两个窗口的名称和不同重置时间可读。隔离 AppKit 检查单会话、堆叠行和并排卡片的七个会话链接。原生灵动岛宿主的最终排版与输入待实机核对。

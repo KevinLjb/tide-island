@@ -10,7 +10,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-当前已安装 `a7d6d05` 的 0.1.0（8）。原生活动展开后采用两排布局和统一边距，空间收紧时切换到紧凑排法。beta arm64 Debug / Release、本机签名包、425 项共享测试和 10 组 CLI 已验证。实际视图用五种宽度与三种高度条件渲染，覆盖工作、待处理、过期及异常等 90 个组合。系统宿主的最终布局和输入效果继续实机核对。完整进度见 [开发计划与进度](docs/development-progress.md)和[原生验证入口](docs/native-validation.md)。
+当前本机已安装 `6808f20` 的 0.1.0（9），并开启展开态 Codex 额度。实际读取到含重置时间的 7 天窗口。beta arm64 Debug / Release、本机签名安装、432 项共享测试和 10 组 CLI 已通过。额度面板完成 20 组 SwiftUI 组件渲染，含窄宽、受限高度和过期状态。系统宿主的最终布局和输入效果继续实机核对。完整进度见 [开发计划与进度](docs/development-progress.md)和[原生验证入口](docs/native-validation.md)。
 
 后台 SDK 实测仍返回 `visibility / 7`，保留前台要求并提供“打开会话”恢复动作。用户前台操作后的独立诊断已通过创建、同 ID 更新、结束及退出清理；可见截图与 SDK 结果分别取证。真实开始、工具和完成回调已有观察，许可等待 / 中断、Wave 返回、其他系统场景及分发签名继续待验。
 

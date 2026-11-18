@@ -57,4 +57,4 @@ T023 的 [系统状态](system-status.md)区域独立显示活动授权、通知
 
 新增 20 项共享测试覆盖默认 / 全字段往返、未来 / 损坏 / 超限记录、只读防覆盖与显式重置、无记录、显示期限边界与来源到期、未确认状态保留、项目名隐藏不改原记录 / 链接 / 截止、隐藏前校验、真实客户端投影、选项乱序 / 去重、关闭记忆及提醒权限等待后的最新显示名。
 
-原生新增 NativePreferences.swift、PreferencesView.swift，应用 Sources 成员已同步，文件总数为九个。设置窗口、TimelineView、UserDefaults、通知授权 / 重置竞态、SMAppService 及真实跨重启行为未编译 / 运行，实际共享 CI 见 [开发进度](development-progress.md)，原生 V001 / V007 / V009 / V011 继续保留。
+build 9 已通过原生应用与扩展的 Debug / Release 编译。本机开启额度后，已在正常退出并重启时复核开关持久化。系统通知授权、登录项与其他实机设置行为继续按 V007 / V009 / V011 分项验证。见 [开发进度](development-progress.md)。

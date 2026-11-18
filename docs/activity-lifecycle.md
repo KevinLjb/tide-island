@@ -6,7 +6,7 @@ T018 在共享控制器中协调公开活动清单、授权、用户关闭及退
 
 ## 清单与所有权
 
-`IslandActivityClient.activities(scope:)` 返回可由当前实例管理的完整清单；nil 表示客户端没有清单能力，空数组才表示该范围确实为空。共享层只处理不透明 ID、六字段状态、staleAt 和 active / stale / ended / dismissed 状态，不保存 SDK 对象、聊天内容或认证信息。
+`IslandActivityClient.activities(scope:)` 返回可由当前实例管理的完整清单；nil 表示客户端没有清单能力，空数组表示该范围为空。共享层处理不透明 ID、会话状态、可选额度显示快照、staleAt 和 active / stale / ended / dismissed 状态。系统关闭后，额度刷新沿用同一观察的抑制记录。
 
 - ownedOnly 仅包含当前进程创建或已接管的句柄。
 - application 允许接管应用遗留活动，调用者必须具有当前主接收器的权威。原生只在 inbox 帧健康时提交该范围，并在 SDK 读取时通过 NSWorkspace 排除另一个仍运行的同 bundle 实例；bundle 身份不可用时不导入。

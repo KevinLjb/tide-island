@@ -125,6 +125,8 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland -configuration Debug
 
 在同一轮用户前台操作后，clean `003b69edaa94069e069c68dd826ca5e1a1336a8b` 的隔离 Debug 诊断已实际通过。sdk-003b69edaa94-029edb03/native-smoke-validation.json 记录 foreground_observed、request_verified、update_verified、end_verified、shutdown_verified、cleanup_verified 全部 true，退出 0，inbox 元数据不变；仍使用内存合成会话及 ownedOnly。该诊断证明 SDK 清单与内容核对的完整生命周期，visible_island_verified 和 real_session_integration_verified 仍为 false；用户截图与自动 SDK 结果分别取证。此前前台超时原因没有独立确认，不归因为特定锁屏、硬件或工具问题；后台创建限制也没有由此次成功消除。
 
+登录服务提示修复 `b6f6ff29efa8a3659b55aae86c8ebbb5c7ac21e2` 的 clean 回归再次通过前台完整合成生命周期（sdk-b6f6ff29efa8-be943324/native-smoke-validation.json），后台仍实际返回 visibility / 7 并分类为 foregroundRequired（sdk-b6f6ff29efa8-d00121a1）。同源 arm64 Debug / Release、423 / 423 项与 10 组 CLI、本机 ad hoc 两 ZIP / 许可和[七项 CI](https://github.com/KevinLjb/tide-island/actions/runs/44220636923)通过，15 项任务检查验收、经验维护与复盘完成。已更新本机应用，12 秒启动、扩展注册、正常退出与包替换期间的数据保留通过；这些安装观察仍不替代真实 Codex / Wave 链路。
+
 ## 报告与验收
 
 native-validation.json 只有在环境 / 版本门禁通过并开始编译后创建。它记录精确 revision、版本、系统 / SDK / Xcode、validation_channel、操作者互斥的正式 / prerelease 声明、架构和逐配置结果。失败保留已完成范围，native_compile_verified 仅在所有请求配置检查成功后为 true；both_configurations_verified 单独表明双配置完整性。

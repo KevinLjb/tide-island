@@ -4,12 +4,14 @@
 
 ## 核对基线
 
-- 本机实际命令 `codex --version` 返回 `codex-cli 0.169.0`。
+- 首次核对时，本机实际命令 `codex --version` 返回 `codex-cli 0.169.0`。
 - [官方版本记录](https://learn.chatgpt.com/docs/changelog) 中 0.169.0 的发布日期为 2026-11-13。
 - 输入字段及语义按官方 tag `rust-v0.169.0` 固定到 revision [`d32063f`](https://github.com/openai/codex/tree/d32063f96c2dff1dc96af839b3952abb6acfeda4)。不将 main 分支的新字段自动当作本机能力。
 - 主要来源：[command hook 输入 schema](https://github.com/openai/codex/tree/d32063f96c2dff1dc96af839b3952abb6acfeda4/codex-rs/hooks/schema/generated)、[legacy notify 序列化](https://github.com/openai/codex/blob/d32063f96c2dff1dc96af839b3952abb6acfeda4/codex-rs/hooks/src/legacy_notify.rs)、[Hooks 使用说明](https://learn.chatgpt.com/docs/hooks)。
 - 通过本机 CLI 导出了 app-server schema，用于交叉核对类型和能力；本轮未连接 app-server 监听真实会话，也未启动模型请求。
 - [合成 fixture](../Tests/TideIslandCoreTests/Fixtures/Codex/lifecycle.json) 包含 9 个自建输入，均按该 revision 对应的完整输入 schema 校验通过。它们是协议测试数据，不是真实用户会话的运行证据。
+
+2026-11-18 再次实测本机为 `codex-cli 0.169.1`。其[官方 tag](https://github.com/openai/codex/releases/tag/rust-v0.169.1)对应 `c376cf7396eff83ce4c6ac61b9553df142e7a0be`；直接比较两份完整、未截断 Git tree 中的 90 个 hook 实现 / schema 相关 blob，与上述 `d32063f` 基线一致，包含 legacy_notify。没有把 diverged compare 页面当作两个端点的直接差异，也不据此承诺所有功能或实际二进制都等同。适配器仍保留已审阅的 0.169.0 契约标记，0.169.1 的真实执行独立验收；本机只读审阅报告为 contract-audit.json。
 
 ## 转换矩阵
 
@@ -74,6 +76,6 @@ tide-island-bridge hook --inbox /absolute/path/to/isolated-inbox < hook-input.js
 
 ## 配置与验证边界
 
-本机尚未安装或修改正在使用的 `~/.codex/hooks.json`、`~/.codex/config.toml` 或项目活动 `.codex/` 配置。T004 的独立 [hooks 配置管理](codex-hooks.md)只编辑显式 hooks.json，既有 notify 与内联 hooks 保持原样。T025 已加入 [notify 共存](notify-integration.md)和 [统一配置流程](installation.md)源码；启用后的 live 运行仍单独验收。
+本机已按明确授权，通过 [统一配置流程](installation.md#本机接入实测2026-11-18)安装默认 `~/.codex/hooks.json` 与顶层 notify，保留原有处理器、其他字段、权限及私有原始备份。没有修改项目活动 `.codex/` 配置或替用户填写信任。T004 的独立 [hooks 配置管理](codex-hooks.md)仍只编辑显式 hooks.json；T025 的 [notify 共存](notify-integration.md)组合安装和实际 live 运行分别验收。
 
 本轮验证覆盖固定版本协议 fixture、v1 / v2 兼容、转换含义、数据排除、CLI 的 stdin / stdout / 退出码及隔离 inbox。单测与 CLI 检查通过不表示用户当前 Codex 已启用这些 hooks，也不代表 27.3 原生扩展验证完成。

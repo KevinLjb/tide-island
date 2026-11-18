@@ -2,9 +2,9 @@
 
 ## 目标与范围
 
-TideIsland 是连接开发会话与 Mac 系统原生实时活动的本地伴随应用。首版围绕 Wave + Codex，先推进生命周期事件、会话管理、终端适配及原生界面源码，原生编译、签名和真机验收统一安排在 macOS 27.3 正式环境可用后进行；额度与宠物作为后续增强。
+TideIsland 是连接开发会话与 Mac 系统原生实时活动的本地伴随应用。首版围绕 Wave + Codex，推进生命周期事件、会话管理、终端适配及系统原生活动；当前按授权在 macOS 27.3 beta 验证，正式环境另行复验，额度与宠物作为后续增强。
 
-已有 Codex 生命周期桥接 CLI；真实配置安装和原生真机验收尚未完成。
+已有 Codex 生命周期桥接 CLI；已完成 beta 原生双配置、本机签名安装和前台合成 SDK 生命周期，用户演示已在原生岛显示。真实 Codex 配置已按授权安装，信任审查、真实会话及其他系统交互仍分别验收。
 
 开发顺序、任务状态与验收清单统一维护在 [开发计划与进度](development-progress.md)。现有共享层检查和 CI 继续随开发执行，不替代后续原生统一验收。
 
@@ -86,7 +86,7 @@ V011 已对 beta arm64 Release 的空闲进程采样 120 秒，记录 CPU、resi
 
 T018 通过有界完整清单接管唯一活动、清理重复、响应授权及系统状态变化；只有健康主接收器可导入遗留活动，原生同时排除另一个运行实例。用户系统关闭后抑制相同展示的立即重建；强制同步保留源序号 / scope，退出拒绝新输入、等待进行中操作、在释放接收器前清理。未知清单完整保留，原生多实例 / 监听 / 退出仍待验证，详见 [活动生命周期](activity-lifecycle.md)。
 
-27.3 beta SDK 的 Activity 句柄没有 Sendable 声明，异步 update / end 属于并发调用边界。原生客户端在 MainActor 保留归属及监听，只将 ID 与共享展示值传入非隔离的异步辅助方法，在调用域内重新取得 SDK 句柄并复核状态；不把 actor 字典中的句柄发送到该边界。缺失目标继续明确失败，shared scheduler 的串行、取消及重新协调规则保持。SDK 新增 pending 显式映射为共享 unknown，保留保守处理，真实生命周期仍待实测。
+27.3 beta SDK 的 Activity 句柄没有 Sendable 声明，异步 update / end 属于并发调用边界。原生客户端在 MainActor 保留归属及监听，只将 ID 与共享展示值传入非隔离的异步辅助方法，在调用域内重新取得 SDK 句柄并复核状态；不把 actor 字典中的句柄发送到该边界。缺失目标继续明确失败，shared scheduler 的串行、取消及重新协调规则保持。SDK 新增 pending 显式映射为共享 unknown，保留保守处理。前台合成 SDK 创建 / 同 ID 更新 / 结束 / shutdown 已实测通过，后台新建仍受 visibility 限制；真实来源与其他系统场景另验。
 
 T019 的 IslandActivityViewState 为系统活动 / expanded / compact / minimal 统一生成状态、符号、分类计数、会话链接和完整读屏文案；stale 隐去实时计数，compact 只在视觉上将大总数缩为 99+。原生采用可换行 / 省略项目名、计数分行回退及同一目标的标准 Link，不增加 wire 字段或改变会话优先级；无障碍、窄布局和输入效果待实测，详见 [活动视图](activity-views.md)。
 
@@ -126,7 +126,7 @@ URL scheme 只识别 `tide-island://session?id=...`；ID / URL 有界，拒绝�
 
 T028 的 DiagnosticReport 只投影版本、时间、汇总与固定原因，事件 / session / navigation reference 不进入报告。CLI 默认版本模式，仅显式 inbox 才以现有完整有界读取生成离线清单，不创建 receiver / checkpoint 或重放 reset 抑制历史。应用在每次 publish 去重前缓存帧及接收时间，Wave 实际返回先去身份再保留单次观察；管理菜单仅在用户动作时组装共享 live 报告、读取系统缓存并打开保存面板，创建数据根之外的私有新文件。诊断不重连、不上传、不证明原生运行，详见 [诊断与回放](diagnostics.md)。
 
-T026 从 VERSION.json 生成 Xcode / 共享 CLI 版本，应用与扩展记录归档 source revision；显式构建脚本先核对环境，再准备原生 archive、签名后 helper 清单、应用 / CLI ZIP 和无绝对路径的摘要记录。签名方式、可选公证、归档头部检查及 checksum 校验分别记录，产物元数据不证明原生运行；当前只执行共享 / 隔离检查，详见 [版本与打包](packaging.md)。
+T026 从 VERSION.json 生成 Xcode / 共享 CLI 版本，应用与扩展记录归档 source revision；显式构建脚本先核对环境，再准备原生 archive、签名后 helper 清单、应用 / CLI ZIP 和无绝对路径的摘要记录。签名方式、可选公证、归档头部检查及 checksum 校验分别记录，产物元数据不证明原生运行。当前已有 beta 本机 archive / ad hoc 包和安装证据，Developer ID / 公证仍待验，详见 [版本与打包](packaging.md)及[进度台账](development-progress.md)。
 
 T027 提供默认不运行的 workflow_dispatch 原生流水线与明确正式环境的执行脚本，绑定完整 reviewed SHA / clean source、真实环境数字检查及逐配置结果。Debug / Release 编译前后复核源，artifact / CLI version 检查与运行验收分离；共享 CI 只检查入口和来源保护，不调用 native tools。实际 runner / 构建未调度，详见 [原生验证入口](native-validation.md)。
 

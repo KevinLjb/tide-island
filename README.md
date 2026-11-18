@@ -4,15 +4,15 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 让 AI 的工作状态，在岛上一目了然。面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。
 
-> 当前阶段：原生验证与交付准备。macOS / Xcode 27.3 beta 的原生 Debug / Release 编译、本机 ad hoc 签名安装、首次启动和扩展注册已通过。SDK 生命周期和真实 Codex 接入继续验证，暂未发布可下载版本。
+> 当前阶段：原生验证与交付准备。macOS / Xcode 27.3 beta 的原生 Debug / Release、本机 ad hoc 签名安装及前台合成 SDK 生命周期已通过，用户演示已在原生岛显示。已按用户授权安装真实 Codex 接入配置，信任审查与真实链路继续验证，暂未发布可下载版本。
 
 第一次使用请看 [开始指南](docs/getting-started.md)。[常见问题](docs/faq.md)说明状态、提醒、Wave 返回、诊断和卸载的实际边界；完整接入命令见 [安装、升级与卸载](docs/installation.md)。
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。最新原生修复 `e7d84c4` 的 beta arm64 Debug / Release、本机 ad hoc 包及许可内容、423 项共享测试和 10 组 CLI 通过，[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44168068545)七项通过。该版已安装，启动观察、扩展注册及正常退出通过；[原生验证入口](docs/native-validation.md)保留完整 SHA、发行渠道及逐项报告。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。最新原生修复 `b6f6ff2` 的 beta arm64 Debug / Release、本机 ad hoc 包及许可内容、423 项共享测试和 10 组 CLI 通过，[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44220636923)七项通过。该版已安装，启动观察、扩展注册、正常退出及前台合成 SDK 生命周期通过；[原生验证入口](docs/native-validation.md)保留完整 SHA、发行渠道及逐项报告。
 
-后台 SDK 实测返回 `visibility / 7`，现保留前台要求并提供“打开会话”恢复动作；自动前台诊断仍未确认激活。完整 SDK 生命周期、可见岛、真实 Codex / Wave 交互及分发签名继续待验，不能由构建和安装结果推定通过。
+后台 SDK 实测仍返回 `visibility / 7`，保留前台要求并提供“打开会话”恢复动作。用户前台操作后的独立诊断已通过创建、同 ID 更新、结束及退出清理；可见演示截图与 SDK 结果分别取证。真实 Codex / Wave 交互、其他系统场景及分发签名继续待验。
 
 T029—T030 的兼容 / 迁移 / 许可和开始指南 / FAQ 已完成，[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/43991766217)实际执行 419 项测试与七项检查通过。T031 的 [公开 app-server 研究](docs/app-server-research.md)完成，暂不接入运行时；没有为观察状态连接或恢复用户现有会话。
 
@@ -212,21 +212,21 @@ CLI 提供两个独立入口：
 - `hook`：读取 stdin，转换工作开始、工具活动、许可等待、中断及会话结束；保持 stdout 为空，不参与 Codex 的控制决定。
 - `notify --payload '<JSON>'`：转换 `agent-turn-complete`，读取线程与可用的 turn 身份，忽略聊天正文。
 
-事件契约按本机 Codex CLI 0.169.0 核对，详细字段、合成测试数据与能力边界见 [Codex 事件契约](docs/codex-events.md)。`swift run tide-island-bridge capabilities` 可查看本程序支持的契约。
+事件契约固定于 Codex CLI 0.169.0 的已审阅源码；当前本机 0.169.1 的相关上游 hook 实现 / schema blob 已直接复核一致，真实执行另验，详见 [Codex 事件契约](docs/codex-events.md)。`swift run tide-island-bridge capabilities` 可查看本程序支持的契约。
 
-`hooks install` / `hooks uninstall` 默认只预览，显式应用时备份并合并 `hooks.json`，保留已有条目。用法、指纹、回退和 Codex `/hooks` 信任审查见 [hooks 配置管理](docs/codex-hooks.md)。本轮尚未应用到用户的真实配置。
+`hooks install` / `hooks uninstall` 默认只预览，显式应用时备份并合并 `hooks.json`，保留已有条目。用法、指纹、回退和 Codex `/hooks` 信任审查见 [hooks 配置管理](docs/codex-hooks.md)。本机已按明确授权完成六类 hooks 与完成 notify 的统一安装，配置写入不代表当前会话已经加载或信任。
 
 原生构建产物可用 `hooks install --app /Applications/TideIsland.app` 检查固定包内 bridge；移动 / 升级后重新预览修复受管路径。该参数与 `--bridge` 互斥，校验清单不替代签名 / 公证验证；安装包当前仍未发布。
 
 hooks 工具保持 `config.toml`、既有 notify 和内联 hooks 原样。独立 `notify-config` 工具只编辑明确指定 config.toml 的顶层 notify，保留并转发原命令参数，卸载恢复旧 notify，详见 [完成通知共存](docs/notify-integration.md)。完整接入使用 [统一配置流程](docs/installation.md)，默认预览、显式应用，总指纹覆盖两个文件：
 
 ```bash
-# 真实接入前先检查预览。尚未修改当前用户配置。
+# 首次启用、移动或升级应用时，先检查最新预览。
 "/Applications/TideIsland.app/Contents/Helpers/tide-island-bridge" integration install \
   --codex-directory /absolute/path/to/codex --app /Applications/TideIsland.app
 ```
 
-单独配置 notify 只覆盖本轮结束；其他已支持事件需要相应 hooks。`Stop`、压缩触发的 `SessionStart` 和子代理输入不会直接改变主会话状态。普通问答的准确等待与整轮最终失败尚无本适配器确认的自动来源；真实配置安装、完整会话恢复和后续来源适配仍待开发。
+单独配置 notify 只覆盖本轮结束；其他已支持事件需要相应 hooks。`Stop`、压缩触发的 `SessionStart` 和子代理输入不会直接改变主会话状态。普通问答的准确等待与整轮最终失败尚无本适配器确认的自动来源；完整真实链路、会话恢复和后续来源适配继续分别推进。
 
 ## 当前能力与后续计划
 

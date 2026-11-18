@@ -2,7 +2,7 @@
 
 A native macOS Dynamic Island companion for Codex and AI coding agents.
 
-让 AI 的工作状态，在岛上一目了然。面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。
+面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。在设置中开启「Codex 额度」后，展开岛可以查看账号实际返回的额度窗口、剩余百分比和重置时间。详见 [额度设置](docs/preferences.md#codex-额度)。
 
 > 当前阶段：原生验证与交付准备。macOS / Xcode 27.3 beta 的原生 Debug / Release、本机 ad hoc 签名安装及前台合成 SDK 生命周期已通过，build 3 布局已由用户实机截图确认。真实 Codex 接入已审查启用，开始 / 工具 / 完成回调已观察到；其他交互继续分项验证，暂未发布可下载版本。
 
@@ -14,7 +14,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 后台 SDK 实测仍返回 `visibility / 7`，保留前台要求并提供“打开会话”恢复动作。用户前台操作后的独立诊断已通过创建、同 ID 更新、结束及退出清理；可见截图与 SDK 结果分别取证。真实开始、工具和完成回调已有观察，许可等待 / 中断、Wave 返回、其他系统场景及分发签名继续待验。
 
-T029—T030 的兼容 / 迁移 / 许可和开始指南 / FAQ 已完成，[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/43991766217)实际执行 419 项测试与七项检查通过。T031 的 [公开 app-server 研究](docs/app-server-research.md)完成，暂不接入运行时；没有为观察状态连接或恢复用户现有会话。
+T029—T030 的兼容 / 迁移 / 许可和开始指南 / FAQ 已完成，[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/43991766217)实际执行 419 项测试与七项检查通过。T031 的 [公开 app-server 会话来源研究](docs/app-server-research.md)完成，会话状态继续取自 hooks 与 notify。
 
 ## 环境要求
 
@@ -243,7 +243,7 @@ hooks 工具保持 `config.toml`、既有 notify 和内联 hooks 原样。独立
 - 已验证：beta arm64 本机 ad hoc 包、安装、首次启动、扩展注册及正常退出；不代表外部分发或可见岛通过。
 - 待验证：灵动岛更新与点击、触摸交互、系统活动协调、真实接入和正式环境。
 - 交付入口就绪：诊断菜单、打包和独立手动原生 CI；Developer ID、公证与公开发布继续单独验收。
-- 待开发：普通问答 / 最终失败补充来源、可靠进程存活证据、Wave 精确定位、额度信息与小宠物。
+- 待开发：普通问答 / 最终失败补充来源、可靠进程存活证据、Wave 精确定位、用量历史与小宠物。
 
 原生界面的尺寸、动画、更新频率由系统约束；小宠物和高频动画需通过实机验证后再确定。
 

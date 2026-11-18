@@ -13,7 +13,7 @@ struct TideIslandActivityWidget: Widget {
         ActivityConfiguration(for: TideIslandAttributes.self) { context in
             let display = IslandActivityViewState(content: context.state, isStale: context.isStale)
             let appearance = ActivityAppearance(display: display, content: context.state)
-            ActivityPanelView(display: display, appearance: appearance)
+            ActivityPanelView(display: display, appearance: appearance, codexQuota: context.state.codexQuota)
                 .padding(ActivityPanelView.inset)
                 .activityBackgroundTint(.black)
                 .activitySystemActionForegroundColor(.white)
@@ -23,7 +23,7 @@ struct TideIslandActivityWidget: Widget {
             let appearance = ActivityAppearance(display: display, content: context.state)
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.bottom) {
-                    ActivityPanelView(display: display, appearance: appearance)
+                    ActivityPanelView(display: display, appearance: appearance, codexQuota: context.state.codexQuota)
                 }
             } compactLeading: {
                 Image(systemName: display.symbolName)
@@ -52,6 +52,7 @@ struct TideIslandActivityWidget: Widget {
 }
 
 private struct ActivityAppearance {
+    static let working = Color(red: 0.43, green: 0.79, blue: 0.96)
     static let waiting = Color(red: 1, green: 0.72, blue: 0.34)
 
     let accent: Color
@@ -64,8 +65,7 @@ private struct ActivityAppearance {
         } else if display.isStale {
             accent = .gray
         } else {
-            accent = content.phase == .needsInput
-                ? Self.waiting : Color(red: 0.43, green: 0.79, blue: 0.96)
+            accent = content.phase == .needsInput ? Self.waiting : Self.working
         }
         workingCount = display.isValid && !display.isStale ? content.workingCount : nil
         waitingCount = display.isValid && !display.isStale ? content.waitingCount : nil
@@ -77,33 +77,133 @@ private struct ActivityPanelView: View {
 
     let display: IslandActivityViewState
     let appearance: ActivityAppearance
+    var codexQuota: CodexQuotaSnapshot? = nil
 
     var body: some View {
+        Group {
+            if display.isValid, !display.isStale, let codexQuota {
+                TimelineView(.explicit([.now] + codexQuota.displayBoundaries)) { context in
+                    panel(windows: codexQuota.windows(at: context.date))
+                }
+            } else {
+                panel(windows: [])
+            }
+        }
+        .frame(idealWidth: 268, maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func panel(windows: [CodexQuotaWindow]) -> some View {
         ViewThatFits(in: .vertical) {
+            if !windows.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    ActivityIdentityView(display: display, appearance: appearance)
+                    ActivityCodexQuotaView(windows: windows)
+                    footer(windows: [])
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
             VStack(alignment: .leading, spacing: 10) {
                 ActivityIdentityView(display: display, appearance: appearance)
-                HStack(spacing: 8) {
-                    ActivityCountsView(display: display, appearance: appearance)
-                    Spacer(minLength: 0)
-                    ActivitySessionLink(display: display)
-                }
-                .frame(minHeight: 44, alignment: .leading)
-                .overlay(alignment: .top) {
-                    Rectangle().fill(.white.opacity(0.1)).frame(height: 1)
-                        .allowsHitTesting(false).accessibilityHidden(true)
-                }
+                footer(windows: windows)
             }
             .fixedSize(horizontal: false, vertical: true)
 
             // The host can offer less vertical space than the expanded layout needs.
             HStack(spacing: 8) {
-                ActivityIdentityView(display: display, appearance: appearance, condensed: true)
+                ActivityIdentityView(display: display, appearance: appearance, condensed: true,
+                                     codexQuota: windows.first)
                 ActivitySessionLink(display: display, iconOnly: true)
                     .fixedSize()
             }
         }
-        .frame(idealWidth: 268, maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .contain)
+    }
+
+    private func footer(windows: [CodexQuotaWindow]) -> some View {
+        HStack(spacing: 8) {
+            if windows.isEmpty {
+                ActivityCountsView(display: display, appearance: appearance)
+            } else {
+                ActivityCodexQuotaView(windows: windows, condensed: true)
+            }
+            Spacer(minLength: 0)
+            ActivitySessionLink(display: display)
+        }
+        .frame(minHeight: 44, alignment: .leading)
+        .overlay(alignment: .top) {
+            Rectangle().fill(.white.opacity(0.1)).frame(height: 1)
+                .allowsHitTesting(false).accessibilityHidden(true)
+        }
+    }
+}
+
+private struct ActivityCodexQuotaView: View {
+    let windows: [CodexQuotaWindow]
+    var condensed = false
+
+    var body: some View {
+        if condensed {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) { ForEach(windows) { shortValue($0) } }
+                    .fixedSize(horizontal: true, vertical: false)
+                VStack(alignment: .leading, spacing: 3) { ForEach(windows) { shortValue($0) } }
+            }
+            .foregroundStyle(.white.opacity(0.82))
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Codex 额度")
+            .privacySensitive()
+        } else {
+            HStack(alignment: .top, spacing: 12) {
+                ForEach(windows) { window in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            Text("Codex \(window.title)")
+                                .font(.caption2).foregroundStyle(.white.opacity(0.62))
+                                .lineLimit(1)
+                            Spacer(minLength: 0)
+                            Text("余 \(window.remainingPercent)%")
+                                .font(.caption.weight(.semibold)).monospacedDigit().lineLimit(1)
+                                .foregroundStyle(.white.opacity(0.9))
+                                .layoutPriority(1)
+                        }
+                        quotaBar(window.remainingPercent)
+                        if let reset = window.resetsAt {
+                            Text("\(reset, format: .dateTime.month().day().hour().minute()) 重置")
+                                .font(.caption2).foregroundStyle(.white.opacity(0.58)).lineLimit(1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(accessibilityText(window))
+                }
+            }
+            .privacySensitive()
+        }
+    }
+
+    private func quotaBar(_ percent: Int) -> some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.12))
+                Capsule()
+                    .fill(percent <= 20 ? ActivityAppearance.waiting : ActivityAppearance.working)
+                    .frame(width: geometry.size.width * Double(percent) / 100)
+            }
+        }
+        .frame(height: 3)
+        .accessibilityHidden(true)
+    }
+
+    private func shortValue(_ window: CodexQuotaWindow) -> some View {
+        Text("\(window.title)余 \(window.remainingPercent)%")
+            .font(.caption2.weight(.medium)).monospacedDigit().lineLimit(1)
+            .accessibilityLabel(accessibilityText(window))
+    }
+
+    private func accessibilityText(_ window: CodexQuotaWindow) -> String {
+        let value = "Codex \(window.title)额度剩余 \(window.remainingPercent)%"
+        guard let reset = window.resetsAt else { return value }
+        return "\(value)，\(reset.formatted(.dateTime.month().day().hour().minute())) 重置"
     }
 }
 
@@ -111,6 +211,7 @@ private struct ActivityIdentityView: View {
     let display: IslandActivityViewState
     let appearance: ActivityAppearance
     var condensed = false
+    var codexQuota: CodexQuotaWindow? = nil
     @ScaledMetric(relativeTo: .headline) private var projectFontSize = 17
 
     var body: some View {
@@ -136,6 +237,13 @@ private struct ActivityIdentityView: View {
 
                 if condensed && display.isValid && !display.isStale {
                     ViewThatFits(in: .horizontal) {
+                        if let codexQuota {
+                            HStack(spacing: 5) {
+                                status
+                                Text("余 \(codexQuota.remainingPercent)%")
+                                    .font(.caption2).monospacedDigit().foregroundStyle(.white.opacity(0.76))
+                            }.fixedSize(horizontal: true, vertical: false)
+                        }
                         ActivityCountsView(display: display, appearance: appearance, singleLine: true)
                             .fixedSize(horizontal: true, vertical: false)
                         status
@@ -147,8 +255,14 @@ private struct ActivityIdentityView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(condensed ? display.accessibilityLabel : display.statusAccessibilityLabel)
+        .accessibilityLabel(identityAccessibilityLabel)
         .privacySensitive()
+    }
+
+    private var identityAccessibilityLabel: String {
+        guard condensed else { return display.statusAccessibilityLabel }
+        guard let codexQuota else { return display.accessibilityLabel }
+        return "\(display.accessibilityLabel)，Codex \(codexQuota.title)额度剩余 \(codexQuota.remainingPercent)%"
     }
 
     private var status: some View {

@@ -34,19 +34,21 @@ public actor IslandActivityController {
         self.now = now
     }
 
-    public func update(snapshot: SessionSnapshot, scope: IslandActivityScope = .ownedOnly, showsProjectName: Bool = true) async throws {
-        _ = try await deliver(snapshot: snapshot, scope: scope, showsProjectName: showsProjectName)
+    public func update(snapshot: SessionSnapshot, scope: IslandActivityScope = .ownedOnly, showsProjectName: Bool = true,
+                       codexQuota: CodexQuotaSnapshot? = nil) async throws {
+        _ = try await deliver(snapshot: snapshot, scope: scope, showsProjectName: showsProjectName, codexQuota: codexQuota)
     }
 
     /// The scheduler uses the actual post-authorization projection, rather than
     /// caching a payload that may have expired while the client was awaited.
-    func deliver(snapshot: SessionSnapshot, scope: IslandActivityScope = .ownedOnly, showsProjectName: Bool = true) async throws -> IslandActivityPresentation? {
+    func deliver(snapshot: SessionSnapshot, scope: IslandActivityScope = .ownedOnly, showsProjectName: Bool = true,
+                 codexQuota: CodexQuotaSnapshot? = nil) async throws -> IslandActivityPresentation? {
         try Task.checkCancellation()
         guard !stopped else { throw IslandActivityError.stopped }
         guard !updating else { throw IslandActivityError.busy }
         updating = true
         defer { updating = false }
-        let candidate = try policy.presentation(for: snapshot, at: now(), showsProjectName: showsProjectName)
+        let candidate = try policy.presentation(for: snapshot, at: now(), showsProjectName: showsProjectName, codexQuota: codexQuota)
         try await reconcile(scope: scope, candidate: candidate)
         guard candidate != nil else { try await endActivities(managed); return nil }
         let enabled = await client.isEnabled()
@@ -54,13 +56,15 @@ public actor IslandActivityController {
         guard enabled else { try await endActivities(managed); throw IslandActivityError.disabled }
         // Authorization itself is asynchronous. Never renew an already expired
         // aggregate by sending a content payload computed before that await.
-        guard let authorized = try policy.presentation(for: snapshot, at: now(), showsProjectName: showsProjectName) else { try await endActivities(managed); return nil }
+        guard let authorized = try policy.presentation(for: snapshot, at: now(), showsProjectName: showsProjectName,
+                                                       codexQuota: codexQuota) else { try await endActivities(managed); return nil }
         if let dismissedContent, sameObservation(dismissedContent, authorized.state) { try await endActivities(managed); return nil }
         dismissedContent = nil
         // Finish duplicate cleanup before updating/creating. A failed end must
         // not be hidden by a successful new request.
         try await endActivities(managed.subtracting(identifier.map { [$0] } ?? []))
-        guard let presentation = try policy.presentation(for: snapshot, at: now(), showsProjectName: showsProjectName) else { try await endActivities(managed); return nil }
+        guard let presentation = try policy.presentation(for: snapshot, at: now(), showsProjectName: showsProjectName,
+                                                         codexQuota: codexQuota) else { try await endActivities(managed); return nil }
         if let identifier {
             do { try await client.update(identifier, presentation: presentation) }
             catch is CancellationError { throw CancellationError() }

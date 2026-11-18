@@ -12,9 +12,22 @@ public struct AppPreferences: Codable, Equatable, Sendable {
     public var historyVisibility: HistoryVisibility
     /// Last explicit intent; the OS status remains authoritative for startup.
     public var launchAtLogin: Bool
+    public var showsCodexQuota: Bool
 
-    public init(reminders: SessionReminderSettings = .init(), historyVisibility: HistoryVisibility = .oneDay, launchAtLogin: Bool = false) {
+    public init(reminders: SessionReminderSettings = .init(), historyVisibility: HistoryVisibility = .oneDay,
+                launchAtLogin: Bool = false, showsCodexQuota: Bool = false) {
         self.reminders = reminders; self.historyVisibility = historyVisibility; self.launchAtLogin = launchAtLogin
+        self.showsCodexQuota = showsCodexQuota
+    }
+
+    private enum CodingKeys: String, CodingKey { case reminders, historyVisibility, launchAtLogin, showsCodexQuota }
+
+    public init(from decoder: any Decoder) throws {
+        let fields = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(reminders: try fields.decode(SessionReminderSettings.self, forKey: .reminders),
+                  historyVisibility: try fields.decode(HistoryVisibility.self, forKey: .historyVisibility),
+                  launchAtLogin: try fields.decode(Bool.self, forKey: .launchAtLogin),
+                  showsCodexQuota: try fields.decodeIfPresent(Bool.self, forKey: .showsCodexQuota) ?? false)
     }
 
     public func visibleStatuses(_ statuses: [SessionStatus], at now: Date) -> [SessionStatus] {
@@ -93,13 +106,19 @@ public struct AppPreferenceDocument: Sendable {
 public extension IslandActivityPresentationPolicy {
     /// Display preference is ordered with the snapshot; it never changes the
     /// stored session or the link identity. Validate the source before hiding.
-    func presentation(for snapshot: SessionSnapshot, at now: Date, showsProjectName: Bool) throws -> IslandActivityPresentation? {
+    func presentation(for snapshot: SessionSnapshot, at now: Date, showsProjectName: Bool,
+                      codexQuota: CodexQuotaSnapshot? = nil) throws -> IslandActivityPresentation? {
         guard let original = try presentation(for: snapshot, at: now) else { return nil }
-        guard !showsProjectName else { return original }
-        let state = IslandActivityContent(sessionID: original.state.sessionID, projectName: "开发会话", phase: original.state.phase,
+        let freshQuota = codexQuota.flatMap { $0.windows(at: now).isEmpty ? nil : $0 }
+        guard !showsProjectName || freshQuota != nil else { return original }
+        let state = IslandActivityContent(sessionID: original.state.sessionID,
+                                          projectName: showsProjectName ? original.state.projectName : "开发会话", phase: original.state.phase,
                                           workingCount: original.state.workingCount, waitingCount: original.state.waitingCount,
-                                          updatedAt: original.state.updatedAt)
-        try validate(state)
+                                          updatedAt: original.state.updatedAt, codexQuota: freshQuota)
+        do { try validate(state) }
+        catch IslandActivityError.contentBudgetExceeded where freshQuota != nil {
+            return try presentation(for: snapshot, at: now, showsProjectName: showsProjectName)
+        }
         return IslandActivityPresentation(state: state, staleAt: original.staleAt)
     }
 }

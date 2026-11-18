@@ -4,7 +4,7 @@ T016 将 Activity 展示数据、时间检查和基本自有活动控制移到�
 
 ## 共享展示数据
 
-`IslandActivityContent` 延续原有六字段 wire shape：sessionID、projectName、phase、workingCount、waitingCount、updatedAt。`TideIslandAttributes.ContentState` 直接别名到该共享类型，应用与扩展继续使用同一份声明，不新建第二套字段。
+`IslandActivityContent` 使用原有六个会话字段 sessionID、projectName、phase、workingCount、waitingCount、updatedAt，并可携带有界 `codexQuota`。`TideIslandAttributes.ContentState` 直接别名到该共享类型。既有负载可直接读取。可选额度超过内容预算时，投影保留会话负载。
 
 展示只包含必要状态，不包含事件 context、工具名 / 正文、Wave 位置、认证、完整路径或原始环境。ID / 项目名沿用事件协议的 UTF-8 和控制字符约束，允许合法中文及特殊字符，不通过截断改变会话身份。内容解码也校验 phase、非负计数、总数溢出、选中 phase 的计数和字段约束。
 

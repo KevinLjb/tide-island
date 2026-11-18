@@ -5,6 +5,16 @@
     };
     "objectVersion" = "56";
     "objects" = {
+        "90601BC8F1454057A80D4A06" = {
+            "isa" = "PBXFileReference";
+            "lastKnownFileType" = "sourcecode.swift";
+            "path" = "Native/App/NativeCodexQuotaReader.swift";
+            "sourceTree" = "SOURCE_ROOT";
+        };
+        "E8C18769C8A7482AA39168B8" = {
+            "isa" = "PBXBuildFile";
+            "fileRef" = "90601BC8F1454057A80D4A06";
+        };
         "B3F77FDC46854D82A3F39B9C" = {
             "isa" = "PBXFileReference";
             "lastKnownFileType" = "sourcecode.swift";
@@ -178,6 +188,7 @@
                 "46C3E37B99F98D891C0F97E9",
                 "FC916CBE8F261521E786BA29",
                 "B3F77FDC46854D82A3F39B9C",
+                "90601BC8F1454057A80D4A06",
             );
         };
         "D45CB4A487390B4D06F7B760" = {
@@ -436,6 +447,7 @@
                 "E31E2B28AD4632B9FAF396D7",
                 "7EB68809C8DA5652D257273E",
                 "D784FC2A4D494993AF87AD56",
+                "E8C18769C8A7482AA39168B8",
             );
             "runOnlyForDeploymentPostprocessing" = 0;
         };

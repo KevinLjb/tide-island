@@ -52,7 +52,7 @@ app-server 的 thread ID、同 session tree 的 sessionId、parentThreadId，以
 
 ## 结论与后续条件
 
-研究阶段完成，当前不增加运行时能力或公开 capability 标记。以后只有宿主提供已授权的明确事件来源，并在隔离环境证明不会替用户回答 / 批准 / 取消 / 恢复会话，才考虑独立适配器。届时至少验证：
+会话来源研究完成。后续若有明确授权的会话事件来源，先在隔离环境验证其对原宿主交互和恢复的影响，再考虑独立适配器。[Codex 额度读取](preferences.md#codex-额度)使用独立的只读账号接口。会话来源适配至少需要验证以下场景。
 
 - 同 / 不同 root thread 与 turn、子代理排除、多个 pending 和部分解决；
 - blocking / nonblocking、纯自然语言问题、旧 timer / 缺字段 / 未知事件；

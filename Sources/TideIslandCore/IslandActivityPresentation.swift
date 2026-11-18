@@ -1,6 +1,6 @@
 import Foundation
 
-/// The six metadata fields used by the native ActivityAttributes wire state.
+/// Metadata used by the native ActivityAttributes wire state.
 /// Kept in the shared module so projections and encoding need no ActivityKit.
 public struct IslandActivityContent: Codable, Hashable, Sendable {
     public let sessionID: String
@@ -9,19 +9,21 @@ public struct IslandActivityContent: Codable, Hashable, Sendable {
     public let workingCount: Int
     public let waitingCount: Int
     public let updatedAt: Date
+    public let codexQuota: CodexQuotaSnapshot?
 
     public init(sessionID: String, projectName: String, phase: AgentPhase,
-                workingCount: Int, waitingCount: Int, updatedAt: Date) {
+                workingCount: Int, waitingCount: Int, updatedAt: Date, codexQuota: CodexQuotaSnapshot? = nil) {
         self.sessionID = sessionID
         self.projectName = projectName
         self.phase = phase
         self.workingCount = workingCount
         self.waitingCount = waitingCount
         self.updatedAt = updatedAt
+        self.codexQuota = codexQuota
     }
 
     private enum CodingKeys: String, CodingKey {
-        case sessionID, projectName, phase, workingCount, waitingCount, updatedAt
+        case sessionID, projectName, phase, workingCount, waitingCount, updatedAt, codexQuota
     }
 
     public init(from decoder: any Decoder) throws {
@@ -31,7 +33,8 @@ public struct IslandActivityContent: Codable, Hashable, Sendable {
                   phase: try fields.decode(AgentPhase.self, forKey: .phase),
                   workingCount: try fields.decode(Int.self, forKey: .workingCount),
                   waitingCount: try fields.decode(Int.self, forKey: .waitingCount),
-                  updatedAt: try fields.decode(Date.self, forKey: .updatedAt))
+                  updatedAt: try fields.decode(Date.self, forKey: .updatedAt),
+                  codexQuota: try? fields.decodeIfPresent(CodexQuotaSnapshot.self, forKey: .codexQuota))
         try IslandActivityPresentationPolicy.standard.validate(self)
     }
 }

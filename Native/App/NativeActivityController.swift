@@ -25,9 +25,9 @@ final class NativeActivityController {
     }
 
     func submit(snapshot: SessionSnapshot, sequence: UInt64, scope: IslandActivityScope, force: Bool = false,
-                showsProjectName: Bool = true) async {
+                showsProjectName: Bool = true, codexQuota: CodexQuotaSnapshot? = nil) async {
         await scheduler.submit(snapshot: snapshot, sequence: sequence, scope: scope,
-                               forceReconciliation: force, showsProjectName: showsProjectName)
+                               forceReconciliation: force, showsProjectName: showsProjectName, codexQuota: codexQuota)
     }
 
     func shutdown() async -> Bool {

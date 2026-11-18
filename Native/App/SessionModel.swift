@@ -16,6 +16,7 @@ final class SessionModel: ObservableObject {
     @Published private(set) var loginBusy = false
     @Published private(set) var loginItemState = LoginItemState.disabled
     @Published private(set) var systemStatusBusy = false
+    @Published private(set) var codexQuotaState = NativeCodexQuotaState.off
     @Published private(set) var diagnosticMessage: String?
     @Published private var activityAvailability = NativeActivityAvailability.unknown
     @Published private var notificationAuthorization: SessionReminderAuthorization?
@@ -31,6 +32,8 @@ final class SessionModel: ObservableObject {
     private let loginItems = NativeLoginItemClient()
     private var notificationTask: Task<Void, Never>?
     private var loginTask: Task<Void, Never>?
+    private var codexQuotaTask: Task<Void, Never>?
+    private var codexQuotaTimer: Task<Void, Never>?
     private var notificationRevision: UInt64 = 0
     private var systemStatusTask: Task<Void, Never>?
     private var systemStatusRevision: UInt64 = 0
@@ -90,6 +93,7 @@ final class SessionModel: ObservableObject {
             .store(in: &subscriptions)
         connectReceiver()
         refreshSystemStatus()
+        refreshCodexQuota()
     }
 
     var preferencesReadOnly: Bool { preferenceStore.document.problem != nil }
@@ -159,12 +163,50 @@ final class SessionModel: ObservableObject {
     func updatePreferences(_ change: (inout AppPreferences) -> Void) {
         guard !stopping else { return }
         var value = preferences; change(&value)
+        let quotaChanged = preferences.showsCodexQuota != value.showsCodexQuota
         do {
             try preferenceStore.save(value)
             preferences = value; preferencesMessage = nil
+            if quotaChanged { applyCodexQuotaPreference() }
             submitActivity()
         } catch { preferencesMessage = "设置尚未保存，原记录已保留；请先恢复默认值后重试。" }
         refreshStatusMessage()
+    }
+
+    func refreshCodexQuota() {
+        guard preferences.showsCodexQuota, !stopping, codexQuotaTask == nil else { return }
+        codexQuotaTimer?.cancel(); codexQuotaTimer = nil
+        if codexQuotaState.snapshot == nil && codexQuotaState != .checking { codexQuotaState = .checking }
+        codexQuotaTask = Task { [weak self] in
+            let snapshot = try? await NativeCodexQuotaReader().read()
+            guard let self, !Task.isCancelled, !stopping, preferences.showsCodexQuota else { return }
+            codexQuotaTask = nil
+            let state = snapshot.map(NativeCodexQuotaState.available) ?? .unavailable
+            if codexQuotaState != state {
+                codexQuotaState = state
+                submitActivity(includesReminders: false)
+            }
+            scheduleCodexQuotaRead(snapshot)
+        }
+    }
+
+    private func scheduleCodexQuotaRead(_ snapshot: CodexQuotaSnapshot?) {
+        let nextReset = snapshot?.displayBoundaries.first?.timeIntervalSinceNow ?? .infinity
+        let delay = min(CodexQuotaSnapshot.refreshInterval, max(10, nextReset + 1))
+        codexQuotaTimer = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(delay)) }
+            catch { return }
+            self?.refreshCodexQuota()
+        }
+    }
+
+    private func applyCodexQuotaPreference() {
+        if preferences.showsCodexQuota { refreshCodexQuota() }
+        else {
+            codexQuotaTask?.cancel(); codexQuotaTask = nil
+            codexQuotaTimer?.cancel(); codexQuotaTimer = nil
+            if codexQuotaState != .off { codexQuotaState = .off }
+        }
     }
 
     func setRemindersEnabled(_ enabled: Bool) {
@@ -242,6 +284,7 @@ final class SessionModel: ObservableObject {
         do {
             try preferenceStore.reset(value)
             preferences = value; preferencesMessage = nil
+            applyCodexQuotaPreference()
             submitActivity()
         } catch { preferencesMessage = "暂时无法恢复设置，请稍后重试。" }
         refreshStatusMessage()
@@ -406,16 +449,19 @@ final class SessionModel: ObservableObject {
         }
     }
 
-    private func submitActivity(force: Bool = false) {
+    private func submitActivity(force: Bool = false, includesReminders: Bool = true) {
         guard !stopping, let snapshot else { return }
         activitySequence &+= 1
         let sequence = activitySequence
         let activities = self.activities, scope = activityScope
         let reminders = self.reminders, settings = preferences.reminders
+        let quota = preferences.showsCodexQuota ? codexQuotaState.snapshot : nil
         Task {
             await activities.submit(snapshot: snapshot, sequence: sequence, scope: scope, force: force,
-                                    showsProjectName: settings.showsProjectName)
-            await reminders.submit(snapshot: snapshot, sequence: sequence, isPrimary: scope == .application, settings: settings)
+                                    showsProjectName: settings.showsProjectName, codexQuota: quota)
+            if includesReminders {
+                await reminders.submit(snapshot: snapshot, sequence: sequence, isPrimary: scope == .application, settings: settings)
+            }
         }
     }
 
@@ -425,6 +471,7 @@ final class SessionModel: ObservableObject {
         subscriptions.removeAll()
         frameTask?.cancel(); systemActivityTask?.cancel(); activityTask?.cancel()
         reminderTask?.cancel()
+        codexQuotaTask?.cancel(); codexQuotaTimer?.cancel()
         systemStatusRevision &+= 1; systemStatusTask?.cancel()
         notificationRevision &+= 1; notificationTask?.cancel(); loginTask?.cancel()
         returnRevision &+= 1; returnTask?.cancel()
@@ -452,6 +499,7 @@ final class SessionModel: ObservableObject {
         activityTask?.cancel()
         systemActivityTask?.cancel()
         reminderTask?.cancel()
+        codexQuotaTask?.cancel(); codexQuotaTimer?.cancel()
         systemStatusTask?.cancel()
         notificationTask?.cancel(); loginTask?.cancel()
         returnTask?.cancel()

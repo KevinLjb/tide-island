@@ -37,6 +37,33 @@ struct PreferencesView: View {
                     Text("用于已结束的本轮状态；未确认的工作会话会继续保留。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+                Section("Codex 额度") {
+                    Toggle("在展开的灵动岛显示额度", isOn: binding(\.showsCodexQuota))
+                    if model.preferences.showsCodexQuota {
+                        if let snapshot = model.codexQuotaState.snapshot {
+                            TimelineView(.explicit([.now] + snapshot.displayBoundaries)) { context in
+                                let windows = snapshot.windows(at: context.date)
+                                if windows.isEmpty { Text("等待刷新额度") }
+                                ForEach(windows) { window in
+                                    LabeledContent {
+                                        Text("\(window.remainingPercent)%").monospacedDigit()
+                                    } label: {
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text("\(window.title)剩余")
+                                            if let reset = window.resetsAt {
+                                                Text("\(reset, format: .dateTime.month().day().hour().minute()) 重置")
+                                                    .font(.caption).foregroundStyle(.secondary)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Button("刷新额度") { model.refreshCodexQuota() }
+                            .disabled(model.codexQuotaState == .checking)
+                    }
+                    Text(model.codexQuotaState.message).font(.caption).foregroundStyle(.secondary)
+                }
                 Section("启动") {
                     Toggle("登录时启动潮汐岛", isOn: Binding(get: { model.loginItemState.isRequested }, set: model.setLaunchAtLogin))
                         .disabled(model.loginBusy)

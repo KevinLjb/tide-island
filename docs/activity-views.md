@@ -4,7 +4,7 @@ T019 使用共享 `IslandActivityViewState` 为系统活动视图、expanded、c
 
 ## 展示规则
 
-投影输入仅为现有六字段 ContentState 和 SDK 的 isStale，不新增 wire 字段，不更新事件时间，不计算新的会话优先级。[展示策略](activity-presentation.md)仍负责目标 / 计数及最早来源期限，[生命周期协调](activity-lifecycle.md)仍负责更新和结束。
+ContentState 提供六个会话字段与可选 Codex 额度快照，SDK 提供 isStale。[展示策略](activity-presentation.md)负责目标、计数及最早来源期限，[生命周期协调](activity-lifecycle.md)负责更新和结束。
 
 | 状态 | 标题与图标 | 数量 | 点击目标 |
 | --- | --- | --- | --- |
@@ -25,6 +25,8 @@ T019 使用共享 `IslandActivityViewState` 为系统活动视图、expanded、c
 计数采用等宽数字，正常宽度隐藏数量为零的类别。窄宽允许分类计数分两行，过大的数字缩为 99+。空间较窄时，“打开会话”缩为箭头。系统给的高度较小时，状态图标、项目文字和箭头在同一排，副标题可容纳完整计数时优先显示计数。工作用蓝色，待处理用橙色，stale 用灰色，并以文字和图标说明状态。
 
 系统决定外框的最终宽高和位置。expanded 通过 WidgetKit 的 `contentMargins` 设置四边内容边距。活动主视图使用 `activityBackgroundTint` 设置黑底，并使用 `activitySystemActionForegroundColor` 设置系统操作色。见 [Apple Live Activities 指南](https://developer.apple.com/design/human-interface-guidelines/live-activities)和 [自定义实时活动视图](https://developer.apple.com/documentation/activitykit/creating-custom-views-for-live-activities)。
+
+开启额度后，展开态在身份和会话入口之间显示实际返回的窗口、剩余百分比、进度条与重置时间。两种窗口并排，宽度或高度受限时优先保留剩余百分比和会话链接，读屏保留完整额度标签。SDK stale、额度到期或额度不可用时恢复会话布局。额度由 `privacySensitive` 标记，compact 和 minimal 保留会话状态。详见 [额度设置](preferences.md#codex-额度)。
 
 根 widgetURL 与显式 Link 共用同一 sessionURL，指向当前显示的会话。Link 使用原生控件语义，文字与箭头两种排法都保留至少 44 × 44 点命中区域。读屏标签包含完整项目名。V007 继续核对真实宿主尺寸、焦点和鼠标 / 触摸命中。
 

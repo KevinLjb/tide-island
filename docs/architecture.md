@@ -2,7 +2,7 @@
 
 ## 目标与范围
 
-TideIsland 是连接开发会话与 Mac 系统原生实时活动的本地伴随应用。首版围绕 Wave + Codex，推进生命周期事件、会话管理、终端适配及系统原生活动；当前按授权在 macOS 27.3 beta 验证，正式环境另行复验，额度与宠物作为后续增强。
+TideIsland 是连接开发会话与 Mac 系统原生实时活动的本地伴随应用。首版围绕 Wave + Codex，推进生命周期事件、会话管理、终端适配、系统原生活动和可选 Codex 额度。当前在 macOS 27.3 beta 验证，正式环境另行复验。
 
 已有 Codex 生命周期桥接 CLI；已完成 beta 原生双配置、本机签名安装和前台合成 SDK 生命周期，用户演示已在原生岛显示。真实 Codex 配置已按授权安装，信任审查、真实会话及其他系统交互仍分别验收。
 
@@ -75,7 +75,7 @@ T025 的独立 notify 共存以共享 NotifyDispatchConfiguration 保留既有 a
 
 ## 原生显示
 
-原生目标最低 macOS 27.3，使用 ActivityKit + WidgetKit；系统负责灵动岛 / 菜单栏的展示和交互边界。应用和扩展共享同一 ActivityAttributes 声明；ContentState 别名到共享 IslandActivityContent，延续六字段元数据。T016 将时间投影、内容校验、基本自有活动控制和客户端协议移到共享层，原生适配只调用 SDK。共享 JSON 的 3 KiB 是开发预算，正式 SDK 传输限制仍待核对；详见 [实时活动展示与客户端](activity-presentation.md)。
+原生目标最低 macOS 27.3，使用 ActivityKit + WidgetKit，系统负责灵动岛及菜单栏的展示和交互。应用和扩展共享同一 ActivityAttributes 声明，ContentState 别名到 IslandActivityContent，包含六个会话字段和可选额度快照。T016 将时间投影、内容校验、基本自有活动控制和客户端协议移到共享层。共享 JSON 的 3 KiB 是开发预算，正式 SDK 传输限制仍待核对。详见 [实时活动展示与客户端](activity-presentation.md)。
 
 源码未采用自行绘制的 NSPanel 作为系统原生岛的替代。27.3 SDK 是原生编译的前提，27.3 系统是运行前提；27.2 环境只能验证共享层。源码与结构检查不能证明原生目标已编译或运行。
 
@@ -92,6 +92,8 @@ T018 通过有界完整清单接管唯一活动、清理重复、响应授权及
 27.3 beta SDK 的 Activity 句柄没有 Sendable 声明，异步 update / end 属于并发调用边界。原生客户端在 MainActor 保留归属及监听，只将 ID 与共享展示值传入非隔离的异步辅助方法，在调用域内重新取得 SDK 句柄并复核状态；不把 actor 字典中的句柄发送到该边界。缺失目标继续明确失败，shared scheduler 的串行、取消及重新协调规则保持。SDK 新增 pending 显式映射为共享 unknown，保留保守处理。前台合成 SDK 创建 / 同 ID 更新 / 结束 / shutdown 已实测通过，后台新建仍受 visibility 限制；真实来源与其他系统场景另验。
 
 T019 的 IslandActivityViewState 为系统活动、expanded、compact 和 minimal 统一生成状态、符号、分类计数、会话链接和读屏文案。stale 隐去实时计数，compact 显示有界总数。expanded 将整个面板置于 bottom 区域，与系统活动主视图共享布局。图标、项目名和状态在上排，计数与标准 Link 在下排。可用宽度或高度收紧时，SwiftUI 选择合适的排法，保留完整读屏文案。详见 [活动视图](activity-views.md)。
+
+启用额度后，应用短时连接同一用户的本机 Codex App Server 控制 socket，调用只读 `account/rateLimits/read`，从 Codex 额度桶提取有界的窗口、剩余量和重置时间。认证由已有进程处理，应用只传递必要的额度元数据。额度随来源序号提交并独立计算有效期。会话原观察时间、聚合及 stale 截止继续由事件决定。见 [Codex App Server](https://learn.chatgpt.com/docs/app-server#6-rate-limits-chatgpt)和[额度设置](preferences.md#codex-额度)。
 
 原生列表源码已加入已读、忽略、置顶和选择。Activity 候选始终优先新鲜待处理，随后才使用选择或置顶的新鲜工作；忽略及历史记录不参与实时聚合。相同注意力策略供共享层测试和原生接入使用，详细操作一致性、稳定排序与恢复语义见 [会话注意力规则](session-attention.md)。beta 原生已编译，实际交互仍待验证。
 

@@ -52,17 +52,19 @@ public actor IslandActivityScheduler {
 
     @discardableResult
     public func submit(snapshot: SessionSnapshot, sequence: UInt64, scope: IslandActivityScope = .ownedOnly,
-                       forceReconciliation: Bool = false, showsProjectName: Bool = true) -> Bool {
+                       forceReconciliation: Bool = false, showsProjectName: Bool = true,
+                       codexQuota: CodexQuotaSnapshot? = nil) -> Bool {
         guard accepting, sourceSequence.map({ sequence > $0 }) != false else { return false }
         let force = forceReconciliation || pending?.force == true || scope != sourceScope || showsProjectName != sourceShowsProjectName
         sourceSequence = sequence
         sourceShowsProjectName = showsProjectName
         sourceScope = scope
-        pending = Pending(sequence: sequence, snapshot: snapshot, scope: scope, force: force, showsProjectName: showsProjectName)
+        pending = Pending(sequence: sequence, snapshot: snapshot, scope: scope, force: force,
+                          showsProjectName: showsProjectName, codexQuota: codexQuota)
         if worker == nil { phase = .scheduled }
         // A temporary throttle wait can be interrupted; an already dispatched
         // native operation is allowed to finish before the latest one follows.
-        let presentation = try? policy.presentation(for: snapshot, at: now(), showsProjectName: showsProjectName)
+        let presentation = try? policy.presentation(for: snapshot, at: now(), showsProjectName: showsProjectName, codexQuota: codexQuota)
         if force || isUrgent(presentation) { delayTask?.cancel() }
         emit()
         startWorker()
@@ -110,6 +112,7 @@ public actor IslandActivityScheduler {
         let scope: IslandActivityScope
         let force: Bool
         let showsProjectName: Bool
+        let codexQuota: CodexQuotaSnapshot?
     }
 
     private func startWorker() {
@@ -129,7 +132,8 @@ public actor IslandActivityScheduler {
         while !Task.isCancelled, let next = pending {
             pending = nil
             do {
-                let presentation = try policy.presentation(for: next.snapshot, at: now(), showsProjectName: next.showsProjectName)
+                let presentation = try policy.presentation(for: next.snapshot, at: now(), showsProjectName: next.showsProjectName,
+                                                           codexQuota: next.codexQuota)
                 if !next.force, hasSynchronized, presentation == lastPresentation {
                     synchronizedSequence = next.sequence
                     problem = nil; phase = pending == nil ? .synchronized : .scheduled
@@ -165,7 +169,8 @@ public actor IslandActivityScheduler {
                 // A failed/lost response may still have changed the SDK state.
                 // Do not reuse an earlier successful dedup cache in that case.
                 hasSynchronized = false
-                let actual = try await controller.deliver(snapshot: next.snapshot, scope: next.scope, showsProjectName: next.showsProjectName)
+                let actual = try await controller.deliver(snapshot: next.snapshot, scope: next.scope,
+                                                          showsProjectName: next.showsProjectName, codexQuota: next.codexQuota)
                 lastPresentation = actual
                 if actual == nil { lastAttemptPresentation = nil }
                 hasSynchronized = true

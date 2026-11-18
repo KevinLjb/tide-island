@@ -29,6 +29,22 @@ private let schedulerEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     #expect(state.phase == .synchronized && state.problem == nil)
 }
 
+@Test func activitySchedulerOrdersQuotaChangesAndClearsQuotaWithoutRenewingTheSession() async throws {
+    let fixture = SchedulerFixture(), snapshot = try schedulerSnapshot("same")
+    let quota = try CodexQuotaSnapshot.decodeResponse(
+        Data(#"{"id":2,"result":{"rateLimits":{"limitId":"codex","primary":{"usedPercent":30,"windowDurationMins":10080}}}}"#.utf8),
+        requestID: 2, checkedAt: schedulerEpoch)
+    await fixture.scheduler.submit(snapshot: snapshot, sequence: 1, codexQuota: quota)
+    await fixture.scheduler.flush()
+    await fixture.scheduler.submit(snapshot: snapshot, sequence: 3)
+    let acceptedOld = await fixture.scheduler.submit(snapshot: snapshot, sequence: 2, codexQuota: quota)
+    await fixture.scheduler.flush()
+    let payloads = await fixture.client.presentations
+    #expect(!acceptedOld && payloads.count == 2 && payloads.first?.state.codexQuota == quota && payloads.last?.state.codexQuota == nil)
+    #expect(payloads.first?.state.updatedAt == payloads.last?.state.updatedAt)
+    #expect(payloads.first?.staleAt == payloads.last?.staleAt && payloads.first?.sessionURL == payloads.last?.sessionURL)
+}
+
 @Test func activitySchedulerKeepsOnlyTheNewestSnapshotDuringAnInflightRequest() async throws {
     let gate = SchedulerGate(), client = SchedulerClient(requestGate: gate)
     let fixture = SchedulerFixture(client: client)

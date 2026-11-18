@@ -13,6 +13,7 @@
 | 原生岛与触摸 | 支持相应公开接口的兼容 Mac | 已有用户演示 / 真实工作状态确认与前台合成 SDK 生命周期证据；新布局、触摸、多屏及无障碍不由这些证据自动覆盖 |
 | ARM64 / universal 交付 | 手动入口为专用 ARM64 runner，打包支持 arm64 / universal 参数 | 本机 arm64 archive、ad hoc 签名包与 build 8 更新已验证。专用 runner、universal、Developer ID、公证与公开分发继续验收 |
 | Codex hooks / notify | 固定 0.169.0 契约；本机 0.169.1 相关上游 hook / schema blob 已复核一致 | 已按授权安装，用户审查后已观察真实开始 / 工具 / 完成事件及原生工作状态；许可等待 / 中断等生命周期另验，见 [事件契约](codex-events.md) |
+| Codex 额度 | 已运行且支持 `account/rateLimits/read` 的本机 Codex App Server | 已在 CLI 0.169.1 与 daemon 0.170.0 的组合读取实际 7 天窗口。账号、服务版本和启动方式影响窗口与接口可用性。见 [额度设置](preferences.md#codex-额度) |
 | Wave | 已审阅 0.14.5，源码 `97e560027f494d20fed347b2d6b72b6bcb3e50e0` | 固定 bundle 应用级返回源码；条件性同标签策略未接真实 driver，无跨标签 / 窗口定位承诺，见 [能力矩阵](wave-capabilities.md) |
 | Python 开发检查 | Python 3.11+，CI 固定 3.13 | 隔离配置检查使用标准 `tomllib`；应用 / bridge 运行不依赖 Python |
 

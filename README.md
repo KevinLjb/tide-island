@@ -10,7 +10,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。当前已安装 `ded4986` 的 0.1.0（7）：原生活动采用项目 / 轻量计数 / 小箭头，会话窗口采用深色卡片，当前引用和状态逻辑保持原有流程。beta arm64 Debug / Release、ad hoc 包及许可、425 项共享测试和 10 组 CLI 通过，[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44261522389)七项通过；16 组实际活动 / 卡片组件渲染及 20 组窗口辅助区域测量通过。build 6 的健康来源重查修复保留，用户已确认当时的设置摘要稳定。build 7 的实际系统宿主显示、点击 / 触摸和读屏继续分别核对。独立历史 SDK 生命周期见 [原生验证入口](docs/native-validation.md)。
+当前已安装 `a7d6d05` 的 0.1.0（8）。原生活动展开后采用两排布局和统一边距，空间收紧时切换到紧凑排法。beta arm64 Debug / Release、本机签名包、425 项共享测试和 10 组 CLI 已验证。实际视图用五种宽度与三种高度条件渲染，覆盖工作、待处理、过期及异常等 90 个组合。系统宿主的最终布局和输入效果继续实机核对。完整进度见 [开发计划与进度](docs/development-progress.md)和[原生验证入口](docs/native-validation.md)。
 
 后台 SDK 实测仍返回 `visibility / 7`，保留前台要求并提供“打开会话”恢复动作。用户前台操作后的独立诊断已通过创建、同 ID 更新、结束及退出清理；可见截图与 SDK 结果分别取证。真实开始、工具和完成回调已有观察，许可等待 / 中断、Wave 返回、其他系统场景及分发签名继续待验。
 

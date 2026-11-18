@@ -12,22 +12,21 @@ T019 使用共享 `IslandActivityViewState` 为系统活动视图、expanded、c
 | SDK stale | 状态待确认、clock | 会话数量待确认；compact 为 ?，不再宣称旧计数为实时 | 保留相同会话链接，由应用重新核对当前观察 |
 | 非法内容 | 固定不可用标题与警示符号，不回显非法项目名 | 菜单栏查看提示，不做溢出加法 | 不生成链接 |
 
-公共初始化器可能收到尚未解码的内容，因此视图投影再次调用共享校验；负数、总数溢出、错误 phase、非法 ID / 项目名、无效时间都降为固定不可用状态。只有通过校验后才相加总数。计数缩写仅用于窄布局，expanded / 系统活动和无障碍文案保留完整数字。
+公共初始化器可能收到尚未解码的内容，因此视图投影再次调用共享校验。负数、总数溢出、错误 phase、非法 ID / 项目名、无效时间都降为固定不可用状态。校验通过后才计算总数。无障碍文案保留完整数字，窄布局使用视觉缩写。
 
-项目名不在模型中截断；主视图与 expanded 的项目主行使用单行中间省略，读屏保留完整 Unicode 名称。expanded 主行移到 bottom 的可用宽度，不再挤在 leading 区域把长英文 / 编号断成两行。项目名标记 privacySensitive，具体系统隐私遮挡由原生环境核对。
+主视图与 expanded 的项目名采用单行中间省略，读屏保留完整 Unicode 名称。expanded 把整个面板放在 bottom 区域，使用该区域的可用宽度。会话身份和入口标记为 privacySensitive。
 
 ## 布局与操作
 
 - minimal：状态图标，读屏包含项目、完整状态与全部计数。
 - compactLeading：同一状态图标，读屏包含项目与状态；compactTrailing：有界总数或 ?，读屏读取完整计数含义。
-- expanded：顶部 leading 显示状态 Label，trailing 为弱化的应用名称；bottom 使用单行内容块，左侧状态细线，中间项目主行 / 次级计数，右侧为“打开会话”原生 Link。
-- 系统活动主视图：复用相同状态、项目和操作组件，不单独拼接另一套 stale 分支。
+- expanded 与系统活动主视图共用面板。上排的 46 点状态图标和项目文字垂直居中。项目名为主标题，状态文字在主标题下方。下排以细分隔线隔开，左侧为计数，右侧为“打开会话”。四边内容边距为 16 点，两排间隔 10 点。
 
-计数区采用轻量等宽文字，不再逐项套背景标签；正常宽度隐藏数量为零的类别，完整计数仍保留在共享投影及读屏文案中。窄宽退为最多两行的分类计数，超过 99 的视觉数字显示 99+。工作为柔和蓝色、待处理为橙色、stale 为灰色，不可用保留警示符号和文字。compact / minimal 同步使用状态色与系统 keylineTint；活动主视图通过公开 activityBackgroundTint / activitySystemActionForegroundColor 保持黑底，不自行重绘系统岛外框。
+计数采用等宽数字，正常宽度隐藏数量为零的类别。窄宽允许分类计数分两行，过大的数字缩为 99+。空间较窄时，“打开会话”缩为箭头。系统给的高度较小时，状态图标、项目文字和箭头在同一排，副标题可容纳完整计数时优先显示计数。工作用蓝色，待处理用橙色，stale 用灰色，并以文字和图标说明状态。
 
-项目名与计数组成同一信息块，会话入口始终在右侧，不另起按钮行。共享投影和读屏始终保留完整数字，不通过无限缩小字号容纳。不增加持续动画，状态也不只依靠颜色区分。设计参考 [Apple Live Activities 指南](https://developer.apple.com/design/human-interface-guidelines/live-activities)，[ActivityKit 展示说明](https://developer.apple.com/documentation/ActivityKit/displaying-live-data-with-live-activities)也提示系统可能截断过高的内容；组件预览不能替代宿主实际尺寸核对。
+系统决定外框的最终宽高和位置。expanded 通过 WidgetKit 的 `contentMargins` 设置四边内容边距。活动主视图使用 `activityBackgroundTint` 设置黑底，并使用 `activitySystemActionForegroundColor` 设置系统操作色。见 [Apple Live Activities 指南](https://developer.apple.com/design/human-interface-guidelines/live-activities)和 [自定义实时活动视图](https://developer.apple.com/documentation/activitykit/creating-custom-views-for-live-activities)。
 
-根 widgetURL 与显式 Link 共用模型中的同一 sessionURL，始终指向显示中的会话，不改成项目名称或聚合总数。Link 使用 plain 样式，活动主视图与展开态均为 32 点可见圆形箭头，外围保留至少 44 × 44 点命中区域及原生控件语义，没有自定义点击手势。图标入口仍有含完整项目名的“打开会话”读屏标签。系统是否允许某个尺寸独立焦点、可用空间及真实触摸命中仍由 V007 核对。
+根 widgetURL 与显式 Link 共用同一 sessionURL，指向当前显示的会话。Link 使用原生控件语义，文字与箭头两种排法都保留至少 44 × 44 点命中区域。读屏标签包含完整项目名。V007 继续核对真实宿主尺寸、焦点和鼠标 / 触摸命中。
 
 “打开会话”进入 TideIsland 的既有 [会话链接 / 返回](wave-return.md)流程，重新核对当前唯一观察，再请求返回 Wave。旧活动链接可以显示明确失效提示；点击响应不代表精确窗口 / 分屏已可见。无障碍操作名含完整项目名，提示说明进入潮汐岛并请求返回 Wave；图标 / 数字也提供明确含义，不让读屏只读 ? 或 99+。
 

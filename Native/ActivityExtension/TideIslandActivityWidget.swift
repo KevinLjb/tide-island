@@ -13,7 +13,8 @@ struct TideIslandActivityWidget: Widget {
         ActivityConfiguration(for: TideIslandAttributes.self) { context in
             let display = IslandActivityViewState(content: context.state, isStale: context.isStale)
             let appearance = ActivityAppearance(display: display, content: context.state)
-            ActivitySummaryView(display: display, appearance: appearance)
+            ActivityPanelView(display: display, appearance: appearance)
+                .padding(ActivityPanelView.inset)
                 .activityBackgroundTint(.black)
                 .activitySystemActionForegroundColor(.white)
                 .widgetURL(display.sessionURL)
@@ -21,15 +22,8 @@ struct TideIslandActivityWidget: Widget {
             let display = IslandActivityViewState(content: context.state, isStale: context.isStale)
             let appearance = ActivityAppearance(display: display, content: context.state)
             return DynamicIsland {
-                DynamicIslandExpandedRegion(.leading) {
-                    ActivityStatusView(display: display, appearance: appearance)
-                }
-                DynamicIslandExpandedRegion(.trailing) {
-                    ActivityBrandLabel()
-                }
                 DynamicIslandExpandedRegion(.bottom) {
-                    ActivityContentView(display: display, appearance: appearance)
-                        .padding(.top, 4)
+                    ActivityPanelView(display: display, appearance: appearance)
                 }
             } compactLeading: {
                 Image(systemName: display.symbolName)
@@ -50,6 +44,7 @@ struct TideIslandActivityWidget: Widget {
                     .accessibilityLabel(display.accessibilityLabel)
                     .privacySensitive()
             }
+            .contentMargins(.all, ActivityPanelView.inset, for: .expanded)
             .keylineTint(appearance.accent)
             .widgetURL(display.sessionURL)
         }
@@ -57,127 +52,136 @@ struct TideIslandActivityWidget: Widget {
 }
 
 private struct ActivityAppearance {
+    static let waiting = Color(red: 1, green: 0.72, blue: 0.34)
+
     let accent: Color
     let workingCount: Int?
     let waitingCount: Int?
 
     init(display: IslandActivityViewState, content: IslandActivityContent) {
         if !display.isValid {
-            accent = .orange
+            accent = Self.waiting
         } else if display.isStale {
             accent = .gray
         } else {
             accent = content.phase == .needsInput
-                ? Color(red: 1, green: 0.72, blue: 0.34)
-                : Color(red: 0.38, green: 0.81, blue: 0.95)
+                ? Self.waiting : Color(red: 0.43, green: 0.79, blue: 0.96)
         }
         workingCount = display.isValid && !display.isStale ? content.workingCount : nil
         waitingCount = display.isValid && !display.isStale ? content.waitingCount : nil
     }
 }
 
-private struct ActivitySummaryView: View {
+private struct ActivityPanelView: View {
+    static let inset: Double = 16
+
     let display: IslandActivityViewState
     let appearance: ActivityAppearance
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                ActivityStatusView(display: display, appearance: appearance)
-                Spacer(minLength: 12)
-                ActivityBrandLabel()
+        ViewThatFits(in: .vertical) {
+            VStack(alignment: .leading, spacing: 10) {
+                ActivityIdentityView(display: display, appearance: appearance)
+                HStack(spacing: 8) {
+                    ActivityCountsView(display: display, appearance: appearance)
+                    Spacer(minLength: 0)
+                    ActivitySessionLink(display: display)
+                }
+                .frame(minHeight: 44, alignment: .leading)
+                .overlay(alignment: .top) {
+                    Rectangle().fill(.white.opacity(0.1)).frame(height: 1)
+                        .allowsHitTesting(false).accessibilityHidden(true)
+                }
             }
-            ActivityContentView(display: display, appearance: appearance)
+            .fixedSize(horizontal: false, vertical: true)
+
+            // The host can offer less vertical space than the expanded layout needs.
+            HStack(spacing: 8) {
+                ActivityIdentityView(display: display, appearance: appearance, condensed: true)
+                ActivitySessionLink(display: display, iconOnly: true)
+                    .fixedSize()
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
+        .frame(idealWidth: 268, maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
     }
 }
 
-private struct ActivityStatusView: View {
+private struct ActivityIdentityView: View {
     let display: IslandActivityViewState
     let appearance: ActivityAppearance
-    @ScaledMetric(relativeTo: .caption) private var fontSize = 11
+    var condensed = false
+    @ScaledMetric(relativeTo: .headline) private var projectFontSize = 17
 
     var body: some View {
-        Label(display.title, systemImage: display.symbolName)
-            .font(.system(size: fontSize, weight: .medium))
-            .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(appearance.accent)
-            .lineLimit(1)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(display.title)
-    }
-}
-
-private struct ActivityBrandLabel: View {
-    @ScaledMetric(relativeTo: .caption2) private var fontSize = 10
-
-    var body: some View {
-        Text("潮汐岛")
-            .font(.system(size: fontSize, weight: .medium))
-            .foregroundStyle(.white.opacity(0.38))
-            .accessibilityHidden(true)
-    }
-}
-
-private struct ActivityContentView: View {
-    let display: IslandActivityViewState
-    let appearance: ActivityAppearance
-    @ScaledMetric(relativeTo: .headline) private var projectFontSize = 16
-
-    var body: some View {
-        // One identity block and one action fit within the native host's height.
-        // The project keeps the full bottom-region width, away from the camera.
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(appearance.accent)
-                .frame(width: 3, height: 30)
+        HStack(spacing: condensed ? 8 : 12) {
+            Image(systemName: display.symbolName)
+                .font(.system(size: condensed ? 14 : 21, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(appearance.accent)
+                .frame(width: condensed ? 26 : 46, height: condensed ? 26 : 46)
+                .background {
+                    RoundedRectangle(cornerRadius: condensed ? 8 : 13, style: .continuous)
+                        .fill(LinearGradient(colors: [appearance.accent.opacity(0.24), appearance.accent.opacity(0.09)],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                }
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(display.projectName)
                     .font(.system(size: projectFontSize, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.white.opacity(0.94))
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .privacySensitive()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                ActivityCountsView(display: display, appearance: appearance)
+
+                if condensed && display.isValid && !display.isStale {
+                    ViewThatFits(in: .horizontal) {
+                        ActivityCountsView(display: display, appearance: appearance, singleLine: true)
+                            .fixedSize(horizontal: true, vertical: false)
+                        status
+                    }
+                } else {
+                    status
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            ActivitySessionLink(display: display)
-                .fixedSize()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(condensed ? display.accessibilityLabel : display.statusAccessibilityLabel)
+        .privacySensitive()
+    }
+
+    private var status: some View {
+        Text(display.title)
+            .font(.caption.weight(.medium))
+            .foregroundStyle(appearance.accent)
+            .lineLimit(1)
     }
 }
 
 private struct ActivityCountsView: View {
     let display: IslandActivityViewState
     let appearance: ActivityAppearance
+    var singleLine = false
 
     var body: some View {
         Group {
             if let working = display.workingText, let waiting = display.waitingText,
                let workingCount = appearance.workingCount, let waitingCount = appearance.waitingCount {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) {
-                        if workingCount > 0 { Text(working).foregroundStyle(.white.opacity(0.64)) }
-                        if workingCount > 0 && waitingCount > 0 {
-                            Circle().fill(.white.opacity(0.25)).frame(width: 3, height: 3)
-                                .accessibilityHidden(true)
+                if singleLine {
+                    inlineCounts(workingCount, waitingCount, working: working, waiting: waiting)
+                } else {
+                    ViewThatFits(in: .horizontal) {
+                        inlineCounts(workingCount, waitingCount, working: working, waiting: waiting)
+                            .fixedSize(horizontal: true, vertical: false)
+                        VStack(alignment: .leading, spacing: 2) {
+                            if workingCount > 0 { Text("工作中 \(bounded(workingCount))") }
+                            if waitingCount > 0 {
+                                Text("待处理 \(bounded(waitingCount))").foregroundStyle(ActivityAppearance.waiting)
+                            }
+                            if workingCount == 0 && waitingCount == 0 { Text(display.countsText) }
                         }
-                        if waitingCount > 0 { Text(waiting).foregroundStyle(Color.orange) }
-                        if workingCount == 0 && waitingCount == 0 { Text(display.countsText) }
                     }
-                    .fixedSize(horizontal: true, vertical: false)
-                    VStack(alignment: .leading, spacing: 2) {
-                        if workingCount > 0 { Text("工作中 \(bounded(workingCount))") }
-                        if waitingCount > 0 { Text("待处理 \(bounded(waitingCount))").foregroundStyle(.orange) }
-                        if workingCount == 0 && waitingCount == 0 { Text(display.countsText) }
-                    }
-                    .lineLimit(1)
                 }
             } else {
                 Text(display.countsText)
@@ -185,10 +189,24 @@ private struct ActivityCountsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .font(.system(.caption2, design: .monospaced))
-        .foregroundStyle(.white.opacity(0.58))
+        .font(.caption)
+        .monospacedDigit()
+        .lineLimit(1)
+        .foregroundStyle(.white.opacity(0.66))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(display.countsText)
+    }
+
+    private func inlineCounts(_ workingCount: Int, _ waitingCount: Int, working: String, waiting: String) -> some View {
+        HStack(spacing: 7) {
+            if workingCount > 0 { Text(working) }
+            if workingCount > 0 && waitingCount > 0 {
+                Circle().fill(.white.opacity(0.28)).frame(width: 3, height: 3)
+                    .accessibilityHidden(true)
+            }
+            if waitingCount > 0 { Text(waiting).foregroundStyle(ActivityAppearance.waiting) }
+            if workingCount == 0 && waitingCount == 0 { Text(display.countsText) }
+        }
     }
 
     private func bounded(_ count: Int) -> String { count > 99 ? "99+" : String(count) }
@@ -196,24 +214,40 @@ private struct ActivityCountsView: View {
 
 private struct ActivitySessionLink: View {
     let display: IslandActivityViewState
-    @ScaledMetric(relativeTo: .caption) private var fontSize = 12
+    var iconOnly = false
 
     var body: some View {
         if let url = display.sessionURL {
             Link(destination: url) {
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: fontSize, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.78))
-                    .frame(width: 32, height: 32)
-                    .background(.white.opacity(0.07), in: Circle())
-                    // The visible button is quiet; its native hit area stays 44pt.
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
+                ViewThatFits(in: .horizontal) {
+                    if !iconOnly {
+                        HStack(spacing: 5) {
+                            Text("打开会话")
+                            arrow
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(.white.opacity(0.085), in: Capsule())
+                        .fixedSize(horizontal: true, vertical: false)
+                    }
+                    arrow
+                        .frame(width: 30, height: 30)
+                        .background(.white.opacity(0.085), in: Circle())
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.88))
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("打开\(display.projectName)的会话")
             .accessibilityHint("在潮汐岛中查看此会话并请求返回 Wave")
             .privacySensitive()
         }
+    }
+
+    private var arrow: some View {
+        Image(systemName: "arrow.up.right")
+            .accessibilityHidden(true)
     }
 }

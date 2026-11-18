@@ -91,17 +91,29 @@ private struct MenuContent: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Text("潮汐岛")
-        Button("打开会话", systemImage: "macwindow") {
-            openWindow(id: "sessions")
-            NSApplication.shared.activate(ignoringOtherApps: true)
-        }
-        Button("加载演示会话", systemImage: "play.circle") { model.loadDemo() }
-        SettingsLink { Label("设置…", systemImage: "gearshape") }
-            .keyboardShortcut(",")
-        Button("重新检查系统状态", systemImage: "arrow.clockwise") { model.recheckSystemStatus() }
-        Divider()
-        Button("退出 TideIsland", systemImage: "power") { NSApplication.shared.terminate(nil) }
+        Group {
+            Text("潮汐岛")
+            Button {
+                openWindow(id: "sessions")
+                NSApplication.shared.activate(ignoringOtherApps: true)
+            } label: {
+                Label("打开会话", systemImage: "macwindow")
+            }
+            Button { model.loadDemo() } label: {
+                Label("加载演示会话", systemImage: "play.circle")
+            }
+            SettingsLink { Label("设置…", systemImage: "gearshape") }
+                .keyboardShortcut(",")
+            Button { model.recheckSystemStatus() } label: {
+                Label("重新检查系统状态", systemImage: "arrow.clockwise")
+            }
+            Divider()
+            Button { NSApplication.shared.terminate(nil) } label: {
+                Label("退出 TideIsland", systemImage: "power")
+            }
             .keyboardShortcut("q")
+        }
+        // macOS hides ordinary menu symbols unless the label explicitly opts in.
+        .labelStyle(.titleAndIcon)
     }
 }

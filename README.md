@@ -4,15 +4,15 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 让 AI 的工作状态，在岛上一目了然。面向 Wave + Codex 的本地开发伴随工具，使用系统原生实时活动展示会话状态。
 
-> 当前阶段：原生验证与交付准备。macOS / Xcode 27.3 beta 的原生 Debug / Release、本机 ad hoc 签名安装及前台合成 SDK 生命周期已通过，用户演示已在原生岛显示。已按用户授权安装真实 Codex 接入配置，信任审查与真实链路继续验证，暂未发布可下载版本。
+> 当前阶段：原生验证与交付准备。macOS / Xcode 27.3 beta 的原生 Debug / Release、本机 ad hoc 签名安装及前台合成 SDK 生命周期已通过，build 3 布局已由用户实机截图确认。真实 Codex 接入已审查启用，开始 / 工具 / 完成回调已观察到；其他交互继续分项验证，暂未发布可下载版本。
 
 第一次使用请看 [开始指南](docs/getting-started.md)。[常见问题](docs/faq.md)说明状态、提醒、Wave 返回、诊断和卸载的实际边界；完整接入命令见 [安装、升级与卸载](docs/installation.md)。
 
 ## 开发进度
 
-完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。最新原生修复 `b6f6ff2` 的 beta arm64 Debug / Release、本机 ad hoc 包及许可内容、423 项共享测试和 10 组 CLI 通过，[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44220636923)七项通过。该版已安装，启动观察、扩展注册、正常退出及前台合成 SDK 生命周期通过；[原生验证入口](docs/native-validation.md)保留完整 SHA、发行渠道及逐项报告。
+完整任务、优先级、开发 / 验证状态及交付记录统一维护在 [开发计划与进度](docs/development-progress.md)。当前已安装 `8353b87` 的 0.1.0（3）：beta arm64 Debug / Release、ad hoc 包及许可内容、423 项共享测试和 10 组 CLI 通过，[同源 CI](https://github.com/KevinLjb/tide-island/actions/runs/44232901027)七项通过。已核对新扩展文件映射，用户实机截图确认分类计数和圆形入口完整可见；前台合成 SDK 生命周期的独立历史来源与逐项报告见 [原生验证入口](docs/native-validation.md)。
 
-后台 SDK 实测仍返回 `visibility / 7`，保留前台要求并提供“打开会话”恢复动作。用户前台操作后的独立诊断已通过创建、同 ID 更新、结束及退出清理；可见演示截图与 SDK 结果分别取证。真实 Codex / Wave 交互、其他系统场景及分发签名继续待验。
+后台 SDK 实测仍返回 `visibility / 7`，保留前台要求并提供“打开会话”恢复动作。用户前台操作后的独立诊断已通过创建、同 ID 更新、结束及退出清理；可见截图与 SDK 结果分别取证。真实开始、工具和完成回调已有观察，许可等待 / 中断、Wave 返回、其他系统场景及分发签名继续待验。
 
 T029—T030 的兼容 / 迁移 / 许可和开始指南 / FAQ 已完成，[精确提交 CI](https://github.com/KevinLjb/tide-island/actions/runs/43991766217)实际执行 419 项测试与七项检查通过。T031 的 [公开 app-server 研究](docs/app-server-research.md)完成，暂不接入运行时；没有为观察状态连接或恢复用户现有会话。
 

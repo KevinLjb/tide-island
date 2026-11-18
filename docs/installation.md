@@ -8,7 +8,7 @@ T025 提供明确目录内的 hooks + notify 统一配置入口。源码及隔�
 
 用户明确选择接入当前 Codex 后，已使用签名验证的 `b6f6ff2` 包内稳定 helper，对 `~/.codex/hooks.json` 与 `config.toml` 执行最新预览及统一应用。六类观察 hook、完成 notify 已写入；原有 hook 分组 / 其他 JSON 字段、非 notify TOML 字段、原通知 argv 与文件权限逐项核对保留，两份私有备份与应用前原始字节一致。原通知命令为空时仅建立本地完成观察，不生成额外外部通知命令。
 
-再次预览确认 hooks / notify 均无需修改。没有变更 Codex 信任、事件文件、会话状态或显示设置；当前继承的 Codex home 与上述目录一致，hooks feature 为 stable / true。安装报告 integration-install-audit.json 与原始配置备份保存在本机私有辅助目录，不进入仓库。用户仍需在当前 Codex 的 `/hooks` 审查条目，并确认当前会话实际加载；文件已写入不是 live 运行通过。真实链路进度以 [统一验收](development-progress.md#6-macos-273-正式环境统一验收)为准。
+再次预览确认 hooks / notify 均无需修改。安装操作没有变更 Codex 信任、事件文件、会话状态或显示设置；当前继承的 Codex home 与上述目录一致，hooks feature 为 stable / true。安装报告 integration-install-audit.json 与原始配置备份保存在本机私有辅助目录，不进入仓库。用户随后已在 Codex 完成信任审查，实际开始 / 工具事件与完成 notify 元数据已有观察；文件写入、信任确认和 live 回调分别取证，其他生命周期与交互仍单独验收，见 [统一验收](development-progress.md#6-macos-273-正式环境统一验收)。
 
 ## 使用前提
 

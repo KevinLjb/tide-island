@@ -2,23 +2,23 @@
 
 本清单记录当前源码目标、已审阅外部契约和实际证据；最低版本声明不等于安装、原生岛或触摸验收通过。
 
-核对日期：2026-11-17。自身版本以 [VERSION.json](../VERSION.json)为准，目前为 0.1.0 / build 1，尚未发布可安装版本。
+核对日期：2026-11-18。自身版本以 [VERSION.json](../VERSION.json)为准，目前为 0.1.0 / build 2；本机开发包已安装验证，尚未公开发布下载版本。
 
 ## 环境与外部集成
 
 | 范围 | 当前目标 / 已审阅版本 | 已有证据与边界 |
 | --- | --- | --- |
-| 共享 Swift Package / bridge | Swift tools 6.0；macOS 14+ | [Package.swift](../Package.swift)声明最低版本；共享 CI 在 `macos-15-intel` 上运行，不代表 macOS 14 / ARM64 已实测 |
-| 原生应用 / 扩展 | macOS / Xcode / SDK 27.3+ | 工程声明目标；正式版尚未发布，编译、系统接口和最低部署版本由 V001 / V002 复核 |
-| 原生岛与触摸 | 支持相应公开接口的兼容 Mac | 展示位置由系统决定；硬件、触摸、多屏与无障碍由 V006 / V008 验收，尚无通过结论 |
-| ARM64 / universal 交付 | 原生入口为专用 ARM64 runner；打包支持 arm64 / universal 参数 | 仅脚本及元数据准备，未生成原生包；共享 Intel CI 不证明 ARM64 或 universal 运行 |
-| Codex hooks / notify | CLI 契约 0.169.0，源码 `d32063f96c2dff1dc96af839b3952abb6acfeda4` | 六类 hooks 和 `agent-turn-complete` notify；固定 schema / 合成测试不证明其他版本、信任配置或真实接入，见 [事件契约](codex-events.md) |
+| 共享 Swift Package / bridge | Swift tools 6.0；macOS 14+ | [Package.swift](../Package.swift)声明最低版本；共享 CI 在 `macos-15-intel`，本机 ARM64 / 27.3 beta 的 423 项及 CLI 亦通过，不代表最低 macOS 14 已实测 |
+| 原生应用 / 扩展 | macOS / Xcode / SDK 27.3+ | 本机 beta arm64 Debug / Release 已通过；正式环境、完整接口与系统场景仍分别复验 |
+| 原生岛与触摸 | 支持相应公开接口的兼容 Mac | 已有用户演示 / 真实工作状态确认与前台合成 SDK 生命周期证据；新布局、触摸、多屏及无障碍不由这些证据自动覆盖 |
+| ARM64 / universal 交付 | 手动入口为专用 ARM64 runner；打包支持 arm64 / universal 参数 | 本机 arm64 archive / ad hoc 安装包及 build 2 更新已通过；未注册 runner，universal、Developer ID / 公证与公开分发另验 |
+| Codex hooks / notify | 固定 0.169.0 契约；本机 0.169.1 相关上游 hook / schema blob 已复核一致 | 已按授权安装，用户审查后已观察真实开始 / 工具事件及原生工作状态；完成 notify 与其他生命周期仍待验，见 [事件契约](codex-events.md) |
 | Wave | 已审阅 0.14.5，源码 `97e560027f494d20fed347b2d6b72b6bcb3e50e0` | 固定 bundle 应用级返回源码；条件性同标签策略未接真实 driver，无跨标签 / 窗口定位承诺，见 [能力矩阵](wave-capabilities.md) |
 | Python 开发检查 | Python 3.11+，CI 固定 3.13 | 隔离配置检查使用标准 `tomllib`；应用 / bridge 运行不依赖 Python |
 
 `version` 只报告自身生成版本；`capabilities` / `diagnostics` 中的 Codex 与 Wave 版本是已审阅契约，不探测当前安装。Wave 版本未知或不同会使精确路线降为待确认 / 应用级回退，不能根据版本字符串制造认证连接。
 
-27.3 数字门禁不能证明正式版。[手动原生入口](native-validation.md)另要求操作者声明正式环境并绑定完整 reviewed SHA；共享 CI、原生编译、签名 / 公证和真实运行分别记录。
+27.3 数字门禁不能证明正式版。[原生入口](native-validation.md)要求完整 reviewed SHA 与显式环境声明；本地 beta 使用独立 prerelease 声明，手动工作流仍只用于正式环境。共享 CI、原生编译、本机签名、分发公证和真实运行分别记录。
 
 ## 数据与配置格式
 
@@ -41,4 +41,4 @@
 
 新 Codex / Wave 版本先固定源码、核对字段 / 身份 / 失败语义，再增加独立合成反例；不能只改版本常量。新增数据格式要明确可读版本、失败保留、保存时机和回退范围，同时更新本清单、[迁移说明](migrations.md)、[许可清单](../THIRD_PARTY_NOTICES.md)及 [开发进度](development-progress.md)。
 
-T029 完成源码清单维护。正式 SDK、真实用户配置、最终包依赖和交互结论继续由 V001—V012 取证。
+T029 的清单随新证据维护，历史测试与最新构建分开。实际验收、安装及仍未通过的场景统一见 [开发进度](development-progress.md)，不从版本或配置写入推断全部能力已通过。

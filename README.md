@@ -12,7 +12,7 @@ A native macOS Dynamic Island companion for Codex and AI coding agents.
 
 ## 开发进度
 
-build 10 的隔离原生测试确认关窗后进程驻留、单窗口重开和主动退出。随后用户的实机截图发现菜单栏仍仅「设置」有图标，build 11 为菜单标签显式启用图标。见 [系统状态与菜单](docs/system-status.md)及[开发计划与进度](docs/development-progress.md)。
+本机已安装 `5405a51` 的 0.1.0（11）。在 macOS 27.3 隔离应用中弹开同源原生菜单，核对到 build 10 只有「设置」的图标被设为显示，build 11 五项都显式设为显示。关窗驻留、重开及菜单退出回归通过。见 [系统状态与菜单](docs/system-status.md)及[开发计划与进度](docs/development-progress.md)。
 
 后台 SDK 实测仍返回 `visibility / 7`，保留前台要求并提供“打开会话”恢复动作。用户前台操作后的独立诊断已通过创建、同 ID 更新、结束及退出清理；可见截图与 SDK 结果分别取证。真实开始、工具和完成回调已有观察，许可等待 / 中断、Wave 返回、其他系统场景及分发签名继续待验。
 

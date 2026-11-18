@@ -11,7 +11,7 @@ public enum LoginItemState: Equatable, Sendable {
         switch self {
         case .disabled, .enabled: nil
         case .requiresApproval: "等待系统允许，可前往登录项设置查看。"
-        case .unavailable: "请先安装潮汐岛，再设置登录时启动。"
+        case .unavailable: "系统暂时无法确认登录启动服务；可重新检查，或前往系统登录项设置查看。"
         }
     }
 }
@@ -83,7 +83,7 @@ public struct SystemStatusProjection: Equatable, Sendable {
         if login == .requiresApproval {
             result.append(.init(id: "login.approval", title: "登录启动等待系统允许", detail: login.message ?? "", level: .attention, action: .loginSettings))
         } else if login == .unavailable {
-            result.append(.init(id: "login.unavailable", title: "登录启动暂不可用", detail: login.message ?? "", level: .information, action: .none))
+            result.append(.init(id: "login.unavailable", title: "登录启动暂不可用", detail: login.message ?? "", level: .information, action: .loginSettings))
         }
         notices = result
     }

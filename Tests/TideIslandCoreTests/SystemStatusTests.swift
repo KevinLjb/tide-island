@@ -100,7 +100,7 @@ import Testing
     #expect(LoginItemState.requiresApproval.isRequested && LoginItemState.enabled.isRequested)
     #expect(!LoginItemState.unavailable.isRequested && !LoginItemState.disabled.isRequested)
     #expect(SystemStatusProjection(login: .enabled).notices.allSatisfy { !$0.id.hasPrefix("login.") })
-    #expect(SystemStatusProjection(login: .unavailable).notices.contains { $0.id == "login.unavailable" && $0.action == .none })
+    #expect(SystemStatusProjection(login: .unavailable).notices.contains { $0.id == "login.unavailable" && $0.action == .loginSettings })
 }
 
 @Test func systemStatusAllActivityFailuresKeepTheirCodeAndRecoveryWithoutRawErrors() {

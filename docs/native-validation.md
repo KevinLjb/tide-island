@@ -119,6 +119,12 @@ xcodebuild -project TideIsland.xcodeproj -scheme TideIsland -configuration Debug
 
 2026-11-18 最新 clean 修复 `e7d84c46b0f7788f7d343d9af0a3bcf6be10d1fd` 的前后台测试按顺序执行，均为单独签名的单体 Debug，未同时启动普通应用。前台报告 sdk-e7d84c46b0f7-9f48e0f9/native-smoke-validation.json 仍为上述前台超时且未请求；后台报告 sdk-e7d84c46b0f7-57feb647/native-smoke-validation.json 为实际 visibility / 7 拒绝及 delivery-foregroundRequired。两次均 cleanup true、退出 0、inbox 元数据不变。检查通过的范围是条件报告、错误分类、隔离和退出，SDK 生命周期仍未通过，恢复按钮的真实交互也未完成。
 
+### 用户前台实测与完整 SDK 生命周期
+
+2026-11-18 用户在普通应用打开演示并重新检查系统状态后，提供了原生岛展开截图：标题为“演示 · TideIsland”，状态正在工作，工作中 1 / 待处理 0，并有打开会话控件。随后核对实际进程路径为 `/Applications/TideIsland.app/Contents/MacOS/TideIsland`、包内来源为 `e7d84c4`。这是用户提供的可见演示证据，不证明同 ID 更新、点击返回或真实 Codex 已接入；图片尺寸与摘要、观察边界保存在本机 user-visible-observation.json，没有将截图复制进仓库。
+
+在同一轮用户前台操作后，clean `003b69edaa94069e069c68dd826ca5e1a1336a8b` 的隔离 Debug 诊断已实际通过。sdk-003b69edaa94-029edb03/native-smoke-validation.json 记录 foreground_observed、request_verified、update_verified、end_verified、shutdown_verified、cleanup_verified 全部 true，退出 0，inbox 元数据不变；仍使用内存合成会话及 ownedOnly。该诊断证明 SDK 清单与内容核对的完整生命周期，visible_island_verified 和 real_session_integration_verified 仍为 false；用户截图与自动 SDK 结果分别取证。此前前台超时原因没有独立确认，不归因为特定锁屏、硬件或工具问题；后台创建限制也没有由此次成功消除。
+
 ## 报告与验收
 
 native-validation.json 只有在环境 / 版本门禁通过并开始编译后创建。它记录精确 revision、版本、系统 / SDK / Xcode、validation_channel、操作者互斥的正式 / prerelease 声明、架构和逐配置结果。失败保留已完成范围，native_compile_verified 仅在所有请求配置检查成功后为 true；both_configurations_verified 单独表明双配置完整性。

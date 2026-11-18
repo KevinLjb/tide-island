@@ -45,6 +45,26 @@ private let schedulerEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     #expect(payloads.first?.staleAt == payloads.last?.staleAt && payloads.first?.sessionURL == payloads.last?.sessionURL)
 }
 
+@Test func activitySchedulerUpdatesWhenOnlyAnOverviewRowChanges() async throws {
+    let fixture = SchedulerFixture()
+    func snapshot(_ otherID: String) throws -> SessionSnapshot {
+        var store = SessionStore()
+        try store.receive([
+            AgentEvent(sessionID: "waiting", projectName: "main", phase: .needsInput, occurredAt: schedulerEpoch),
+            AgentEvent(sessionID: otherID, projectName: "secondary", phase: .working, occurredAt: schedulerEpoch),
+        ])
+        return store.snapshot(at: schedulerEpoch)
+    }
+    await fixture.scheduler.submit(snapshot: try snapshot("first"), sequence: 1)
+    await fixture.scheduler.flush()
+    await fixture.scheduler.submit(snapshot: try snapshot("replacement"), sequence: 2)
+    await fixture.scheduler.flush()
+    let payloads = await fixture.client.presentations
+    #expect(payloads.map { $0.state.otherSessions?.first?.id } == ["first", "replacement"])
+    #expect(payloads.first?.state.workingCount == payloads.last?.state.workingCount &&
+            payloads.first?.sessionURL == payloads.last?.sessionURL && payloads.first?.staleAt == payloads.last?.staleAt)
+}
+
 @Test func activitySchedulerKeepsOnlyTheNewestSnapshotDuringAnInflightRequest() async throws {
     let gate = SchedulerGate(), client = SchedulerClient(requestGate: gate)
     let fixture = SchedulerFixture(client: client)

@@ -11,6 +11,8 @@ public struct IslandActivityViewState: Equatable, Sendable {
     public let waitingText: String?
     public let compactCountText: String
     public let sessionURL: URL?
+    public let overviewSessions: [IslandActivitySession]
+    public let liveCount: Int
     public let isValid: Bool
     public let isStale: Bool
 
@@ -30,11 +32,15 @@ public struct IslandActivityViewState: Equatable, Sendable {
         if valid, !isStale {
             // Validation has already excluded negative counts and overflow.
             let total = content.workingCount + content.waitingCount
+            liveCount = total
+            overviewSessions = content.otherSessions.map { [content.primarySession] + $0 } ?? []
             workingText = "工作中 \(content.workingCount)"
             waitingText = "待处理 \(content.waitingCount)"
             countsText = "工作中 \(content.workingCount) · 待处理 \(content.waitingCount)"
             compactCountText = total > 99 ? "99+" : String(total)
         } else {
+            liveCount = 0
+            overviewSessions = []
             workingText = nil; waitingText = nil; compactCountText = "?"
             countsText = valid ? "会话数量待确认" : "请从菜单栏打开潮汐岛"
         }

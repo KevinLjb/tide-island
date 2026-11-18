@@ -102,23 +102,3 @@ public struct AppPreferenceDocument: Sendable {
         return data
     }
 }
-
-public extension IslandActivityPresentationPolicy {
-    /// Display preference is ordered with the snapshot; it never changes the
-    /// stored session or the link identity. Validate the source before hiding.
-    func presentation(for snapshot: SessionSnapshot, at now: Date, showsProjectName: Bool,
-                      codexQuota: CodexQuotaSnapshot? = nil) throws -> IslandActivityPresentation? {
-        guard let original = try presentation(for: snapshot, at: now) else { return nil }
-        let freshQuota = codexQuota.flatMap { $0.windows(at: now).isEmpty ? nil : $0 }
-        guard !showsProjectName || freshQuota != nil else { return original }
-        let state = IslandActivityContent(sessionID: original.state.sessionID,
-                                          projectName: showsProjectName ? original.state.projectName : "开发会话", phase: original.state.phase,
-                                          workingCount: original.state.workingCount, waitingCount: original.state.waitingCount,
-                                          updatedAt: original.state.updatedAt, codexQuota: freshQuota)
-        do { try validate(state) }
-        catch IslandActivityError.contentBudgetExceeded where freshQuota != nil {
-            return try presentation(for: snapshot, at: now, showsProjectName: showsProjectName)
-        }
-        return IslandActivityPresentation(state: state, staleAt: original.staleAt)
-    }
-}

@@ -4,7 +4,7 @@ T019 使用共享 `IslandActivityViewState` 为系统活动视图、expanded、c
 
 ## 展示规则
 
-ContentState 提供六个会话字段与可选 Codex 额度快照，SDK 提供 isStale。[展示策略](activity-presentation.md)负责目标、计数及最早来源期限，[生命周期协调](activity-lifecycle.md)负责更新和结束。
+ContentState 提供六个会话字段、可选 Codex 额度与最多两条补充会话，SDK 提供 isStale。[展示策略](activity-presentation.md)负责目标、计数及最早来源期限，[生命周期协调](activity-lifecycle.md)负责更新和结束。
 
 | 状态 | 标题与图标 | 数量 | 点击目标 |
 | --- | --- | --- | --- |
@@ -16,19 +16,25 @@ ContentState 提供六个会话字段与可选 Codex 额度快照，SDK 提供 i
 
 主视图与 expanded 的项目名采用单行中间省略，读屏保留完整 Unicode 名称。expanded 把整个面板放在 bottom 区域，使用该区域的可用宽度。会话身份和入口标记为 privacySensitive。
 
+## 多会话总览
+
+有多条已确认的近期会话时，展开面板优先展示待处理项，随后按现有候选和注意力顺序显示工作项。空间足够时列三条。高度收紧时依次使用两行或两张并排卡片，更窄的空间使用单会话排法。面板下方有空间时显示其余会话数量和可用额度。活动为 stale 时显示待确认。
+
+每行链接包含自己的会话 ID，经过潮汐岛现有入口选择对应会话并请求返回 Wave。同名项目用与会话窗口一致的短标签区分。隐藏项目名时，仍可用短标签区分。读屏包含完整显示标题和会话标签。点击区域至少为 44 点高。见 [Apple 实时活动深链](https://developer.apple.com/documentation/widgetkit/linking-to-specific-app-scenes-from-your-widget-or-live-activity)和[会话链接](wave-return.md#会话链接)。
+
 ## 布局与操作
 
 - minimal：状态图标，读屏包含项目、完整状态与全部计数。
 - compactLeading：同一状态图标，读屏包含项目与状态；compactTrailing：有界总数或 ?，读屏读取完整计数含义。
-- expanded 与系统活动主视图共用面板。上排的 46 点状态图标和项目文字垂直居中。项目名为主标题，状态文字在主标题下方。下排以细分隔线隔开，左侧为计数，右侧为“打开会话”。四边内容边距为 16 点，两排间隔 10 点。
+- expanded 与系统活动主视图共用面板。单会话排法的上排将 46 点状态图标与项目文字垂直居中。项目名为主标题，状态文字在主标题下方。下排以细分隔线隔开，左侧为计数，右侧为“打开会话”。四边内容边距为 16 点，两排间隔 10 点。
 
 计数采用等宽数字，正常宽度隐藏数量为零的类别。窄宽允许分类计数分两行，过大的数字缩为 99+。空间较窄时，“打开会话”缩为箭头。系统给的高度较小时，状态图标、项目文字和箭头在同一排，副标题可容纳完整计数时优先显示计数。工作用蓝色，待处理用橙色，stale 用灰色，并以文字和图标说明状态。
 
 系统决定外框的最终宽高和位置。expanded 通过 WidgetKit 的 `contentMargins` 设置四边内容边距。活动主视图使用 `activityBackgroundTint` 设置黑底，并使用 `activitySystemActionForegroundColor` 设置系统操作色。见 [Apple Live Activities 指南](https://developer.apple.com/design/human-interface-guidelines/live-activities)和 [自定义实时活动视图](https://developer.apple.com/documentation/activitykit/creating-custom-views-for-live-activities)。
 
-开启额度后，展开态在身份和会话入口之间显示实际返回的窗口、剩余百分比、进度条与重置时间。两种窗口并排，宽度或高度受限时优先保留剩余百分比和会话链接，读屏保留完整额度标签。SDK stale、额度到期或额度不可用时恢复会话布局。额度由 `privacySensitive` 标记，compact 和 minimal 保留会话状态。详见 [额度设置](preferences.md#codex-额度)。
+开启额度后，单会话展开在身份和入口之间显示实际返回的窗口、剩余百分比、进度条与重置时间。两种窗口并排，宽度或高度受限时优先保留剩余百分比和会话链接。多会话总览在行下方放置简要额度。读屏保留完整额度标签。SDK stale、额度到期或额度不可用时恢复会话布局。额度由 `privacySensitive` 标记，compact 和 minimal 保留会话状态。详见 [额度设置](preferences.md#codex-额度)。
 
-根 widgetURL 与显式 Link 共用同一 sessionURL，指向当前显示的会话。Link 使用原生控件语义，文字与箭头两种排法都保留至少 44 × 44 点命中区域。读屏标签包含完整项目名。V007 继续核对真实宿主尺寸、焦点和鼠标 / 触摸命中。
+根 widgetURL 指向主会话，显式 Link 指向该行的会话。Link 使用原生控件语义，文字与箭头两种排法都保留至少 44 × 44 点命中区域。读屏标签包含完整项目名。V007 继续核对真实宿主尺寸、焦点和鼠标 / 触摸命中。
 
 “打开会话”进入 TideIsland 的既有 [会话链接 / 返回](wave-return.md)流程，重新核对当前唯一观察，再请求返回 Wave。旧活动链接可以显示明确失效提示；点击响应不代表精确窗口 / 分屏已可见。无障碍操作名含完整项目名，提示说明进入潮汐岛并请求返回 Wave；图标 / 数字也提供明确含义，不让读屏只读 ? 或 99+。
 

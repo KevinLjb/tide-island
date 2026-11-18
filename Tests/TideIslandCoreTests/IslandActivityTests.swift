@@ -94,6 +94,86 @@ private let islandEpoch = Date(timeIntervalSince1970: 1_800_000_000)
     #expect(decoded == state && SessionLink.url(for: decoded.sessionID) != nil)
 }
 
+@Test func islandOverviewPrioritizesWaitingAndKeepsTheFullAggregateDeadline() throws {
+    var store = SessionStore()
+    try store.receive([
+        islandEvent("wait-new", .needsInput, time: -5), islandEvent("wait-old", .needsInput, time: -15),
+        islandEvent("pinned", .working, time: -30), islandEvent("selected", .working, time: -100),
+        islandEvent("ignored", .needsInput), islandEvent("stale", .working, time: -310),
+        islandEvent("done", .completed, time: -20),
+    ])
+    for (id, action) in [("ignored", SessionAction.ignore), ("selected", .select), ("pinned", .pin)] {
+        let session = try #require(store.snapshot(at: islandEpoch).sessions.first(where: { $0.id == id }))
+        let applied = store.perform(action, for: session.reference, at: islandEpoch)
+        #expect(applied)
+    }
+    let snapshot = store.snapshot(at: islandEpoch)
+    let projected = try IslandActivityPresentationPolicy.standard.presentation(for: snapshot, at: islandEpoch)
+    let result = try #require(projected)
+    let display = IslandActivityViewState(content: result.state, isStale: false)
+    #expect(display.overviewSessions.map(\.id) == ["wait-new", "wait-old", "pinned"])
+    #expect(result.state.workingCount == 2 && result.state.waitingCount == 2 && display.liveCount == 4)
+    #expect(result.staleAt == islandEpoch.addingTimeInterval(200))
+}
+
+@Test func islandOverviewHidesNamesAndKeepsDistinctLinksForDuplicateProjects() throws {
+    let ids = ["wait / ? & 🐚", "work / ? & 🐚"]
+    let snapshot = try islandSnapshot([
+        AgentEvent(sessionID: ids[0], projectName: "fixture-private-project", phase: .needsInput, occurredAt: islandEpoch),
+        AgentEvent(sessionID: ids[1], projectName: "fixture-private-project", phase: .working, occurredAt: islandEpoch),
+    ])
+    let policy = IslandActivityPresentationPolicy.standard
+    let projected = try policy.presentation(for: snapshot, at: islandEpoch, showsProjectName: false)
+    let hidden = try #require(projected)
+    let data = try EventCodec.jsonEncoder().encode(hidden.state)
+    #expect(!String(decoding: data, as: UTF8.self).contains("fixture-private-project"))
+    let decoded = try EventCodec.jsonDecoder().decode(IslandActivityContent.self, from: data)
+    let overview = IslandActivityViewState(content: decoded, isStale: false).overviewSessions
+    #expect(decoded == hidden.state && overview.map(\.projectName) == ["开发会话", "开发会话"])
+    #expect(overview.map(\.id) == ids)
+    for session in overview {
+        let link = try #require(SessionLink.url(for: session.id))
+        let reference = try SessionLink.resolve(link, in: snapshot, at: islandEpoch).get()
+        #expect(reference.sessionID == session.id)
+    }
+    let stale = IslandActivityViewState(content: decoded, isStale: true)
+    #expect(stale.overviewSessions.isEmpty && stale.liveCount == 0)
+}
+
+@Test func islandOverviewRejectsInvalidOrRepeatedIdentitiesAndImpossibleCounts() throws {
+    let policy = IslandActivityPresentationPolicy.standard
+    let attempted = [
+        IslandActivitySession(sessionID: "primary", projectName: "copy", phase: .working),
+        IslandActivitySession(sessionID: "bad\nidentity", projectName: "bad", phase: .working),
+        IslandActivitySession(sessionID: "bad", projectName: "bad", phase: .completed),
+        IslandActivitySession(sessionID: "bad", projectName: "bad", phase: .needsInput),
+    ]
+    for row in attempted {
+        let content = IslandActivityContent(sessionID: "primary", projectName: "one", phase: .working,
+                                            workingCount: 2, waitingCount: 0, updatedAt: islandEpoch, otherSessions: [row])
+        #expect(throws: IslandActivityError.invalidContent) { try policy.validate(content) }
+        #expect(throws: IslandActivityError.invalidContent) {
+            try EventCodec.jsonDecoder().decode(IslandActivityContent.self, from: EventCodec.jsonEncoder().encode(content))
+        }
+    }
+}
+
+@Test func islandOverviewFitsMaximumEscapedNamesTogetherWithQuota() throws {
+    let ids = (1...3).map { String(repeating: "\\", count: 255) + String($0) }
+    let project = String(repeating: "\"", count: 160)
+    let snapshot = try islandSnapshot(ids.map {
+        AgentEvent(sessionID: $0, projectName: project, phase: .working, occurredAt: islandEpoch)
+    })
+    let quota = try CodexQuotaSnapshot.decodeResponse(
+        Data(#"{"id":2,"result":{"rateLimits":{"primary":{"usedPercent":11,"windowDurationMins":300,"resetsAt":1800002500},"secondary":{"usedPercent":63,"windowDurationMins":10080,"resetsAt":1800080000}}}}"#.utf8),
+        requestID: 2, checkedAt: islandEpoch)
+    let policy = IslandActivityPresentationPolicy.standard
+    let projected = try policy.presentation(for: snapshot, at: islandEpoch, showsProjectName: true, codexQuota: quota)
+    let result = try #require(projected)
+    #expect(result.state.codexQuota == quota && result.state.otherSessions?.map(\.id) == Array(ids.dropFirst()))
+    #expect(try EventCodec.jsonEncoder().encode(result.state).count <= policy.maximumContentBytes)
+}
+
 @Test func islandControllerRequestsUpdatesAndEndsTheSameOwnedActivity() async throws {
     let client = IslandTestClient(), controller = IslandActivityController(client: client, now: { islandEpoch.addingTimeInterval(20) })
     let first = try islandSnapshot([islandEvent("one", .working)], time: 20)

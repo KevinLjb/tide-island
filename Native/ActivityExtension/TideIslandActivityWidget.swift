@@ -95,6 +95,24 @@ private struct ActivityPanelView: View {
 
     private func panel(windows: [CodexQuotaWindow]) -> some View {
         ViewThatFits(in: .vertical) {
+            if display.overviewSessions.count == 3 {
+                overview(limit: 3, windows: windows, showsFooter: true)
+                overview(limit: 3, windows: [], showsFooter: false)
+            }
+            if !display.overviewSessions.isEmpty {
+                overview(limit: 2, windows: windows, showsFooter: true)
+                overview(limit: 2, windows: [], showsFooter: false)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 6) {
+                        ForEach(display.overviewSessions.prefix(2)) { session in
+                            overviewLink(session, isTile: true)
+                        }
+                    }
+                    .frame(minWidth: 120, idealWidth: 120, maxWidth: .infinity)
+                    compactPanel(windows: windows)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
             if !windows.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     ActivityIdentityView(display: display, appearance: appearance)
@@ -109,13 +127,55 @@ private struct ActivityPanelView: View {
             }
             .fixedSize(horizontal: false, vertical: true)
 
-            // The host can offer less vertical space than the expanded layout needs.
-            HStack(spacing: 8) {
-                ActivityIdentityView(display: display, appearance: appearance, condensed: true,
-                                     codexQuota: windows.first)
-                ActivitySessionLink(display: display, iconOnly: true)
-                    .fixedSize()
+            compactPanel(windows: windows)
+        }
+    }
+
+    private func compactPanel(windows: [CodexQuotaWindow]) -> some View {
+        HStack(spacing: 8) {
+            ActivityIdentityView(display: display, appearance: appearance, condensed: true,
+                                 codexQuota: windows.first)
+            ActivitySessionLink(display: display, iconOnly: true)
+                .fixedSize()
+        }
+    }
+
+    private func overview(limit: Int, windows: [CodexQuotaWindow], showsFooter: Bool) -> some View {
+        let visible = display.overviewSessions.prefix(limit)
+        let more = display.liveCount - visible.count
+        return VStack(alignment: .leading, spacing: 4) {
+            ForEach(visible) { session in
+                overviewLink(session)
             }
+            if showsFooter, more > 0 || !windows.isEmpty {
+                Rectangle().fill(.white.opacity(0.10)).frame(height: 1)
+                    .accessibilityHidden(true)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        otherSessionsCount(more)
+                        if !windows.isEmpty { ActivityCodexQuotaView(windows: windows, condensed: true) }
+                    }
+                    .fixedSize(horizontal: true, vertical: false)
+                    VStack(alignment: .leading, spacing: 3) {
+                        otherSessionsCount(more)
+                        if !windows.isEmpty { ActivityCodexQuotaView(windows: windows, condensed: true) }
+                    }
+                }
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func overviewLink(_ session: IslandActivitySession, isTile: Bool = false) -> some View {
+        let sharesName = display.overviewSessions.filter { $0.projectName == session.projectName }.count > 1
+        return ActivityOverviewLink(session: session, sharesName: sharesName, isTile: isTile)
+    }
+
+    @ViewBuilder private func otherSessionsCount(_ count: Int) -> some View {
+        if count > 0 {
+            Text("另有 \(count > 99 ? "99+" : String(count)) 个会话")
+                .font(.caption2).foregroundStyle(.white.opacity(0.65)).monospacedDigit().lineLimit(1)
+                .accessibilityLabel("另有 \(count) 个会话")
         }
     }
 
@@ -134,6 +194,94 @@ private struct ActivityPanelView: View {
             Rectangle().fill(.white.opacity(0.1)).frame(height: 1)
                 .allowsHitTesting(false).accessibilityHidden(true)
         }
+    }
+}
+
+private struct ActivityOverviewLink: View {
+    let session: IslandActivitySession
+    let sharesName: Bool
+    let isTile: Bool
+
+    private var accent: Color { session.phase == .needsInput ? ActivityAppearance.waiting : ActivityAppearance.working }
+    private var sessionLabel: String? { sharesName ? SessionBrowserProjection.sessionLabel(for: session.id) : nil }
+
+    var body: some View {
+        if let url = SessionLink.url(for: session.id) {
+            Link(destination: url) {
+                Group {
+                    if isTile {
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack(spacing: 4) {
+                                name
+                                arrow
+                            }
+                            HStack(spacing: 4) {
+                                symbol
+                                status
+                            }
+                            shortSessionLabel
+                        }
+                        .padding(.horizontal, 7)
+                    } else {
+                        HStack(spacing: 9) {
+                            symbol
+                                .frame(width: 30, height: 30)
+                                .background(accent.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
+                            VStack(alignment: .leading, spacing: 2) {
+                                name
+                                HStack(spacing: 5) {
+                                    status
+                                    shortSessionLabel
+                                }
+                            }
+                            arrow
+                        }
+                        .padding(.horizontal, 4)
+                    }
+                }
+                .frame(minWidth: 44, maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .background(.white.opacity(isTile ? 0.07 : 0.04), in: RoundedRectangle(cornerRadius: 9))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("打开\(session.projectName)，\(session.phase.title)\(sessionLabel.map { "，\($0)" } ?? "")")
+            .accessibilityHint("在潮汐岛中选择此会话并请求返回 Wave")
+            .privacySensitive()
+        }
+    }
+
+    private var name: some View {
+        Text(session.projectName)
+            .font((isTile ? Font.caption : .subheadline).weight(.semibold))
+            .foregroundStyle(.white.opacity(0.94))
+            .lineLimit(1).truncationMode(.middle)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var status: some View {
+        Text(session.phase == .needsInput ? "待处理" : "工作中")
+            .font(.caption2.weight(.medium)).foregroundStyle(accent)
+            .lineLimit(1).fixedSize(horizontal: true, vertical: false)
+    }
+
+    @ViewBuilder private var shortSessionLabel: some View {
+        if let sessionLabel {
+            Text(String(sessionLabel.suffix(6))).font(.system(.caption2, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.58)).lineLimit(1)
+        }
+    }
+
+    private var arrow: some View {
+        Image(systemName: "arrow.up.right")
+            .font(.system(size: 10, weight: .semibold)).foregroundStyle(.white.opacity(0.53))
+            .accessibilityHidden(true)
+    }
+
+    private var symbol: some View {
+        Image(systemName: session.phase.symbolName)
+            .font(.system(size: isTile ? 9 : 15, weight: .medium))
+            .symbolRenderingMode(.hierarchical).foregroundStyle(accent)
+            .accessibilityHidden(true)
     }
 }
 

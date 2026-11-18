@@ -4,7 +4,7 @@ T016 将 Activity 展示数据、时间检查和基本自有活动控制移到�
 
 ## 共享展示数据
 
-`IslandActivityContent` 使用原有六个会话字段 sessionID、projectName、phase、workingCount、waitingCount、updatedAt，并可携带有界 `codexQuota`。`TideIslandAttributes.ContentState` 直接别名到该共享类型。既有负载可直接读取。可选额度超过内容预算时，投影保留会话负载。
+`IslandActivityContent` 使用原有六个会话字段 sessionID、projectName、phase、workingCount、waitingCount、updatedAt，并可携带有界 `codexQuota` 与 `otherSessions`。`TideIslandAttributes.ContentState` 直接别名到该共享类型。旧负载直接读取为单会话视图。每条补充会话只携带 ID、显示名和工作 / 待处理状态。
 
 展示只包含必要状态，不包含事件 context、工具名 / 正文、Wave 位置、认证、完整路径或原始环境。ID / 项目名沿用事件协议的 UTF-8 和控制字符约束，允许合法中文及特殊字符，不通过截断改变会话身份。内容解码也校验 phase、非负计数、总数溢出、选中 phase 的计数和字段约束。
 
@@ -19,7 +19,7 @@ T016 将 Activity 展示数据、时间检查和基本自有活动控制移到�
 - staleAt 取全部参与计数会话的最早 freshUntil，而不是仅选中会话的期限。
 - 缓存快照若已有任一参与者到期，整份旧聚合不再发送；应向接收器获取新的完整快照，不能保留包含旧会话的总数。未来观察 / 时钟回退也保守停止旧展示，非法 now 返回固定错误。
 
-T021 的 [偏好投影](preferences.md)在验证原内容后，可将项目名替换为“开发会话”，额度开启后也可附加新鲜快照。两种选项都保留原观察时间、计数、最早截止和会话目标。控制器与调度器接收同一组有序选项。
+展开态最多附加两条会话，沿用原有主候选和注意力顺序。校验身份唯一、阶段、条目数及对应分类总数。超过字节预算时优先缩减末尾补充行。隐藏项目名时，在校验原字段后统一显示“开发会话”，链接仍按精确 ID 解析。额度另行检查有效期。见 [偏好](preferences.md)和[总览布局](activity-views.md#多会话总览)。
 
 共享 JSON 编码使用 **3 KiB 开发预算**，帮助限制后续字段增长；这是本项目的临时开发约束，不是已核实的 macOS 27.3 SDK 传输上限。T017 / V001 必须按正式 SDK 核对实际序列化口径和限制，不能把该预算或共享测试视作原生 payload 已验收。
 

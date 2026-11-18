@@ -75,7 +75,7 @@ T025 的独立 notify 共存以共享 NotifyDispatchConfiguration 保留既有 a
 
 ## 原生显示
 
-原生目标最低 macOS 27.3，使用 ActivityKit + WidgetKit，系统负责灵动岛及菜单栏的展示和交互。应用和扩展共享同一 ActivityAttributes 声明，ContentState 别名到 IslandActivityContent，包含六个会话字段和可选额度快照。T016 将时间投影、内容校验、基本自有活动控制和客户端协议移到共享层。共享 JSON 的 3 KiB 是开发预算，正式 SDK 传输限制仍待核对。详见 [实时活动展示与客户端](activity-presentation.md)。
+原生目标最低 macOS 27.3，使用 ActivityKit + WidgetKit，系统负责灵动岛及菜单栏的展示和交互。应用和扩展共享同一 ActivityAttributes 声明，ContentState 别名到 IslandActivityContent，包含六个会话字段、可选额度和最多两条补充会话。T016 将时间投影、内容校验、基本自有活动控制和客户端协议移到共享层。共享 JSON 的 3 KiB 是开发预算，正式 SDK 传输限制仍待核对。详见 [实时活动展示与客户端](activity-presentation.md)。
 
 源码未采用自行绘制的 NSPanel 作为系统原生岛的替代。27.3 SDK 是原生编译的前提，27.3 系统是运行前提；27.2 环境只能验证共享层。源码与结构检查不能证明原生目标已编译或运行。
 
@@ -92,6 +92,8 @@ T018 通过有界完整清单接管唯一活动、清理重复、响应授权及
 27.3 beta SDK 的 Activity 句柄没有 Sendable 声明，异步 update / end 属于并发调用边界。原生客户端在 MainActor 保留归属及监听，只将 ID 与共享展示值传入非隔离的异步辅助方法，在调用域内重新取得 SDK 句柄并复核状态；不把 actor 字典中的句柄发送到该边界。缺失目标继续明确失败，shared scheduler 的串行、取消及重新协调规则保持。SDK 新增 pending 显式映射为共享 unknown，保留保守处理。前台合成 SDK 创建 / 同 ID 更新 / 结束 / shutdown 已实测通过，后台新建仍受 visibility 限制；真实来源与其他系统场景另验。
 
 T019 的 IslandActivityViewState 为系统活动、expanded、compact 和 minimal 统一生成状态、符号、分类计数、会话链接和读屏文案。stale 隐去实时计数，compact 显示有界总数。expanded 将整个面板置于 bottom 区域，与系统活动主视图共享布局。图标、项目名和状态在上排，计数与标准 Link 在下排。可用宽度或高度收紧时，SwiftUI 选择合适的排法，保留完整读屏文案。详见 [活动视图](activity-views.md)。
+
+多会话面板按现有注意力顺序显示近期确认的会话，每条记录有独立 Link。一个活动承载有界的预览与完整计数。详见 [多会话总览](activity-views.md#多会话总览)。
 
 会话窗口由单个 SwiftUI Window 场景提供，菜单栏负责重开。菜单操作使用固定 Label，并以 `.titleAndIcon` 请求显示普通菜单图标。应用委托让关闭最后一个窗口后继续接收事件和维护活动，主动退出进入同一个异步清理流程。见 [活动生命周期](activity-lifecycle.md#正常退出)。
 
